@@ -1,0 +1,140 @@
+# 3ds Max Wavefront OBJ Exporter v0.97b - (c)2007 guruware
+# File Created: 21.06.2017 00:11:52
+
+newmtl Statue
+	Ns 22.0000
+	Ni 1.5000
+	d 1.0000
+	Tr 0.0000
+	Tf 1.0000 1.0000 1.0000 
+	illum 2
+	Ka 0.5880 0.5880 0.5880
+	Kd 0.5880 0.5880 0.5880
+	Ks 0.3240 0.3240 0.3240
+	Ke 0.0000 0.0000 0.0000
+	map_Ka D:\TRYLZ Engine\Photon_GI\Assets\Reflect.tif
+	map_Kd D:\TRYLZ Engine\Photon_GI\Assets\Reflect.tif
+
+newmtl Mirror
+	Ns 10.0000
+	Ni 9.0000
+	d 1.0000
+	Tr 0.0000
+	Tf 1.0000 1.0000 1.0000 
+	illum 2
+	Ka 0.5880 0.5880 0.5880
+	Kd 0.5880 0.5880 0.5880
+	Ks 1.0000 1.0000 1.0000
+	Ke 0.0000 0.0000 0.0000
+
+newmtl Red
+	Ns 10.0000
+	Ni 1.5000
+	d 1.0000
+	Tr 0.0000
+	Tf 1.0000 1.0000 1.0000 
+	illum 2
+	Ka 0.5880 0.5880 0.5880
+	Kd 0.5880 0.5880 0.5880
+	Ks 0.0000 0.0000 0.0000
+	Ke 0.0000 0.0000 0.0000
+	map_Ka D:\TRYLZ Engine\Photon_GI\Assets\red.bmp
+	map_Kd D:\TRYLZ Engine\Photon_GI\Assets\red.bmp
+
+newmtl light_wood
+	Ns 10.0000
+	Ni 1.5000
+	d 1.0000
+	Tr 0.0000
+	Tf 1.0000 1.0000 1.0000 
+	illum 2
+	Ka 0.5880 0.5880 0.5880
+	Kd 0.5880 0.5880 0.5880
+	Ks 0.2340 0.2340 0.2340
+	Ke 0.0000 0.0000 0.0000
+	map_Ka D:\TRYLZ Engine\Photon_GI\Assets\light_wood.jpg
+	map_Kd D:\TRYLZ Engine\Photon_GI\Assets\light_wood.jpg
+
+newmtl Wood
+	Ns 10.0000
+	Ni 1.5000
+	d 1.0000
+	Tr 0.0000
+	Tf 1.0000 1.0000 1.0000 
+	illum 2
+	Ka 0.5880 0.5880 0.5880
+	Kd 0.5880 0.5880 0.5880
+	Ks 0.0000 0.0000 0.0000
+	Ke 0.0000 0.0000 0.0000
+	map_Ka D:\TRYLZ Engine\Photon_GI\Assets\wood.jpg
+	map_Kd D:\TRYLZ Engine\Photon_GI\Assets\wood.jpg
+
+newmtl Blue
+	Ns 10.0000
+	Ni 1.5000
+	d 1.0000
+	Tr 0.0000
+	Tf 1.0000 1.0000 1.0000 
+	illum 2
+	Ka 0.5880 0.5880 0.5880
+	Kd 0.5880 0.5880 0.5880
+	Ks 0.0000 0.0000 0.0000
+	Ke 0.0000 0.0000 0.0000
+	map_Ka D:\TRYLZ Engine\Photon_GI\Assets\blue.bmp
+	map_Kd D:\TRYLZ Engine\Photon_GI\Assets\blue.bmp
+
+newmtl light_Wood
+	Ns 14.0000
+	Ni 1.5000
+	d 1.0000
+	Tr 0.0000
+	Tf 1.0000 1.0000 1.0000 
+	illum 2
+	Ka 0.5880 0.5880 0.5880
+	Kd 0.5880 0.5880 0.5880
+	Ks 0.0000 0.0000 0.0000
+	Ke 0.0000 0.0000 0.0000
+	map_Ka D:\TRYLZ Engine\Photon_GI\Assets\light_wood.jpg
+	map_Kd D:\TRYLZ Engine\Photon_GI\Assets\light_wood.jpg
+
+newmtl Drago
+	Ns 28.0000
+	Ni 1.5000
+	d 1.0000
+	Tr 0.0000
+	Tf 1.0000 1.0000 1.0000 
+	illum 2
+	Ka 0.5880 0.5880 0.5880
+	Kd 0.5880 0.5880 0.5880
+	Ks 0.7700 0.7700 0.7700
+	Ke 0.0000 0.0000 0.0000
+	map_Ka D:\TRYLZ Engine\Photon_GI\Assets\blue.bmp
+	map_Kd D:\TRYLZ Engine\Photon_GI\Assets\blue.bmp
+
+newmtl Green
+	Ns 10.0000
+	Ni 1.5000
+	d 1.0000
+	Tr 0.0000
+	Tf 1.0000 1.0000 1.0000 
+	illum 2
+	Ka 0.5880 0.5880 0.5880
+	Kd 0.5880 0.5880 0.5880
+	Ks 0.0000 0.0000 0.0000
+	Ke 0.0000 0.0000 0.0000
+	map_Ka D:\TRYLZ Engine\Photon_GI\Assets\green.jpg
+	map_Kd D:\TRYLZ Engine\Photon_GI\Assets\green.jpg
+
+newmtl Gold
+	Ns 16.0000
+	Ni 7.0000
+	d 1.0000
+	Tr 0.0000
+	Tf 1.0000 1.0000 1.0000 
+	illum 2
+	Ka 0.8235 0.6431 0.0902
+	Kd 0.8235 0.6431 0.0902
+	Ks 0.2882 0.2882 0.2882
+	Ke 0.0000 0.0000 0.0000
+	map_Ka D:\Makin JV\gold.jpg
+	map_Kd D:\Makin JV\gold.jpg
