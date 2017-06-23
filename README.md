@@ -24,7 +24,7 @@ The base math library used.
 ## Features
 
 ### Offline renderer:  
-- Path tracing
+- Multithreaded CPU Path tracer
 - Area lights
 - Soft shadows
 
@@ -41,8 +41,8 @@ This is a work in progress. There is soo much to do.
 ## Incoming features:  
 
 ### Offline renderer:
-- Refractive materials
 - Bounding volume hierarchies accelerator to replace brute force ray-AABB tests.
+- Refractive materials
 - Replace Path tracing by Bidirectionnal path tracing
 - Post processing denoising  
 - Ambient occlusion
