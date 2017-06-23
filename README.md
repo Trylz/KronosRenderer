@@ -35,7 +35,7 @@ The base math library used.
 - Physically based rendering
 - Directionnal and omni lights  
 
-There is still soo much to do.  
+This is a work in progress. There is soo much to do.  
 
 
 ## Incoming features:  
