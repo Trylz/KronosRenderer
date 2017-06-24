@@ -25,11 +25,12 @@ The base math library used.
 
 ### Offline renderer:  
 - Multithreaded CPU Path tracer
+- Bounding volume hierarchy accelerator with implementation from [Scratchapixel](https://www.scratchapixel.com/)  
 - Area lights
 - Soft shadows
 
 ### Realtime renderer:
-- DirectX 12 rendering
+- DirectX 12 api
 
 ### Offline and Realtime renderer: 
 - Physically based rendering
@@ -41,7 +42,6 @@ This is a work in progress. There is soo much to do.
 ## Incoming features:  
 
 ### Offline renderer:
-- Bounding volume hierarchies accelerator to replace brute force ray-AABB tests.
 - Refractive materials
 - Replace Path tracing by Bidirectionnal path tracing
 - Post processing denoising  
