@@ -1,5 +1,5 @@
 ![logo](logo.jpg?raw=true)
-# Trylz_BPT
+# Trylz Renderer
 
 A physically based renderer with realtime DirectX 12 preview, written in c++.  
 General features:  
