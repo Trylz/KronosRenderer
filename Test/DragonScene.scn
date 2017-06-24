@@ -35,6 +35,6 @@
 			</light>
 		</point>
 	</lights>
-	<model>SimpleModel.obj</model>
+	<model>DragonSceneModel.obj</model>
 </scene>
 
