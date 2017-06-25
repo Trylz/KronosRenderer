@@ -30,7 +30,7 @@ The base math library used.
 - Soft shadows
 
 ### Realtime renderer:
-- DirectX 12 api
+- DirectX 12 Api
 
 ### Offline and Realtime renderer: 
 - Physically based rendering
@@ -42,8 +42,9 @@ This is a work in progress. There is soo much to do.
 ## Incoming features:  
 
 ### Offline renderer:
-- Refractive materials
 - Replace Path tracing by Bidirectionnal path tracing
+- Save rendered images to file
+- Refractive materials
 - Post processing denoising  
 - Ambient occlusion
 - Subsurface scattering ([Jensen & al](http://jbit.net/~sparky/bssrdf.pdf))
