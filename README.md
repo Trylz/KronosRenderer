@@ -21,7 +21,7 @@ Xml reading / writing.
  - [GLM](http://glm.g-truc.net/0.9.8/index.html)  
 The base math library used.  
 
- - [OpenCV](http://docs.opencv.org/2.4/index.html)  
+ - [OpenCV](http://opencv.org)  
 Image processing. Currently only used for denoising.
 
 ## Features
