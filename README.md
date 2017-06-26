@@ -68,5 +68,3 @@ This is a work in progress. There is soo much to do.
 - Undo / Redo actions
 - Create lights  
 - Edit lights(draw a representation, add gizmo manipulations)
-
-
