@@ -6,7 +6,7 @@ General features:
 - User interface with basic settings
 - Create scenes from model files and save it in xml files
 - Free play camera
-- Render high quality images and export them
+- Render high quality images
 
 ## 3rd parties  
 - [Assimp](http://assimp.sourceforge.net/)  
