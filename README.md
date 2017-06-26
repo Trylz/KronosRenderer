@@ -28,7 +28,8 @@ Image processing. Currently only used for denoising.
 
 ### Offline renderer:  
 - Multithreaded CPU Path tracer
-- Bounding volume hierarchy accelerator with implementation from [Scratchapixel](https://www.scratchapixel.com/)- Post-process denoising 
+- Bounding volume hierarchy accelerator with implementation from [Scratchapixel](https://www.scratchapixel.com/)  
+- Post-process denoising  
 - Area lights
 - Soft shadows
 
