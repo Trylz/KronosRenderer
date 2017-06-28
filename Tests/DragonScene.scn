@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <scene>
-	<ambient>0.620000 0.620000 0.620000 1.000000</ambient>
+	<ambient>0.600000 0.600000 0.600000 1.000000</ambient>
 	<cameras>
 		<FirstPerson>
 			<moveSensibility>0.600000</moveSensibility>
