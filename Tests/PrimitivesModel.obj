@@ -1,5 +1,5 @@
 # 3ds Max Wavefront OBJ Exporter v0.97b - (c)2007 guruware
-# File Created: 24.06.2017 02:45:11
+# File Created: 27.06.2017 21:07:44
 
 mtllib PrimitivesModel.mtl
 
@@ -143,11 +143,9 @@ f 19/19/5 20/20/5 17/17/5
 s 4
 f 21/20/6 22/17/6 23/18/6 
 f 23/18/6 24/19/6 21/20/6 
-usemtl Blue
 s 8
 f 17/20/7 20/17/7 22/18/7 
 f 22/18/7 21/19/7 17/20/7 
-usemtl light_Wood
 s 16
 f 20/20/8 19/17/8 23/18/8 
 f 23/18/8 22/19/8 20/20/8 
@@ -1743,7 +1741,7 @@ vt 0.9688 -0.0000 0.0000
 # 559 texture coords
 
 g Sphere2Mesh
-usemtl Gold
+usemtl Material__2
 s off
 f 33/25/17 34/26/18 35/27/19 
 f 33/28/17 35/27/19 36/29/20 
@@ -4009,7 +4007,7 @@ vt 0.5000 1.0000 0.0000
 # 127 texture coords
 
 g Cone001
-usemtl Gold
+usemtl Material__2
 s 1
 f 739/814/575 740/815/575 741/816/575 
 f 739/814/575 742/817/575 740/815/575 
