@@ -25,15 +25,14 @@
 				<intensity>3.200000</intensity>
 			</light>
 		</directionnal>
-		<point>
+		<omni>
 			<position>0.000000 50.000000 0.000000</position>
 			<radius>2.000000</radius>
-			<attenuation>0.020000</attenuation>
 			<light>
 				<color>0.800000 0.800000 0.800000 1.000000</color>
 				<intensity>1.200000</intensity>
 			</light>
-		</point>
+		</omni>
 	</lights>
 	<model>DragonSceneModel.obj</model>
 </scene>
