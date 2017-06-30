@@ -30,7 +30,7 @@
 			<radius>2.000000</radius>
 			<light>
 				<color>0.420000 0.900000 0.188000 1.000000</color>
-				<intensity>1.200000</intensity>
+				<intensity>1.720000</intensity>
 			</light>
 		</omni>
 		<omni>
@@ -38,7 +38,7 @@
 			<radius>2.000000</radius>
 			<light>
 				<color>0.180000 0.100000 0.890000 1.000000</color>
-				<intensity>2.400000</intensity>
+				<intensity>3.00000</intensity>
 			</light>
 		</omni>
 	</lights>
