@@ -22,7 +22,7 @@
 			<direction>0.200000 -0.720000 -0.400000</direction>
 			<light>
 				<color>1.000000 1.000000 1.000000 1.000000</color>
-				<intensity>3.800000</intensity>
+				<intensity>3.600000</intensity>
 			</light>
 		</directionnal>
 		<omni>
