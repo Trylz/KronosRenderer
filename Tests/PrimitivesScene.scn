@@ -14,6 +14,8 @@
 				<fovY>63.025360</fovY>
 				<nearZ>0.100000</nearZ>
 				<farZ>1000.000000</farZ>
+				<lensRadius>6.000000</lensRadius>
+				<focalDistance>180.000000</focalDistance>
 			</camera>
 		</FirstPerson>
 	</cameras>
@@ -38,7 +40,7 @@
 			<radius>2.000000</radius>
 			<light>
 				<color>0.180000 0.100000 0.890000 1.000000</color>
-				<intensity>3.00000</intensity>
+				<intensity>3.000000</intensity>
 			</light>
 		</omni>
 	</lights>

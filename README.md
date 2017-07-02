@@ -30,6 +30,7 @@ Image processing. Currently only used for denoising.
 - Multithreaded CPU Path tracer
 - Bounding volume hierarchy accelerator with implementation from [Scratchapixel](https://www.scratchapixel.com/)  
 - Post-process denoising  
+- Depth of field
 - Area lights
 - Soft shadows
 
@@ -57,10 +58,10 @@ This is a work in progress. There is soo much to do.
 - Shadow mapping
 - Antiliasing (FXAA or SMAA)
 - Vulkan Api support with runtime switch
+- Depth of field
 - Subsurface scattering ([SSS](http://www.iryoku.com/separable-sss/))
 
 ### Offline and Realtime renderer:
-- Depth of field
 - Spotlights
 - Normal mapping
 - Cube maps  
