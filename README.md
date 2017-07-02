@@ -60,6 +60,7 @@ This is a work in progress. There is soo much to do.
 - Subsurface scattering ([SSS](http://www.iryoku.com/separable-sss/))
 
 ### Offline and Realtime renderer:
+- Depth of field
 - Spotlights
 - Normal mapping
 - Cube maps  
