@@ -7,13 +7,15 @@
 			<rotationSensibility>2.400000</rotationSensibility>
 			<zoomSensibility>0.100000</zoomSensibility>
 			<camera>
-				<position>44.211681 133.839996 284.403473</position>
+				<position>34.689861 134.286499 285.626343</position>
 				<up>0.000000 1.000000 0.000000</up>
 				<angleH>457.317993</angleH>
 				<angleV>-18.974230</angleV>
 				<fovY>56.000000</fovY>
 				<nearZ>0.100000</nearZ>
 				<farZ>1000.000000</farZ>
+				<lensRadius>0.000000</lensRadius>
+				<focalDistance>1.000000</focalDistance>
 			</camera>
 		</FirstPerson>
 	</cameras>
@@ -22,7 +24,7 @@
 			<direction>0.200000 -0.720000 -0.400000</direction>
 			<light>
 				<color>1.000000 1.000000 1.000000 1.000000</color>
-				<intensity>3.92000</intensity>
+				<intensity>3.920000</intensity>
 			</light>
 		</directionnal>
 		<omni>
