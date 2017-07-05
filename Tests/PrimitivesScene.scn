@@ -14,7 +14,7 @@
 				<fovY>63.025360</fovY>
 				<nearZ>0.100000</nearZ>
 				<farZ>1000.000000</farZ>
-				<lensRadius>6.000000</lensRadius>
+				<lensRadius>5.000000</lensRadius>
 				<focalDistance>180.000000</focalDistance>
 			</camera>
 		</FirstPerson>
