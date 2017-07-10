@@ -28,7 +28,8 @@ Image processing. Currently only used for denoising.
 
 ### Offline renderer:  
 - Multithreaded CPU Path tracer
-- Bounding volume hierarchy accelerator with implementation from [Scratchapixel](https://www.scratchapixel.com/)  
+- Bounding volume hierarchy accelerator with implementation from [Scratchapixel](https://www.scratchapixel.com/) 
+- Transparent and refractive materials 
 - Post-process denoising  
 - Depth of field
 - Area lights
@@ -36,6 +37,7 @@ Image processing. Currently only used for denoising.
 
 ### Realtime renderer:
 - DirectX 12 Api
+- Transparent materials
 
 ### Offline and Realtime renderer: 
 - Physically based rendering
@@ -50,7 +52,6 @@ This is a work in progress. There is soo much to do.
 - Progress bar to show rendering state
 - Save images to file
 - Replace Path tracing by Bidirectionnal path tracing
-- Refractive materials 
 - Ambient occlusion
 - Subsurface scattering ([Jensen & al](http://jbit.net/~sparky/bssrdf.pdf))
 
