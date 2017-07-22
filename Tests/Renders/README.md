@@ -6,11 +6,11 @@ See Assets.txt for author references.
 Various materials:
 ![Alt text](DragonScene.png?raw=true "DragonScene")  
 
-Geometric primitives with DOF:
-![Alt text](Primitives.png?raw=true "Primitives")  
-
 Interior room:
 ![Alt text](InteriorRoom.png?raw=true "InteriorRoom")  
+
+Geometric primitives with DOF:
+![Alt text](Primitives.png?raw=true "Primitives")  
 
 Crytek Sponza:
 ![Alt text](Sponza.png?raw=true "Sponza")  
