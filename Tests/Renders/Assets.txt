@@ -9,7 +9,7 @@ Dragon: Schwarz Rudolf
 Chair : 3dregenerator
 
 
-Dark and light wood textures : from the web
+Wood texture : from the web
 
 //--------------------------------------------------------------------
 
