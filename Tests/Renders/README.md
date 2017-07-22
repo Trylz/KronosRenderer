@@ -1,6 +1,5 @@
 
-The assets used are mostly from the web.  
-See Assets.txt for author references.
+The assets used are mostly from the web. See Assets.txt for author references.
 
 
 Various materials:
