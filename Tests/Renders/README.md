@@ -1,16 +1,18 @@
 
-![Alt text](DragonScene.png?raw=true "DragonScene")
+The assets used are mostly from the web. See Assets.txt for author references.
 
 
-![Alt text](Primitives.png?raw=true "Primitives")
+Various materials:
+![Alt text](DragonScene.png?raw=true "DragonScene")  
 
+Geometric primitives with DOF:
+![Alt text](Primitives.png?raw=true "Primitives")  
 
-![Alt text](Sponza.png?raw=true "Sponza")
+Interior room:
+![Alt text](InteriorRoom.png?raw=true "InteriorRoom")  
 
+Crytek Sponza:
+![Alt text](Sponza.png?raw=true "Sponza")  
 
-![Alt text](Transparent_Refractive.png?raw=true "Transparent_Refractive")
-
-
-
-
-
+Refraction:
+![Alt text](Transparent_Refractive.png?raw=true "Transparent_Refractive")  
