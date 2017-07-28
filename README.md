@@ -1,7 +1,9 @@
 ![logo](logo.jpg?raw=true)
 # Trylz Renderer
 
-A physically based renderer with realtime DirectX 12 preview, written in c++.  
+A physically based renderer with realtime DirectX 12 preview written in c++.  
+Requires Windows 10 and SSE4 to run.  
+
 General features:  
 - User interface with basic settings
 - Create scenes from model files and save it in xml files
