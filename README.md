@@ -2,7 +2,7 @@
 # Trylz Renderer
 
 A physically based renderer with realtime DirectX 12 preview written in c++.  
-Requires 64 bits Windows 10 and SSE4 to run.  
+Requires 64 bits Windows 10 and AVX2 to run.  
 
 General features:  
 - User interface with basic settings
