@@ -13,14 +13,7 @@ Dark and light wood textures : from the web
 
 //--------------------------------------------------------------------
 
-Interior room:
-Room, couch, Tv and Tv table : from the web same author
-
-Curtain: http://www.cadnav.com/3d-models/model-4088.html
-Left flower vase: http://www.cadnav.com/3d-models/model-32809.html
-Right flower vase:: http://www.cadnav.com/3d-models/model-8375.html
-Small table : https://free3d.com/3d-model/table-17689.html
-Pillows: http://www.archibase.net
+Interior room:  Jay Hardy
 
 //--------------------------------------------------------------------
 
