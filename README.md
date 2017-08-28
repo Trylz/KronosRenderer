@@ -53,13 +53,12 @@ This is a work in progress. There is soo much to do.
 ### Offline renderer:
 - Progress bar to show rendering state
 - Save images to file
-- Replace Path tracing by Bidirectionnal path tracing
 - Ambient occlusion
 - Subsurface scattering ([Jensen & al](http://jbit.net/~sparky/bssrdf.pdf))
 
 ### Realtime renderer:
 - Shadow mapping
-- Antiliasing (FXAA or SMAA)
+- Antiliasing (MSAA or FXAA or SMAA)
 - Vulkan Api support with runtime switch
 - Depth of field
 - Subsurface scattering ([SSS](http://www.iryoku.com/separable-sss/))
