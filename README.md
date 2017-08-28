@@ -32,7 +32,7 @@ Image processing. Currently only used for denoising.
 - Multithreaded CPU Path tracer
 - Bounding volume hierarchy accelerator with implementation from [Scratchapixel](https://www.scratchapixel.com/) 
 - Refractive materials 
-- Post-process denoising  
+- Simple post-process denoising  
 - Depth of field
 - Area lights
 - Soft shadows
