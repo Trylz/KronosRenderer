@@ -54,6 +54,8 @@ This is a work in progress. There is soo much to do.
 - Progress bar to show rendering state
 - Save images to file
 - Ambient occlusion
+- Participating medium(homogeneous and heterogeneous)
+- Replace path tracing by bidirectionnal path tracing
 - Subsurface scattering ([Jensen & al](http://jbit.net/~sparky/bssrdf.pdf))
 
 ### Realtime renderer:
