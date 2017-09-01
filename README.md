@@ -72,6 +72,7 @@ This is a work in progress. There is soo much to do.
 
 ### UI:
 - Replace native Win32 api by a cross plateform ui library  
+- Drag and drop files
 - Undo / Redo actions
 - Create lights  
 - Edit lights(draw a representation, add gizmo manipulations)
