@@ -11,6 +11,9 @@ Interior room:
 Geometric primitives with DOF:
 ![Alt text](Primitives.png?raw=true "Primitives")  
 
+Chevrolet Camaro:
+![Alt text](Camaro.png?raw=true "Camaro")  
+
 Crytek Sponza:
 ![Alt text](Sponza.png?raw=true "Sponza")  
 
