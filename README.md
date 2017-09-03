@@ -55,7 +55,7 @@ This is a work in progress. There is soo much to do.
 - Save images to file
 - Ambient occlusion
 - Participating medium (homogeneous and heterogeneous)
-- Replace path tracing by bidirectionnal path tracing
+- Experiment bidirectionnal path tracing
 - Subsurface scattering ([Jensen & al](http://jbit.net/~sparky/bssrdf.pdf))
 
 ### Realtime renderer:
@@ -72,6 +72,7 @@ This is a work in progress. There is soo much to do.
 
 ### UI:
 - Replace native Win32 api by a cross plateform ui library  
+- Drag and drop files
 - Undo / Redo actions
 - Create lights  
 - Edit lights(draw a representation, add gizmo manipulations)
