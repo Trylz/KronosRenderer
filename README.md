@@ -10,6 +10,8 @@ General features:
 - Free play camera
 - Render high quality images
 
+Trylz Renderer is a free software. To use Trylz just give it some credits.
+
 ## 3rd parties  
 - [Assimp](http://assimp.sourceforge.net)  
 3d model loading. Currently Trylz only support Wavefront Obj.  
