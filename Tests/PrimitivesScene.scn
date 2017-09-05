@@ -30,6 +30,7 @@
 		<omni>
 			<position>3.000000 40.000000 0.000000</position>
 			<radius>2.000000</radius>
+			<range>350.0</range>
 			<light>
 				<color>0.420000 0.900000 0.188000</color>
 				<intensity>1.720000</intensity>
@@ -38,6 +39,7 @@
 		<omni>
 			<position>-10.000000 30.000000 40.000000</position>
 			<radius>2.000000</radius>
+			<range>350.0</range>
 			<light>
 				<color>0.180000 0.100000 0.890000</color>
 				<intensity>3.000000</intensity>
