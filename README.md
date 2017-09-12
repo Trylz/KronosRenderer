@@ -50,7 +50,7 @@ Image processing. Currently only used for denoising.
 This is a work in progress. There is soo much to do.  
 
 
-## Incoming features:  
+## Upcoming features:  
 
 ### Offline renderer:
 - Progress bar to show rendering state
