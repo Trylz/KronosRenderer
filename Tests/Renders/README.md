@@ -8,8 +8,8 @@ Various materials:
 Interior room:
 ![Alt text](InteriorRoom.png?raw=true "InteriorRoom")  
 
-Geometric primitives with DOF:
-![Alt text](Primitives.png?raw=true "Primitives")  
+Golden dragon with depth of field:
+![Alt text](GoldenDragon.png?raw=true "GoldenDragon")  
 
 Chevrolet Camaro:
 ![Alt text](Camaro.png?raw=true "Camaro")  

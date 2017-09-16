@@ -17,7 +17,8 @@ Interior room:  Jay Hardy
 
 //--------------------------------------------------------------------
 
-Geometric primitives with DOF:
+Golden dragon with depth of field:
+Dragon : Albini Franco - https://archive3d.net/?a=download&id=59071714
 Dark and light wood textures : from the web
 
 //--------------------------------------------------------------------
