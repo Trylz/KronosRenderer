@@ -11,11 +11,11 @@ Interior room:
 Golden dragon with depth of field:
 ![Alt text](GoldenDragon.png?raw=true "GoldenDragon")  
 
-Chevrolet Camaro:
-![Alt text](Camaro.png?raw=true "Camaro")  
+Crytek Sponza:
+![Alt text](Sponza.png?raw=true "Sponza") 
 
 Refraction:
 ![Alt text](Transparent_Refractive.png?raw=true "Transparent_Refractive")  
 
-Crytek Sponza:
-![Alt text](Sponza.png?raw=true "Sponza")  
+Chevrolet Camaro:
+![Alt text](Camaro.png?raw=true "Camaro")  

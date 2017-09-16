@@ -23,8 +23,7 @@ Dark and light wood textures : from the web
 
 //--------------------------------------------------------------------
 
-Chevrolet Camaro: animium.com
-http://animium.com/2016/09/chevrolet-camaro-zl1-3d-model
+Crytek Sponza: Frank Meinl
 
 //--------------------------------------------------------------------
 
@@ -33,7 +32,8 @@ Dark and light wood textures : from the web
 
 //--------------------------------------------------------------------
 
-Crytek Sponza: Frank Meinl
+Chevrolet Camaro: animium.com
+http://animium.com/2016/09/chevrolet-camaro-zl1-3d-model
 
 //--------------------------------------------------------------------
 
