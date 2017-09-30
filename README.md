@@ -38,6 +38,7 @@ Image processing. Currently only used for denoising.
 - Depth of field
 - Area lights
 - Soft shadows
+- Ambient occlusion
 
 ### Realtime renderer:
 - DirectX 12 Api
@@ -55,7 +56,6 @@ This is a work in progress. There is soo much to do.
 ### Offline renderer:
 - Progress bar to show rendering state
 - Save images to file
-- Ambient occlusion
 - Participating medium (homogeneous and heterogeneous)
 - Experiment bidirectionnal path tracing
 - Subsurface scattering ([Jensen & al](http://jbit.net/~sparky/bssrdf.pdf))
