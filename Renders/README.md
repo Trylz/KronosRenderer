@@ -14,6 +14,9 @@ Golden dragon with depth of field:
 Crytek Sponza:
 ![Alt text](Sponza.png?raw=true "Sponza") 
 
+Modern bathroom:
+![Alt text](Bathroom.png?raw=true "Modern bathroom")  
+
 Refraction:
 ![Alt text](Transparent_Refractive.png?raw=true "Transparent_Refractive")  
 
