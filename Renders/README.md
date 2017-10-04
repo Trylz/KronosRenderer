@@ -14,11 +14,11 @@ Golden dragon with depth of field:
 Crytek Sponza:
 ![Alt text](Sponza.png?raw=true "Sponza") 
 
-Modern bathroom:
-![Alt text](Bathroom.png?raw=true "Modern bathroom")  
-
 Refraction:
 ![Alt text](Transparent_Refractive.png?raw=true "Transparent_Refractive")  
+
+Modern bathroom:
+![Alt text](Bathroom.png?raw=true "Modern bathroom")  
 
 Chevrolet Camaro:
 ![Alt text](Camaro.png?raw=true "Camaro")  
