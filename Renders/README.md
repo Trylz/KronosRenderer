@@ -8,7 +8,7 @@ Various materials:
 Interior room:
 ![Alt text](InteriorRoom.png?raw=true "InteriorRoom")  
 
-Golden dragon with depth of field:
+Golden dragon:
 ![Alt text](GoldenDragon.png?raw=true "GoldenDragon")  
 
 Crytek Sponza:
