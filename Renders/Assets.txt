@@ -28,7 +28,8 @@ Crytek Sponza: Frank Meinl
 //--------------------------------------------------------------------
 
 Refraction:
-Dark and light wood textures : from the web
+Glass cup : Jencarlos - https://archive3d.net/?a=download&id=d4714be1
+Room : Wig42
 
 //--------------------------------------------------------------------
 
