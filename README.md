@@ -19,14 +19,17 @@ Trylz Renderer is a free software. To use Trylz just give it some credits.
 - [FreeImage](http://freeimage.sourceforge.net)  
 Support of various image formats.  
 
-- [RapidXml](http://rapidxml.sourceforge.net)  
+- [RapidXml](http://rapidxml.sourceforge.net/)  
 Xml reading / writing.  
  
- - [GLM](http://glm.g-truc.net/0.9.8/index.html)  
+ - [GLM](https://glm.g-truc.net/0.9.8/index.html)  
 The base math library used.  
 
- - [OpenCV](http://opencv.org)  
+ - [OpenCV](https://opencv.org)  
 Image processing. Currently only used for denoising.
+
+ - [WxWidgets](https://www.wxwidgets.org/)  
+A cross-platform GUI library.
 
 ## Features
 
@@ -73,7 +76,6 @@ This is a work in progress. There is soo much to do.
 - Cube maps  
 
 ### UI:
-- Replace native Win32 api by a cross plateform ui library  
 - Drag and drop files
 - Undo / Redo actions
 - Create lights  
