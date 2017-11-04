@@ -59,7 +59,6 @@ This is a work in progress. There is soo much to do.
 ## Upcoming features:  
 
 ### Offline renderer:
-- Progress bar to show rendering state
 - Participating medium (homogeneous and heterogeneous)
 - Experiment bidirectionnal path tracing
 - Subsurface scattering ([Jensen & al](http://jbit.net/~sparky/bssrdf.pdf))
@@ -72,9 +71,9 @@ This is a work in progress. There is soo much to do.
 - Subsurface scattering ([SSS](http://www.iryoku.com/separable-sss/))
 
 ### Offline and Realtime renderer:
+- Cube maps  
 - Spotlights
 - Normal mapping
-- Cube maps  
 
 ### UI:
 - Drag and drop files
