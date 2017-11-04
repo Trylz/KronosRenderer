@@ -42,7 +42,7 @@ A cross-platform GUI library.
 - Area lights
 - Soft shadows
 - Ambient occlusion
-- Renders post-processing
+- Post-processing
 - Save renders to file
 
 ### Realtime renderer:
@@ -78,6 +78,7 @@ This is a work in progress. There is soo much to do.
 
 ### UI:
 - Drag and drop files
+- Material edition
 - Undo / Redo actions
 - Create lights  
 - Edit lights(draw a representation, add gizmo manipulations)
