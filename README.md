@@ -42,6 +42,8 @@ A cross-platform GUI library.
 - Area lights
 - Soft shadows
 - Ambient occlusion
+- Renders post-processing
+- Save renders to file
 
 ### Realtime renderer:
 - DirectX 12 Api
@@ -58,7 +60,6 @@ This is a work in progress. There is soo much to do.
 
 ### Offline renderer:
 - Progress bar to show rendering state
-- Save images to file
 - Participating medium (homogeneous and heterogeneous)
 - Experiment bidirectionnal path tracing
 - Subsurface scattering ([Jensen & al](http://jbit.net/~sparky/bssrdf.pdf))
