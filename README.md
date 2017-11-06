@@ -26,7 +26,7 @@ Xml reading / writing.
 The base math library used.  
 
  - [OpenCV](https://opencv.org)  
-Image processing. Currently only used for denoising.
+Used for image processing.
 
  - [WxWidgets](https://www.wxwidgets.org/)  
 A cross-platform GUI library.
