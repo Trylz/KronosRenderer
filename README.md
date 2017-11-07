@@ -42,7 +42,7 @@ A cross-platform GUI library.
 - Area lights
 - Soft shadows
 - Ambient occlusion
-- Post-processing
+- Image post-processing
 - Save renders to file
 
 ### Realtime renderer:
