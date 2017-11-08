@@ -76,8 +76,7 @@ This is a work in progress. There is soo much to do.
 - Normal mapping
 
 ### UI:
-- Drag and drop files
-- Material edition
 - Undo / Redo actions
+- Material edition
 - Create lights  
 - Edit lights(draw a representation, add gizmo manipulations)
