@@ -3,7 +3,7 @@
 	<ambient>0.600000 0.600000 0.600000</ambient>
 	<cameras>
 		<FirstPerson>
-			<moveSensibility>0.600000</moveSensibility>
+			<moveSensibility>0.500000</moveSensibility>
 			<rotationSensibility>2.400000</rotationSensibility>
 			<zoomSensibility>0.100000</zoomSensibility>
 			<camera>
@@ -30,7 +30,7 @@
 		<omni>
 			<position>0.000000 64.000000 0.000000</position>
 			<radius>2.000000</radius>
-			<range>350.0</range>
+			<range>350.000000</range>
 			<light>
 				<color>0.800000 0.800000 0.800000</color>
 				<intensity>1.130000</intensity>
