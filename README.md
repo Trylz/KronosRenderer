@@ -51,6 +51,7 @@ A cross-platform GUI library.
 ### Offline and Realtime renderer: 
 - Physically based rendering
 - Directionnal and omni lights  
+- Cube maps 
 - Transparent materials  
 
 This is a work in progress. There is soo much to do.  
@@ -70,8 +71,7 @@ This is a work in progress. There is soo much to do.
 - Depth of field
 - Subsurface scattering ([SSS](http://www.iryoku.com/separable-sss/))
 
-### Offline and Realtime renderer:
-- Cube maps  
+### Offline and Realtime renderer: 
 - Spotlights
 - Normal mapping
 

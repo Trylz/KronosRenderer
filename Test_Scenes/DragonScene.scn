@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<scene>
+	<ambient>0.600000 0.600000 0.600000</ambient>
+	<cameras>
+		<FirstPerson>
+			<moveSensibility>0.500000</moveSensibility>
+			<rotationSensibility>2.400000</rotationSensibility>
+			<zoomSensibility>0.100000</zoomSensibility>
+			<camera>
+				<position>52.283344 142.191513 276.806335</position>
+				<up>0.000000 1.000000 0.000000</up>
+				<angleH>462.188538</angleH>
+				<angleV>-19.741880</angleV>
+				<fovY>56.000000</fovY>
+				<nearZ>0.100000</nearZ>
+				<farZ>20000.000000</farZ>
+				<lensRadius>0.000000</lensRadius>
+				<focalDistance>1.000000</focalDistance>
+			</camera>
+		</FirstPerson>
+	</cameras>
+	<lights>
+		<directionnal>
+			<direction>0.200000 -0.720000 -0.400000</direction>
+			<light>
+				<color>1.000000 1.000000 1.000000</color>
+				<intensity>3.200</intensity>
+			</light>
+		</directionnal>
+		<omni>
+			<position>0.000000 64.000000 0.000000</position>
+			<radius>2.000000</radius>
+			<range>350.000000</range>
+			<light>
+				<color>0.800000 0.800000 0.800000</color>
+				<intensity>1.130000</intensity>
+			</light>
+		</omni>
+	</lights>
+	<CubeMap>
+		<maps>
+			<map>Skybox\Right.tga</map>
+			<map>Skybox\Left.tga</map>
+			<map>Skybox\Bottom.tga</map>
+			<map>Skybox\Top.tga</map>
+			<map>Skybox\Front.tga</map>
+			<map>Skybox\Back.tga</map>
+		</maps>
+		<rect>
+			<min>-128.506302 1.588700 -108.350502</min>
+			<max>113.406303 149.567001 107.504196</max>
+		</rect>
+		<scale>20</scale>
+	</CubeMap>
+	<model>DragonSceneModel.obj</model>
+</scene>
+
