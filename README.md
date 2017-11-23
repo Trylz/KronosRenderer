@@ -37,12 +37,12 @@ A cross-platform GUI library.
 - Multithreaded CPU Path tracer
 - Bounding volume hierarchy accelerator with implementation from [Scratchapixel](https://www.scratchapixel.com/) 
 - Refractive materials 
-- Simple post-process denoising  
+- Post-process denoising  
 - Depth of field
 - Area lights
 - Soft shadows
 - Ambient occlusion
-- Image post-processing
+- Image filtering
 - Save renders to file
 
 ### Realtime renderer:
