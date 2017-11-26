@@ -2,7 +2,8 @@
 # Trylz Renderer
 
 A physically based renderer with realtime DirectX 12 preview written in c++.  
-Requires 64 bits Windows 10 and AVX2 to run.  
+Requires 64 bits Windows 10 and at least SSE4 to run. 
+Trylz will automatically choose at runtime beetween SSE4 and AVX2 depending on the device.
 
 General features:  
 - User interface with basic settings
@@ -30,6 +31,13 @@ Used for image processing.
 
  - [WxWidgets](https://www.wxwidgets.org/)  
 A cross-platform GUI library.
+
+ - [FeatureDetector](https://github.com/Mysticial/FeatureDetector)  
+Determine CPU features supported.
+
+## Utilities
+- [wxFormBuilder](https://github.com/wxFormBuilder/wxFormBuilder)  
+A RAD tool for wxWidgets GUI design.
 
 ## Features
 
