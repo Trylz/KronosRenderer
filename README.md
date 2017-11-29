@@ -69,8 +69,9 @@ This is a work in progress. There is soo much to do.
 
 ### Offline renderer:
 - Participating medium (homogeneous and heterogeneous)
-- Experiment bidirectionnal path tracing
 - Subsurface scattering ([Jensen & al](http://jbit.net/~sparky/bssrdf.pdf))
+- Experiment bidirectionnal path tracing
+- Plugins for modeling softwares.
 
 ### Realtime renderer:
 - Shadow mapping
@@ -86,5 +87,5 @@ This is a work in progress. There is soo much to do.
 ### UI:
 - Undo / Redo actions
 - Material edition
-- Create lights  
-- Edit lights(draw a representation, add gizmo manipulations)
+- Lights edition(draw a representation, add gizmo manipulations)
+
