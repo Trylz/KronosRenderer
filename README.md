@@ -1,9 +1,9 @@
 ![logo](logo.jpg?raw=true)
-# Trylz Renderer
+# Orion Renderer
 
 A physically based renderer with realtime DirectX 12 preview written in c++.  
 Requires 64 bits Windows 10 and at least SSE4 to run.  
-Trylz will automatically choose at runtime beetween SSE4 and AVX2 depending on the device.
+Orion will automatically choose at runtime beetween SSE4 and AVX2 depending on the device.
 
 General features:  
 - User interface with basic settings
@@ -11,11 +11,11 @@ General features:
 - Free play camera
 - Render high quality images
 
-Trylz Renderer is a free software. To use Trylz just give it some credits.
+Orion Renderer is a free software. To use Orion just give it some credits.
 
 ## 3rd parties  
 - [Assimp](http://assimp.sourceforge.net)  
-3d model loading. Currently Trylz only support Wavefront Obj.  
+3d model loading. Currently Orion only support Wavefront Obj.  
 
 - [FreeImage](http://freeimage.sourceforge.net)  
 Support of various image formats.  
