@@ -1,0 +1,141 @@
+<!-- Made using Embree page -->
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset='utf-8' />
+    <meta http-equiv="X-UA-Compatible" content="chrome=1" />
+    <meta name="description" content="Embree: High Performance Ray Tracing Kernels" />
+    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+    <title>Embree</title>
+    <link rel="icon" type="image/png" href="images/icon192.png" sizes="192x192">
+    <link rel="SHORTCUT ICON" HREF="images/icon32.ico">
+  <!--  <style type="text/css"> -->
+    </style>
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+      <div class="inner">
+        <a id="forkme_banner" href="https://github.com/Trylz/OrionRenderer">View on GitHub</a>
+        <h1 id="project_title">Orion Renderer</h1>
+        <h2 id="project_tagline">Physically based renderer</h2>
+      </div>
+
+      <div id="nav">
+      <div id="nbar">
+        <ul>
+          <li><a href="index.html">Overview</a></li>
+          <li><a href="gallery.html">Gallery</a></li>
+        </ul>
+      </div>
+      </div>
+
+    </div>
+
+    <a id="news_banner" href="https://github.com/Trylz/OrionRenderer/releases">
+      You can download v1.0 here!
+    </a>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <div id="main_content" class="inner">
+		<h1 id="embree-api">Orion Renderer</h1>
+		<p>
+			A physically based renderer with realtime DirectX 12 preview written in c++.  
+			Requires 64 bits Windows 10 and at least SSE4 to run.  
+			Orion will automatically choose at runtime beetween SSE4 and AVX2 depending on the device.
+
+			General features:  
+			- User interface with basic settings
+			- Create scenes from model files and save it in xml files
+			- Free play camera
+			- Render high quality images
+
+			Orion Renderer is a free software. To use Orion just give it some credits.
+		</p>
+
+		<h2 id="3rd-parties">3rd parties </h2>
+		<p>
+			## 3rd parties  
+			- [Assimp](http://assimp.sourceforge.net)  
+			3d model loading. Currently Orion only support Wavefront Obj.  
+
+			- [FreeImage](http://freeimage.sourceforge.net)  
+			Support of various image formats.  
+
+			- [RapidXml](http://rapidxml.sourceforge.net/)  
+			Xml reading / writing.  
+			 
+			 - [GLM](https://glm.g-truc.net/0.9.8/index.html)  
+			The base math library used.  
+
+			 - [OpenCV](https://opencv.org)  
+			Used for image processing.
+
+			 - [WxWidgets](https://www.wxwidgets.org/)  
+			A cross-platform GUI library.
+
+			 - [FeatureDetector](https://github.com/Mysticial/FeatureDetector)  
+			Determine CPU features supported.
+
+			## Utilities
+			- [wxFormBuilder](https://github.com/wxFormBuilder/wxFormBuilder)  
+			A RAD tool for wxWidgets GUI design.
+		</p>
+		<h2 id="Features">Features</h2>
+		<p>
+			### Offline renderer:  
+			- Multithreaded CPU Path tracer
+			- Bounding volume hierarchy accelerator with implementation from [Scratchapixel](https://www.scratchapixel.com/) 
+			- Refractive materials 
+			- Post-process denoising  
+			- Depth of field
+			- Area lights
+			- Soft shadows
+			- Ambient occlusion
+			- Image filtering(Brightness, Hue, bloom...)
+			- Save renders to file
+
+			### Realtime renderer:
+			- DirectX 12 Api
+
+			### Offline and Realtime renderer: 
+			- Physically based rendering
+			- Directionnal and omni lights  
+			- Cube maps 
+			- Transparent materials  
+
+			This is a work in progress. There is soo much to do.  
+		</p>
+
+		<h2 id="Upcoming-features"> Upcoming features</h2>
+		<p>
+			## Upcoming features:  
+
+			### Offline renderer:
+			- Participating medium (homogeneous and heterogeneous)
+			- Subsurface scattering ([Jensen & al](http://jbit.net/~sparky/bssrdf.pdf))
+			- Experiment bidirectionnal path tracing
+			- Plugins for modeling softwares.
+
+			### Realtime renderer:
+			- Shadow mapping
+			- Antiliasing (MSAA or FXAA or SMAA)
+			- Vulkan Api support with runtime switch
+			- Depth of field
+			- Subsurface scattering ([SSS](http://www.iryoku.com/separable-sss/))
+
+			### Offline and Realtime renderer: 
+			- Spotlights
+			- Normal mapping
+
+			### UI:
+			- Undo / Redo actions
+			- Material edition
+			- Lights edition(draw a representation, add gizmo manipulations)
+		</p>
+		<div/>
+	<div/>
