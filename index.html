@@ -46,95 +46,118 @@
 			A physically based renderer with realtime DirectX 12 preview written in c++.  
 			Requires 64 bits Windows 10 and at least SSE4 to run.  
 			Orion will automatically choose at runtime beetween SSE4 and AVX2 depending on the device.
-
-			General features:  
-			- User interface with basic settings
-			- Create scenes from model files and save it in xml files
-			- Free play camera
-			- Render high quality images
+			<br><br>
+			General features:
+			<ul>
+				<li>User interface with basic settings</li>
+				<li>Create scenes from model files and save it in xml files</li>
+				<li>Free play camera</li>
+				<li>Render high quality images</li>
+			</ul>
 
 			Orion Renderer is a free software. To use Orion just give it some credits.
 		</p>
 
 		<h2 id="3rd-parties">3rd parties </h2>
 		<p>
-			## 3rd parties  
-			- [Assimp](http://assimp.sourceforge.net)  
-			3d model loading. Currently Orion only support Wavefront Obj.  
-
-			- [FreeImage](http://freeimage.sourceforge.net)  
-			Support of various image formats.  
-
-			- [RapidXml](http://rapidxml.sourceforge.net/)  
-			Xml reading / writing.  
-			 
-			 - [GLM](https://glm.g-truc.net/0.9.8/index.html)  
-			The base math library used.  
-
-			 - [OpenCV](https://opencv.org)  
-			Used for image processing.
-
-			 - [WxWidgets](https://www.wxwidgets.org/)  
-			A cross-platform GUI library.
-
-			 - [FeatureDetector](https://github.com/Mysticial/FeatureDetector)  
-			Determine CPU features supported.
-
-			## Utilities
-			- [wxFormBuilder](https://github.com/wxFormBuilder/wxFormBuilder)  
-			A RAD tool for wxWidgets GUI design.
+			<ul>
+				<li><a href="http://assimp.sourceforge.net/"> Assimp </a><br>
+					3d model loading. Currently Orion only support Wavefront Obj. 
+				</li><br>
+				<li><a href="http://freeimage.sourceforge.net"> FreeImage </a><br>
+					Support of various image formats.  
+				</li><br>
+				<li><a href="http://rapidxml.sourceforge.net/"> RapidXml </a><br>
+					Xml reading / writing. 
+				</li><br>
+				<li><a href="https://glm.g-truc.net/0.9.8/index.html"> GLM </a><br>
+					The base math library used. 
+				</li><br>
+				<li><a href="https://opencv.org"> OpenCV </a><br>
+					Used for image processing.
+				</li><br>
+				<li><a href="https://www.wxwidgets.org/"> WxWidgets </a><br>
+					A cross-platform GUI library.
+				</li><br>
+				<li><a href="https://github.com/Mysticial/FeatureDetector"> FeatureDetector </a><br>
+					Determine CPU features supported.
+				</li><br>
+			</ul>
 		</p>
+
+		<h2 id="Features">Utilities</h2>
+		<p>
+			<ul>
+				<li><a href="https://github.com/wxFormBuilder/wxFormBuilder"> wxFormBuilder </a><br>
+					A RAD tool for wxWidgets GUI design. 
+				</li><br>
+			</ul>
+		</p>
+
+
 		<h2 id="Features">Features</h2>
 		<p>
-			### Offline renderer:  
-			- Multithreaded CPU Path tracer
-			- Bounding volume hierarchy accelerator with implementation from [Scratchapixel](https://www.scratchapixel.com/) 
-			- Refractive materials 
-			- Post-process denoising  
-			- Depth of field
-			- Area lights
-			- Soft shadows
-			- Ambient occlusion
-			- Image filtering(Brightness, Hue, bloom...)
-			- Save renders to file
+			<h3>Offline renderer:</h3>
+				<ul>
+					<li> Multithreaded CPU Path tracer</li>
+					<li>Bounding volume hierarchy accelerator with implementation from <a href="https://www.scratchapixel.com">Scratchapixel</a></li>
+					<li>Refractive materials</li>
+					<li>Post-process denoising</li>
+					<li>Depth of field</li>
+					<li>Area lights</li>
+					<li>Soft shadows</li>
+					<li>Ambient occlusion</li>
+					<li>Image filtering(Brightness, Hue, bloom...)</li>					
+					<li>Save renders to file</li>
+				</ul>
 
-			### Realtime renderer:
-			- DirectX 12 Api
+			<h3>Realtime renderer:</h3>
+				<ul>
+					<li>DirectX 12 Api</li>
+				</ul>
 
-			### Offline and Realtime renderer: 
-			- Physically based rendering
-			- Directionnal and omni lights  
-			- Cube maps 
-			- Transparent materials  
+			<h3>Offline and Realtime renderer:</h3>
+				<ul>
+					<li>Physically based rendering</li>
+					<li>Directionnal and omni lights</li>
+					<li>Cube maps</li>					
+					<li>Transparent materials</li>
+				</ul>
 
 			This is a work in progress. There is soo much to do.  
 		</p>
 
 		<h2 id="Upcoming-features"> Upcoming features</h2>
 		<p>
-			## Upcoming features:  
+			<h3>Offline renderer:</h3>
+				<ul>
+					<li>Participating medium (homogeneous and heterogeneous)</li>
+					<li>Subsurface scattering<a href="http://jbit.net/~sparky/bssrdf.pdf"> (Jensen & al)</a></li>
+					<li>Experiment bidirectionnal path tracing</li>					
+					<li>Plugins for modeling softwares.</li>
+				</ul>
 
-			### Offline renderer:
-			- Participating medium (homogeneous and heterogeneous)
-			- Subsurface scattering ([Jensen & al](http://jbit.net/~sparky/bssrdf.pdf))
-			- Experiment bidirectionnal path tracing
-			- Plugins for modeling softwares.
+			<h3>Realtime renderer:</h3>
+				<ul>
+					<li>Shadow mapping</li>
+					<li>Antiliasing (MSAA or FXAA or SMAA)</li>
+					<li>Vulkan Api support with runtime switch</li>					
+					<li>Depth of field</li>
+					<li>Subsurface scattering<a href="http://www.iryoku.com/separable-sss/"> (SSS) </a></li>
+				</ul>
 
-			### Realtime renderer:
-			- Shadow mapping
-			- Antiliasing (MSAA or FXAA or SMAA)
-			- Vulkan Api support with runtime switch
-			- Depth of field
-			- Subsurface scattering ([SSS](http://www.iryoku.com/separable-sss/))
+			<h3>Offline and Realtime renderer: </h3>
+				<ul>
+					<li>Spotlights</li>
+					<li>Normal mapping</li>
+				</ul>
 
-			### Offline and Realtime renderer: 
-			- Spotlights
-			- Normal mapping
-
-			### UI:
-			- Undo / Redo actions
-			- Material edition
-			- Lights edition(draw a representation, add gizmo manipulations)
+			<h3>UI:</h3>
+				<ul>
+					<li>Undo / Redo actions</li>
+					<li>Material edition</li>
+					<li>Lights edition(draw a representation, add gizmo manipulations)</li>					
+				</ul>
 		</p>
 		<div/>
 	<div/>
