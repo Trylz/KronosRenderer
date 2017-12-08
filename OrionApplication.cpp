@@ -28,7 +28,6 @@ bool OrionApplication::OnInit()
 {
 	// Init systems
 	Controller::CoreControllerSingleton::create();
-
 	wxXmlResource::Get()->InitAllHandlers();
 
 	m_mainEditor = new MainFrame();
@@ -47,7 +46,6 @@ bool OrionApplication::OnInit()
 	Controller::CoreControllerSingleton::instance()->onNewRenderer(dx12Renderer);
 #endif
 
-	m_isRunning = true;
 	m_mainEditor->onInit();
 
 	// Play splash screen
@@ -73,8 +71,6 @@ int OrionApplication::OnExit()
 	// wxwidgets already destroy windows on exit. So no need to delete
 	m_splashScreen = nullptr;
 	m_mainEditor = nullptr;
-
-	m_isRunning = false;
 
 	Controller::CoreControllerSingleton::destroy();
 

@@ -20,7 +20,6 @@ class OrionApplication : public wxApp
 	bool OnInit() override;
 	int OnExit() override;
 
-	bool m_isRunning = false;
 	wxSplashScreen* m_splashScreen;
 	MainEditor::MainFrame* m_mainEditor;
 };
