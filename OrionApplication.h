@@ -12,7 +12,6 @@
 #include "Controller/CoreController.h"
 #include "MainEditor/MainFrame.h"
 
-#include <memory>
 #include <wx/splash.h>
 
 class OrionApplication : public wxApp
