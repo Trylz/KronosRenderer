@@ -46,8 +46,14 @@
 		<p>
 			A physically based renderer with realtime DirectX 12 preview written in c++.<br>
 			Requires 64 bits Windows 10 and at least SSE4 to run.<br>
-			Orion will automatically choose at runtime beetween SSE4 and AVX2 depending on the device.
-			<br><br>
+			Orion will automatically choose at runtime beetween SSE4 and AVX2 depending on the device. Two raytracing modes are supported :<br>
+
+			<ul>
+				<li>Pure CPU intersection kernels.</li>
+				<li>Hybrid mode using the GPU.</li>
+			</ul>
+
+			<br>
 			General features:
 			<ul>
 				<li>User interface with basic settings</li>
@@ -62,11 +68,20 @@
 		<h2 id="3rd-parties">3rd parties </h2>
 		<p>
 			<ul>
+				<li><a href="https://www.wxwidgets.org/"> WxWidgets </a><br>
+					A cross-platform GUI library.
+				</li><br>
 				<li><a href="http://assimp.sourceforge.net/"> Assimp </a><br>
 					3d model loading. Currently Orion only support Wavefront Obj. 
 				</li><br>
 				<li><a href="http://freeimage.sourceforge.net"> FreeImage </a><br>
 					Support of various image formats.  
+				</li><br>
+				<li><a href="http://www.amd.com/en-gb/innovations/software-technologies/firepro-graphics/firerays/"> Radeon Rays </a><br>
+					High performance GPU accelerated ray tracing library.
+				</li><br>
+				<li><a href="https://www.threadingbuildingblocks.org//"> Intel TBB </a><br>
+					A task sheduling framework.
 				</li><br>
 				<li><a href="http://rapidxml.sourceforge.net/"> RapidXml </a><br>
 					Xml reading / writing. 
@@ -76,9 +91,6 @@
 				</li><br>
 				<li><a href="https://opencv.org"> OpenCV </a><br>
 					Used for image processing.
-				</li><br>
-				<li><a href="https://www.wxwidgets.org/"> WxWidgets </a><br>
-					A cross-platform GUI library.
 				</li><br>
 				<li><a href="https://github.com/Mysticial/FeatureDetector"> FeatureDetector </a><br>
 					Determine CPU features supported.
@@ -100,8 +112,15 @@
 		<p>
 			<h3>Offline renderer:</h3>
 				<ul>
-					<li> Multithreaded CPU Path tracer</li>
-					<li>Bounding volume hierarchy accelerator with implementation from <a href="https://www.scratchapixel.com">Scratchapixel</a></li>
+					<li> Multithreaded path tracer with two modes:
+						<ul>
+							<li> Pure CPU intersection kernels. It's uses the bounding volume hierarchy accelerator from <a href="https://www.scratchapixel.com">Scratchapixel.</a>
+							</li>
+							<li> Hybrid. Use the GPU for primary rays and the CPU for secondary. It is the faster on common hardware and also the most memory consuming.<br>
+							This is the default mode.
+							</li>
+						</ul>
+					</li>
 					<li>Refractive materials</li>
 					<li>Post-process denoising</li>
 					<li>Depth of field</li>
@@ -132,11 +151,11 @@
 		<p>
 			<h3>Offline renderer:</h3>
 				<ul>
-					<li>GPU raytracing with <a href="http://www.amd.com/en-gb/innovations/software-technologies/firepro-graphics/firerays">Radeon rays</a></li>
 					<li>Participating medium (homogeneous and heterogeneous)</li>
 					<li>Subsurface scattering<a href="http://jbit.net/~sparky/bssrdf.pdf"> (Jensen & al)</a></li>
 					<li>Experiment bidirectionnal path tracing</li>					
 					<li>Plugins for modeling softwares.</li>
+					<li>Pure GPU raytracing.</li>
 				</ul>
 
 			<h3>Realtime renderer:</h3>
