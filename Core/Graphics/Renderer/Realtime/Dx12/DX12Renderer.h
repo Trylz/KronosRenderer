@@ -194,6 +194,22 @@ inline Graphics::Texture::CubeMapPtr DX12Renderer::createCubeMapFromNode(const G
 	return std::make_unique<DX12CubeMap>((TGraphicResourceAllocator<DX12_GRAPHIC_ALLOC_PARAMETERS>*) this, args);
 }
 
+inline bool DX12Renderer::releaseTexture(const Dx12TextureHandle& textureHandle) const
+{
+	m_cbs_srv_uavAllocator->release(textureHandle.descriptorHandle);
+	return textureHandle.buffer->Release();
+}
+
+inline bool DX12Renderer::releaseVertexBuffer(const Dx12VertexBufferHandle& arrayBufferHandle) const
+{
+	return arrayBufferHandle.buffer->Release();
+}
+
+inline bool DX12Renderer::releaseIndexBuffer(const Dx12IndexBufferHandle& arrayBufferHandle) const
+{
+	return arrayBufferHandle.buffer->Release();
+}
+
 template<typename VertexDataType>
 bool DX12Renderer::createVertexBuffer(const std::vector<VertexDataType>& data, Dx12VertexBufferHandle& dst)
 {
@@ -232,10 +248,7 @@ DX12Renderer::ArrayBufferResourceSized DX12Renderer::createArrayBufferRecource(c
 		nullptr, // optimized clear value must be null for this type of resource. used for render targets and depth/stencil buffers
 		IID_PPV_ARGS(&retData.buffer));
 
-	if (FAILED(hr))
-	{
-		return ArrayBufferResourceSized();
-	}
+	ORION_ASSERT(SUCCEEDED(hr));
 
 	// create upload heap
 	ID3D12Resource* vBufferUploadHeap;
@@ -247,10 +260,7 @@ DX12Renderer::ArrayBufferResourceSized DX12Renderer::createArrayBufferRecource(c
 		nullptr,
 		IID_PPV_ARGS(&vBufferUploadHeap));
 
-	if (FAILED(hr))
-	{
-		return ArrayBufferResourceSized();
-	}
+	ORION_ASSERT(SUCCEEDED(hr));
 
 	// store buffer data in upload heap
 	D3D12_SUBRESOURCE_DATA bufferData = {};

@@ -10,8 +10,6 @@
 #include "DX12Renderer.h"
 #include <d3d12.h>
 
-#define RELEASE_ID3D12_RESOURCE(p) p->Release()
-
 namespace Graphics { namespace Renderer { namespace Realtime { namespace Dx12
 {
 using namespace DirectX; 
@@ -564,22 +562,6 @@ bool DX12Renderer::createIndexBuffer(const std::vector<uint32_t>& data, Dx12Inde
 	return true;
 }
 
-bool DX12Renderer::releaseTexture(const Dx12TextureHandle& textureHandle) const
-{
-	m_cbs_srv_uavAllocator->release(textureHandle.descriptorHandle);
-	return RELEASE_ID3D12_RESOURCE(textureHandle.buffer);
-}
-
-bool DX12Renderer::releaseVertexBuffer(const Dx12VertexBufferHandle& arrayBufferHandle) const
-{
-	return RELEASE_ID3D12_RESOURCE(arrayBufferHandle.buffer);
-}
-
-bool DX12Renderer::releaseIndexBuffer(const Dx12IndexBufferHandle& arrayBufferHandle) const
-{
-	return RELEASE_ID3D12_RESOURCE(arrayBufferHandle.buffer);
-}
-
 void DX12Renderer::startCommandRecording()
 {
 	waitCurrentBackBufferCommandsFinish();
@@ -621,9 +603,7 @@ void DX12Renderer::endCommandRecording()
 		waitCurrentBackBufferCommandsFinish();
 
 		for (auto resource : m_loadingResources)
-		{
-			RELEASE_ID3D12_RESOURCE(resource);
-		}
+			resource->Release();
 
 		m_loadingResources.clear();
 	}
