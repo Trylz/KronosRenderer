@@ -69,8 +69,6 @@ public:
 	void endSceneLoadCommandRecording(const Graphics::Scene* scene) override;
 	void endCommandRecording() override;
 
-	const SharedDevicePtr& getDevice() const;
-
 	static float s_screenAspectRatio;
 
 private:
@@ -168,11 +166,6 @@ private:
 	// describe our multi-sampling. We are not multi-sampling, so we set the count to 1 (we need at least one sample of course)
 	DXGI_SAMPLE_DESC m_sampleDesc = {};
 };
-
-inline const SharedDevicePtr& DX12Renderer::getDevice() const
-{
-	return m_device;
-}
 
 inline Graphics::Model::ModelPtr DX12Renderer::createModelFromRaw(const std::string& path) const
 {
