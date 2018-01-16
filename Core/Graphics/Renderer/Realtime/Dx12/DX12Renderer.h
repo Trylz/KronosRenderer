@@ -89,7 +89,7 @@ private:
 	bool createFencesAndFenceEvent();
 	void releaseSwapChainDynamicResources();
 
-	struct ArrayBufferResourceSized : ResourceBuffer
+	struct ArrayBufferResource : ResourceBuffer
 	{
 		uint32_t bufferSize = 0u;
 	};
@@ -99,7 +99,7 @@ private:
 
 	// Create a resource given a vector of data. Used for vertex and index buffers.
 	template<typename BufferDataType>
-	ArrayBufferResourceSized createArrayBufferRecource(const std::vector<BufferDataType>& data);
+	ArrayBufferResource createArrayBufferRecource(const std::vector<BufferDataType>& data);
 
 	bool createRGBATextureArray2D(const std::vector<const Texture::RGBAImage*>& image, uint32_t width, uint32_t height, D3D12_SRV_DIMENSION viewDimension, Dx12TextureHandle& dst);
 
@@ -194,6 +194,16 @@ inline Graphics::Texture::CubeMapPtr DX12Renderer::createCubeMapFromNode(const G
 	return std::make_unique<DX12CubeMap>((TGraphicResourceAllocator<DX12_GRAPHIC_ALLOC_PARAMETERS>*) this, args);
 }
 
+inline void DX12Renderer::onMeshSelectionMaterialChanged(const Graphics::Scene& scene, const MeshSelection& currentSelection)
+{
+	m_forwardLightningEffect->onUpdateGroupMaterial(scene, currentSelection, m_commandList);
+}
+
+inline bool DX12Renderer::createRGBATexture2D(const Texture::RGBAImage* image, Dx12TextureHandle& dst)
+{
+	return createRGBATextureArray2D({ image }, image->getWidth(), image->getHeight(), D3D12_SRV_DIMENSION_TEXTURE2D, dst);
+}
+
 inline bool DX12Renderer::releaseTexture(const Dx12TextureHandle& textureHandle) const
 {
 	m_cbs_srv_uavAllocator->release(textureHandle.descriptorHandle);
@@ -213,7 +223,7 @@ inline bool DX12Renderer::releaseIndexBuffer(const Dx12IndexBufferHandle& arrayB
 template<typename VertexDataType>
 bool DX12Renderer::createVertexBuffer(const std::vector<VertexDataType>& data, Dx12VertexBufferHandle& dst)
 {
-	ArrayBufferResourceSized resourceData = createArrayBufferRecource(data);
+	ArrayBufferResource resourceData = createArrayBufferRecource(data);
 	if (resourceData.bufferSize == 0u || resourceData.buffer == nullptr)
 	{
 		return false;
@@ -228,9 +238,9 @@ bool DX12Renderer::createVertexBuffer(const std::vector<VertexDataType>& data, D
 }
 
 template<typename BufferDataType>
-DX12Renderer::ArrayBufferResourceSized DX12Renderer::createArrayBufferRecource(const std::vector<BufferDataType>& data)
+DX12Renderer::ArrayBufferResource DX12Renderer::createArrayBufferRecource(const std::vector<BufferDataType>& data)
 {
-	ArrayBufferResourceSized retData;
+	ArrayBufferResource retData;
 
 	BufferDataType* dataArray = const_cast<BufferDataType*>(&data[0]);
 	uint32_t arraySize = (uint32_t)data.size();

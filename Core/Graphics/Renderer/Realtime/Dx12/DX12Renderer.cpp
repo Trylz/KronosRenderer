@@ -401,19 +401,6 @@ void DX12Renderer::onRenderBufferSizeChanged(const glm::uvec2& newSize)
 	setUpViewportAndScissor(newSize);
 }
 
-void DX12Renderer::onMeshSelectionMaterialChanged(const Graphics::Scene& scene, const MeshSelection& currentSelection)
-{
-	m_forwardLightningEffect->onUpdateGroupMaterial(scene, currentSelection, m_commandList);
-}
-
-bool DX12Renderer::createRGBATexture2D(const Texture::RGBAImage* image, Dx12TextureHandle& dst)
-{
-	std::vector<const Texture::RGBAImage*> images;
-	images.push_back(image);
-
-	return createRGBATextureArray2D(images, image->getWidth(), image->getHeight(), D3D12_SRV_DIMENSION_TEXTURE2D, dst);
-}
-
 bool DX12Renderer::createRGBATexture2DArray(const std::vector<const Texture::RGBAImage*>& images, Dx12TextureHandle& dst)
 {
 	uint32_t width = images[0]->getWidth();
@@ -548,7 +535,7 @@ bool DX12Renderer::createVertexBuffer(const std::vector<Graphics::Texture::CubeM
 
 bool DX12Renderer::createIndexBuffer(const std::vector<uint32_t>& data, Dx12IndexBufferHandle& dst)
 {
-	ArrayBufferResourceSized resourceData = createArrayBufferRecource(data);
+	ArrayBufferResource resourceData = createArrayBufferRecource(data);
 	if (resourceData.bufferSize == 0u || resourceData.buffer == nullptr)
 	{
 		return false;
