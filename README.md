@@ -9,5 +9,5 @@ Checkout an old video demonstration [here.](https://www.youtube.com/watch?v=9e2i
 
 This repository contains the source code of the initial DirectX 12 renderer used by Orion.  
 
-![Editor](Editor.png?raw=true "Editor")  
 ![Dragon scene](docs/gallery/DragonScene.png?raw=true "DragonScene")  
+![Editor](Editor.png?raw=true "Editor")  
