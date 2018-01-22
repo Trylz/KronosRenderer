@@ -7,6 +7,7 @@
 
 #include "stdafx.h"
 
+#include "../CreateTextureException.h"
 #include "DX12Renderer.h"
 #include <d3d12.h>
 
@@ -385,10 +386,8 @@ void DX12Renderer::releaseSwapChainDynamicResources()
 	m_dsvAllocator->release(m_dsvDescriptorsHandle);
 }
 
-void DX12Renderer::onRenderBufferSizeChanged(const glm::uvec2& newSize)
+void DX12Renderer::resizeBuffers(const glm::uvec2& newSize)
 {
-	finishTasks();
-
 	releaseSwapChainDynamicResources();
 
 	HRESULT hr = m_swapChain->ResizeBuffers(0, newSize.x, newSize.y, DXGI_FORMAT_UNKNOWN, m_swapChainDesc.Flags);
@@ -401,31 +400,29 @@ void DX12Renderer::onRenderBufferSizeChanged(const glm::uvec2& newSize)
 	setUpViewportAndScissor(newSize);
 }
 
-bool DX12Renderer::createRGBATexture2DArray(const std::vector<const Texture::RGBAImage*>& images, Dx12TextureHandle& dst)
+void DX12Renderer::createRGBATexture2DArray(const std::vector<const Texture::RGBAImage*>& images, Dx12TextureHandle& dst)
 {
 	uint32_t width = images[0]->getWidth();
 	uint32_t height = images[0]->getHeight();
 
 	if (width > D3D12_REQ_TEXTURECUBE_DIMENSION)
-		return false;
+		throw CreateTextureException("Images width is too high.");
 	if (height > D3D12_REQ_TEXTURECUBE_DIMENSION)
-		return false;
+		throw CreateTextureException("Images height is too high");
 
 	for (auto im : images)
 	{
 		if (im->getWidth() != width)
-			return false;
+			throw CreateTextureException("All images must have the same width. It is not the case for: " + im->getPath());
 
 		if (im->getHeight() != height)
-			return false;
+			throw CreateTextureException("All images must have the same height. It is not the case for: " + im->getPath());
 	}
 
 	createRGBATextureArray2D(images, width, height, D3D12_SRV_DIMENSION_TEXTURECUBE, dst);
-
-	return true;
 }
 
-bool DX12Renderer::createRGBATextureArray2D(const std::vector<const Texture::RGBAImage*>& images, uint32_t width, uint32_t height, D3D12_SRV_DIMENSION viewDimension, Dx12TextureHandle& dst)
+void DX12Renderer::createRGBATextureArray2D(const std::vector<const Texture::RGBAImage*>& images, uint32_t width, uint32_t height, D3D12_SRV_DIMENSION viewDimension, Dx12TextureHandle& dst)
 {
 	const uint32_t arraySize = (uint32_t)images.size();
 	ORION_ASSERT(arraySize < D3D12_REQ_TEXTURE2D_ARRAY_AXIS_DIMENSION);
@@ -459,10 +456,7 @@ bool DX12Renderer::createRGBATextureArray2D(const std::vector<const Texture::RGB
 		nullptr, // used for render targets and depth/stencil buffers
 		IID_PPV_ARGS(&dst.buffer));
 
-	if (FAILED(hr))
-	{
-		return false;
-	}
+	ORION_ASSERT(SUCCEEDED(hr));
 
 	dst.format = textureDesc.Format;
 
@@ -484,10 +478,7 @@ bool DX12Renderer::createRGBATextureArray2D(const std::vector<const Texture::RGB
 		nullptr,
 		IID_PPV_ARGS(&textureBufferUploadHeap));
 
-	if (FAILED(hr))
-	{
-		return false;
-	}
+	ORION_ASSERT(SUCCEEDED(hr));
 
 	std::string uploadDebugString = "Texture Upload Resource Heap images first = " + images[0]->getPath() + ", size = " + std::to_string(arraySize);
 	std::wstring uploadDebugStringW(uploadDebugString.begin(), uploadDebugString.end());
@@ -519,8 +510,6 @@ bool DX12Renderer::createRGBATextureArray2D(const std::vector<const Texture::RGB
 	srvDesc.Format = dst.format;
 	srvDesc.Texture2D.MipLevels = 1;
 	dst.descriptorHandle = m_cbs_srv_uavAllocator->allocate({ dst.buffer }, srvDesc);
-
-	return true;
 }
 
 bool DX12Renderer::createVertexBuffer(const std::vector<Model::Vertex>& data, Dx12VertexBufferHandle& dst)
@@ -596,7 +585,7 @@ void DX12Renderer::endCommandRecording()
 	}
 }
 
-void DX12Renderer::endSceneLoadCommandRecording(const Graphics::Scene* scene)
+void DX12Renderer::endSceneLoadCommandRecording(const Graphics::Scene::BaseScene* scene)
 {
 	if (scene)
 	{
@@ -606,7 +595,7 @@ void DX12Renderer::endSceneLoadCommandRecording(const Graphics::Scene* scene)
 	endCommandRecording();
 }
 
-void DX12Renderer::drawScene(const Graphics::Scene& scene, const MeshSelection& currentSelection)
+void DX12Renderer::drawScene(const Graphics::Scene::BaseScene& scene, const MeshSelection& currentSelection)
 {
 	// here we start recording commands into the commandList (which all the commands will be stored in the commandAllocator)
 

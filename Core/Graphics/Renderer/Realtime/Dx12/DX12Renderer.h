@@ -47,11 +47,11 @@ public:
 	Graphics::Texture::CubeMapPtr createCubeMapFromRaw(Graphics::Texture::CubeMapConstructRawArgs& args) const override;
 	Graphics::Texture::CubeMapPtr createCubeMapFromNode(const Graphics::Texture::CubeMapConstructNodeArgs& args) const override;
 
-	void drawScene(const Graphics::Scene& scene, const MeshSelection& currentSelection) override;
+	void drawScene(const Graphics::Scene::BaseScene& scene, const MeshSelection& currentSelection) override;
 	void present() override;
 
-	bool createRGBATexture2D(const Texture::RGBAImage* image, Dx12TextureHandle& dst) override;
-	bool createRGBATexture2DArray(const std::vector<const Texture::RGBAImage*>& images, Dx12TextureHandle& dst) override;
+	void createRGBATexture2D(const Texture::RGBAImage* image, Dx12TextureHandle& dst) override;
+	void createRGBATexture2DArray(const std::vector<const Texture::RGBAImage*>& images, Dx12TextureHandle& dst) override;
 
 	bool releaseTexture(const Dx12TextureHandle& textureHandle) const override;
 
@@ -62,11 +62,11 @@ public:
 	bool createIndexBuffer(const std::vector<uint32_t>& data, Dx12IndexBufferHandle& dst) override;
 	bool releaseIndexBuffer(const Dx12IndexBufferHandle& arrayBufferHandle) const override;
 
-	void onRenderBufferSizeChanged(const glm::uvec2& newSize) override;
-	void onMeshSelectionMaterialChanged(const Graphics::Scene& scene, const MeshSelection& currentSelection) override;
+	void resizeBuffers(const glm::uvec2& newSize) override;
+	void onMeshSelectionMaterialChanged(const Graphics::Scene::BaseScene& scene, const MeshSelection& currentSelection) override;
 
 	void startCommandRecording() override;
-	void endSceneLoadCommandRecording(const Graphics::Scene* scene) override;
+	void endSceneLoadCommandRecording(const Graphics::Scene::BaseScene* scene) override;
 	void endCommandRecording() override;
 
 	static float s_screenAspectRatio;
@@ -99,7 +99,7 @@ private:
 	template<typename BufferDataType>
 	ArrayBufferResource createArrayBufferRecource(const std::vector<BufferDataType>& data);
 
-	bool createRGBATextureArray2D(const std::vector<const Texture::RGBAImage*>& image, uint32_t width, uint32_t height, D3D12_SRV_DIMENSION viewDimension, Dx12TextureHandle& dst);
+	void createRGBATextureArray2D(const std::vector<const Texture::RGBAImage*>& image, uint32_t width, uint32_t height, D3D12_SRV_DIMENSION viewDimension, Dx12TextureHandle& dst);
 
 	// the window
 	HWND m_hwindow;
@@ -187,14 +187,14 @@ inline Graphics::Texture::CubeMapPtr DX12Renderer::createCubeMapFromNode(const G
 	return std::make_unique<DX12CubeMap>((TGraphicResourceAllocator<DX12_GRAPHIC_ALLOC_PARAMETERS>*) this, args);
 }
 
-inline void DX12Renderer::onMeshSelectionMaterialChanged(const Graphics::Scene& scene, const MeshSelection& currentSelection)
+inline void DX12Renderer::onMeshSelectionMaterialChanged(const Graphics::Scene::BaseScene& scene, const MeshSelection& currentSelection)
 {
 	m_forwardLightningEffect->onUpdateGroupMaterial(scene, currentSelection, m_commandList);
 }
 
-inline bool DX12Renderer::createRGBATexture2D(const Texture::RGBAImage* image, Dx12TextureHandle& dst)
+inline void DX12Renderer::createRGBATexture2D(const Texture::RGBAImage* image, Dx12TextureHandle& dst)
 {
-	return createRGBATextureArray2D({ image }, image->getWidth(), image->getHeight(), D3D12_SRV_DIMENSION_TEXTURE2D, dst);
+	createRGBATextureArray2D({ image }, image->getWidth(), image->getHeight(), D3D12_SRV_DIMENSION_TEXTURE2D, dst);
 }
 
 inline bool DX12Renderer::releaseTexture(const Dx12TextureHandle& textureHandle) const
