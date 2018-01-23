@@ -3,7 +3,7 @@
 //
 //	Author					: Yann Clotioloman Yeo
 //	E-Mail					: orionrenderer@gmail.com
-//========================================================================
+//=========================================================================
 
 #pragma once
 
@@ -11,7 +11,7 @@
 
 namespace Graphics { namespace Renderer { namespace Realtime { namespace Dx12 { namespace Descriptor
 {
-struct CBV_SRV_UAV_DescriptorAllocator : BaseAllocator<D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 2000>
+struct CBV_SRV_UAV_DescriptorAllocator : BaseAllocator<D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 1000>
 {
 	inline CBV_SRV_UAV_DescriptorAllocator(const SharedDevicePtr& device) : BaseAllocator(device) {}
 
@@ -24,7 +24,7 @@ struct CBV_SRV_UAV_DescriptorAllocator : BaseAllocator<D3D12_DESCRIPTOR_HEAP_TYP
 	}
 };
 
-struct RTV_DescriptorAllocator : BaseAllocator<D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 20>
+struct RTV_DescriptorAllocator : BaseAllocator<D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 10>
 {
 	inline RTV_DescriptorAllocator(const SharedDevicePtr& device) : BaseAllocator(device) {}
 
@@ -37,7 +37,7 @@ struct RTV_DescriptorAllocator : BaseAllocator<D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 2
 	}
 };
 
-struct DSV_DescriptorAllocator : BaseAllocator<D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 20>
+struct DSV_DescriptorAllocator : BaseAllocator<D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 10>
 {
 	inline DSV_DescriptorAllocator(const SharedDevicePtr& device) : BaseAllocator(device) {}
 

@@ -9,11 +9,20 @@
 
 #include "../HandleTypes.h"
 
+// ORION_DEPLOYMENT_BUILD
+#include "Platform.h"
+
 #include <atlbase.h>
 #include <D3Dcompiler.h>
-#include <memory>
 
-#define ORION_DX12_SHADER_PATH(x) (std::wstring(L"../Core/Graphics/Renderer/Realtime/Dx12/Effect/Shaders/") + x).c_str()
+#define ORION_DX12_SHADER_BASE_PATH std::wstring(L"Core/Graphics/Renderer/Realtime/Dx12/Effect/Shaders/")
+
+#if defined (ORION_DEPLOYMENT_BUILD)
+	#define ORION_DX12_SHADER_PATH(x) (std::wstring(L"../") + ORION_DX12_SHADER_BASE_PATH + x).c_str()
+#else
+	#define ORION_DX12_SHADER_PATH(x) (std::wstring(L"../../") + ORION_DX12_SHADER_BASE_PATH + x).c_str()
+#endif
+
 #define ORION_DX12_ATTRIBUTE_ALIGN __declspec(align(16))
 
 namespace Graphics { namespace Renderer { namespace Realtime { namespace Dx12{ namespace Effect

@@ -126,7 +126,7 @@ void HighlightColorEffect::initVertexShaderCB()
 
 void HighlightColorEffect::updateVertexShaderCB(HighlightColorEffectPushArgs& data, int frameIndex, int passIndex)
 {
-	auto& camera = data.scene.getMainCamera();
+	auto& camera = data.scene.getCamera();
 
 	// MVP
 	XMStoreFloat4x4(&m_vertexShaderCB.wvpMat,
@@ -147,13 +147,14 @@ void HighlightColorEffect::pushDrawCommands(HighlightColorEffectPushArgs& data, 
 {
 	commandList->OMSetStencilRef(0);
 
+	commandList->SetGraphicsRootSignature(m_rootSignature);
+	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
 	for (int i = 0; i < s_nbPasses; ++i)
 	{
 		updateVertexShaderCB(data, frameIndex, i);
 
 		commandList->SetPipelineState(m_PSOs[i]);
-		commandList->SetGraphicsRootSignature(m_rootSignature);
-		commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 		commandList->SetGraphicsRootConstantBufferView(0, m_vertexShaderCBUploadHeaps[i][frameIndex]->GetGPUVirtualAddress());
 
 		auto dx12Model = static_cast<const DX12Model*>(data.scene.getModel().get());

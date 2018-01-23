@@ -45,12 +45,12 @@ ForwardLighningEffect::~ForwardLighningEffect()
 	}
 }
 
-void ForwardLighningEffect::onNewScene(const Graphics::Scene& scene, std::vector<ID3D12Resource*>& loadingResources, ID3D12GraphicsCommandList* commandList)
+void ForwardLighningEffect::onNewScene(const Graphics::Scene::BaseScene& scene, std::vector<ID3D12Resource*>& loadingResources, ID3D12GraphicsCommandList* commandList)
 {
 	initDynamicMaterialConstantBuffer(scene, commandList);
 }
 
-void ForwardLighningEffect::onUpdateGroupMaterial(const Graphics::Scene& scene, const Graphics::Model::MeshGroupId& groupId, ID3D12GraphicsCommandList* commandList)
+void ForwardLighningEffect::onUpdateGroupMaterial(const Graphics::Scene::BaseScene& scene, const Graphics::Model::MeshGroupId& groupId, ID3D12GraphicsCommandList* commandList)
 {
 	for (int i = 0; i < swapChainBufferCount; ++i)
 	{
@@ -220,7 +220,7 @@ void ForwardLighningEffect::initStaticConstantBuffers()
 	}
 }
 
-void ForwardLighningEffect::initDynamicMaterialConstantBuffer(const Graphics::Scene& scene, ID3D12GraphicsCommandList* commandList)
+void ForwardLighningEffect::initDynamicMaterialConstantBuffer(const Graphics::Scene::BaseScene& scene, ID3D12GraphicsCommandList* commandList)
 {
 	HRESULT hr;
 
@@ -288,7 +288,7 @@ void ForwardLighningEffect::fromMaterialUploadHeapToDefaulHeap(ID3D12GraphicsCom
 	}
 }
 
-void ForwardLighningEffect::updateGroupMaterial(const Graphics::Scene& scene, const Graphics::Model::MeshGroupId& groupId, ID3D12GraphicsCommandList* commandList)
+void ForwardLighningEffect::updateGroupMaterial(const Graphics::Scene::BaseScene& scene, const Graphics::Model::MeshGroupId& groupId, ID3D12GraphicsCommandList* commandList)
 {
 	using namespace Graphics::Material;
 
@@ -317,10 +317,15 @@ void ForwardLighningEffect::updateGroupMaterial(const Graphics::Scene& scene, co
 				materialCB.shininess = fresnelMat->getShininess();
 				materialCB.fresnel0 = fresnelMat->getFresnel0();
 			}
+			else
+			{
+				materialCB.diffuse = { defaultAmbient, defaultAmbient, defaultAmbient, 1.0f };
+				materialCB.ambient = { defaultAmbient, defaultAmbient, defaultAmbient, 1.0f };
+			}
 
 			switch (material->getType())
 			{
-			case BaseMaterial::Type::Dieletric:
+			case BaseMaterial::Type::DefaultDieletric:
 			{
 				const DefaultDielectric* dielectricMat = static_cast<const DefaultDielectric*>(material);
 				materialCB.diffuse = { dielectricMat->getDiffuse().r, dielectricMat->getDiffuse().g, dielectricMat->getDiffuse().b, 1.0f };
@@ -328,7 +333,7 @@ void ForwardLighningEffect::updateGroupMaterial(const Graphics::Scene& scene, co
 				materialCB.emissive = { dielectricMat->getEmissive().r, dielectricMat->getEmissive().g, dielectricMat->getEmissive().b, 1.0f };
 			}break;
 
-			case BaseMaterial::Type::Metal:
+			case BaseMaterial::Type::DefaultMetal:
 			{
 				const DefaultMetal* metalMat = static_cast<const DefaultMetal*>(material);
 				materialCB.diffuse = { metalMat->getReflectance().r, metalMat->getReflectance().g, metalMat->getReflectance().b, 1.0f };
@@ -338,8 +343,8 @@ void ForwardLighningEffect::updateGroupMaterial(const Graphics::Scene& scene, co
 			materialCB.opacity = material->getOpacity();
 			materialCB.type = static_cast<INT>(material->getType());
 
-			materialCB.hasDiffuseTex = !materialHandle->diffuseTexture.expired();
-			materialCB.hasSpecularTex = !materialHandle->specularTexture.expired();
+			materialCB.hasDiffuseTex = materialHandle->diffuseTexture.isValid();
+			materialCB.hasSpecularTex = materialHandle->specularTexture.isValid();
 		}
 
 		uint64_t posInCB = std::distance(groups.begin(), groupIter) * PixelShaderMaterialCBAlignedSize;
@@ -350,7 +355,7 @@ void ForwardLighningEffect::updateGroupMaterial(const Graphics::Scene& scene, co
 void ForwardLighningEffect::updateVertexShaderCB(ForwardLightningPushArgs& data, int frameIndex)
 {
 	XMStoreFloat4x4(&m_vertexShaderCB.wvpMat,
-		data.scene.getMainCamera()->getTransposedMVP(DX12Renderer::s_screenAspectRatio));
+		data.scene.getCamera()->getTransposedMVP(DX12Renderer::s_screenAspectRatio));
 
 	memcpy(m_vertexShaderCBGPUAddress[frameIndex], &m_vertexShaderCB, sizeof(VertexShaderCB));
 }
@@ -362,7 +367,7 @@ void ForwardLighningEffect::updatePixelShaderLightsCB(ForwardLightningPushArgs& 
 	const uint32_t lightSize = static_cast<uint32_t>(lights.size());
 	m_pixelShaderLightsCB.nbLights = lightSize;
 
-	const glm::vec3 cameraPos = data.scene.getMainCamera().get()->getPosition();
+	const glm::vec3 cameraPos = data.scene.getCamera().get()->getPosition();
 	m_pixelShaderLightsCB.eyePosition = { cameraPos.x, cameraPos.y, cameraPos.z, 0.0f};
 
 	const auto& ambientColor = data.scene.getAmbientColor();
@@ -432,14 +437,14 @@ void ForwardLighningEffect::pushDrawCommands(ForwardLightningPushArgs& data, ID3
 			if (auto materialHandle = mesh->material.lock())
 			{
 				//Set textures states.
-				auto diffuseTex = materialHandle->diffuseTexture.lock();
+				auto diffuseTex = materialHandle->diffuseTexture.isValid() ? dx12Model->getTexture(materialHandle->diffuseTexture) : nullptr;
 				if (diffuseTex)
 				{
 					commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(diffuseTex->getHandle().buffer, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE));
 					commandList->SetGraphicsRootDescriptorTable(3, diffuseTex->getHandle().descriptorHandle.getGpuHandle());
 				}
 
-				auto specularTex = materialHandle->specularTexture.lock();
+				auto specularTex = materialHandle->specularTexture.isValid() ? dx12Model->getTexture(materialHandle->specularTexture) : nullptr;
 				if (specularTex)
 				{
 					commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(specularTex->getHandle().buffer, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE));

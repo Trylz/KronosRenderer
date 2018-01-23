@@ -24,8 +24,8 @@ template <TGRAPHIC_ALLOC_PARAMETER_LIST>
 class TGraphicResourceAllocator
 {
 public:
-	virtual bool createRGBATexture2D(const Texture::RGBAImage* image, TextureHandle& dst) = 0;
-	virtual bool createRGBATexture2DArray(const std::vector<const Texture::RGBAImage*>& images, TextureHandle& dst) = 0;
+	virtual void createRGBATexture2D(const Texture::RGBAImage* image, TextureHandle& dst) = 0;
+	virtual void createRGBATexture2DArray(const std::vector<const Texture::RGBAImage*>& images, TextureHandle& dst) = 0;
 	virtual bool releaseTexture(const TextureHandle& textureHandle) const = 0;
 
 	virtual bool createVertexBuffer(const std::vector<Model::Vertex>& data, VertexBufferHandle& dst) = 0;

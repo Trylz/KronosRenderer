@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "Graphics/Scene.h"
+#include "Graphics/Scene/BaseScene.h"
 #include "Graphics/Texture/CubeMap.h"
 
 namespace Graphics { namespace Renderer { namespace Realtime
@@ -28,14 +28,14 @@ public:
 	virtual Graphics::Texture::CubeMapPtr createCubeMapFromNode(const Graphics::Texture::CubeMapConstructNodeArgs& args) const = 0;
 
 	virtual void release() = 0;
-	virtual void onRenderBufferSizeChanged(const glm::uvec2& newSize) = 0;
-	virtual void onMeshSelectionMaterialChanged(const Graphics::Scene& scene, const MeshSelection& currentSelection) = 0;
-	virtual void drawScene(const Graphics::Scene& scene, const MeshSelection& currentSelection) = 0;
+	virtual void resizeBuffers(const glm::uvec2& newSize) = 0;
+	virtual void onMeshSelectionMaterialChanged(const Graphics::Scene::BaseScene& scene, const MeshSelection& currentSelection) = 0;
+	virtual void drawScene(const Graphics::Scene::BaseScene& scene, const MeshSelection& currentSelection) = 0;
 	virtual void present() = 0;
 
 	virtual void finishTasks() {}
 	virtual void startCommandRecording() {}
-	virtual void endSceneLoadCommandRecording(const Graphics::Scene* scene) {}
+	virtual void endSceneLoadCommandRecording(const Graphics::Scene::BaseScene* scene) {}
 	virtual void endCommandRecording() {}
 };
 

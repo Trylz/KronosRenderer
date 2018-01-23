@@ -9,14 +9,13 @@
 
 #include "BaseEffect.h"
 #include "Graphics/Renderer/Realtime/RealtimeRenderer.h"
-#include "Graphics/Scene.h"
 #include <DirectXMath.h>
 
 namespace Graphics { namespace Renderer { namespace Realtime { namespace Dx12 { namespace Effect
 {
 struct HighlightColorEffectPushArgs
 {
-	const Graphics::Scene& scene;
+	const Graphics::Scene::BaseScene& scene;
 	MeshSelection selection;
 };
 

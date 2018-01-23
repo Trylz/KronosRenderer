@@ -9,14 +9,13 @@
 
 #include "BaseEffect.h"
 #include "Graphics/Renderer/Realtime/RealtimeRenderer.h"
-#include "Graphics/Scene.h"
 #include <DirectXMath.h>
 
 namespace Graphics { namespace Renderer { namespace Realtime { namespace Dx12 { namespace Effect
 {
 struct ForwardLightningPushArgs
 {
-	const Graphics::Scene& scene;
+	const Graphics::Scene::BaseScene& scene;
 };
 
 class ForwardLighningEffect : public BaseEffect<ForwardLightningPushArgs&>
@@ -26,8 +25,8 @@ public:
 	~ForwardLighningEffect();
 
 	void pushDrawCommands(ForwardLightningPushArgs& data, ID3D12GraphicsCommandList* commandList, int frameIndex) override;
-	void onNewScene(const Graphics::Scene& scene, std::vector<ID3D12Resource*>& loadingResources, ID3D12GraphicsCommandList* commandList);
-	void onUpdateGroupMaterial(const Graphics::Scene& scene, const Graphics::Model::MeshGroupId& groupId, ID3D12GraphicsCommandList* commandList);
+	void onNewScene(const Graphics::Scene::BaseScene& scene, std::vector<ID3D12Resource*>& loadingResources, ID3D12GraphicsCommandList* commandList);
+	void onUpdateGroupMaterial(const Graphics::Scene::BaseScene& scene, const Graphics::Model::MeshGroupId& groupId, ID3D12GraphicsCommandList* commandList);
 
 private:
 	ORION_DX12_ATTRIBUTE_ALIGN struct DX12Light
@@ -83,9 +82,9 @@ private:
 	void initRootSignature() override;
 	void initPipelineStateObjects() override;
 	void initStaticConstantBuffers();
-	void initDynamicMaterialConstantBuffer(const Graphics::Scene& scene, ID3D12GraphicsCommandList* commandList);
+	void initDynamicMaterialConstantBuffer(const Graphics::Scene::BaseScene& scene, ID3D12GraphicsCommandList* commandList);
 	void fromMaterialUploadHeapToDefaulHeap(ID3D12GraphicsCommandList* commandList);
-	void updateGroupMaterial(const Graphics::Scene& scene, const Graphics::Model::MeshGroupId& groupId, ID3D12GraphicsCommandList* commandList);
+	void updateGroupMaterial(const Graphics::Scene::BaseScene& scene, const Graphics::Model::MeshGroupId& groupId, ID3D12GraphicsCommandList* commandList);
 
 	void updateVertexShaderCB(ForwardLightningPushArgs& data, int frameIndex);
 	void updatePixelShaderLightsCB(ForwardLightningPushArgs& data, int frameIndex);

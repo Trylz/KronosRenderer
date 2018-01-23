@@ -105,7 +105,7 @@ void CubeMappingEffect::initVertexShaderCB()
 void CubeMappingEffect::updateVertexShaderCB(CubeMappingPushArgs& data, int frameIndex)
 {
 	XMStoreFloat4x4(&m_vertexShaderCB.wvpMat,
-		data.scene.getMainCamera()->getTransposedMVP(DX12Renderer::s_screenAspectRatio));
+		data.scene.getCamera()->getTransposedMVP(DX12Renderer::s_screenAspectRatio));
 
 	auto& center = data.scene.getCubeMap()->getCenter();
 	m_vertexShaderCB.cubeMapCenter = { center.x, center.y, center.z};
