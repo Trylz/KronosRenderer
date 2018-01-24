@@ -20,7 +20,7 @@ class BaseAllocator
 {
 public:
 	BaseAllocator(const SharedDevicePtr& device);
-	inline ~BaseAllocator() { m_heap->Release(); }
+	~BaseAllocator() { m_heap->Release(); }
 
 	UINT getDescriptorSize() const;
 	ID3D12DescriptorHeap* getHeap();
@@ -71,19 +71,19 @@ inline BaseAllocator<descType, pageSize>::BaseAllocator(const SharedDevicePtr& d
 }
 
 template <D3D12_DESCRIPTOR_HEAP_TYPE descType, UINT pageSize>
-UINT BaseAllocator<descType, pageSize>::getDescriptorSize() const
+inline UINT BaseAllocator<descType, pageSize>::getDescriptorSize() const
 {
 	return m_descriptorSize;
 }
 
 template <D3D12_DESCRIPTOR_HEAP_TYPE descType, UINT pageSize>
-ID3D12DescriptorHeap* BaseAllocator<descType, pageSize>::getHeap()
+inline ID3D12DescriptorHeap* BaseAllocator<descType, pageSize>::getHeap()
 {
 	return m_heap;
 }
 
 template <D3D12_DESCRIPTOR_HEAP_TYPE descType, UINT pageSize>
-void BaseAllocator<descType, pageSize>::release(const DescriptorHandle& handle)
+inline void BaseAllocator<descType, pageSize>::release(const DescriptorHandle& handle)
 {
 	ORION_ASSERT(handle.getDescriptorType() == descType);
 
@@ -95,7 +95,7 @@ void BaseAllocator<descType, pageSize>::release(const DescriptorHandle& handle)
 }
 
 template <D3D12_DESCRIPTOR_HEAP_TYPE descType, UINT pageSize>
-int BaseAllocator<descType, pageSize>::retrieveFreeBlock(UINT count)
+inline int BaseAllocator<descType, pageSize>::retrieveFreeBlock(UINT count)
 {
 	int blockStart = -1;
 
@@ -124,7 +124,7 @@ int BaseAllocator<descType, pageSize>::retrieveFreeBlock(UINT count)
 }
 
 template <D3D12_DESCRIPTOR_HEAP_TYPE descType, UINT pageSize>
-DescriptorHandle BaseAllocator<descType, pageSize>::createResourceViews(const ResourceArray& resources, const createViewInHeapFunc& createFunc)
+inline DescriptorHandle BaseAllocator<descType, pageSize>::createResourceViews(const ResourceArray& resources, const createViewInHeapFunc& createFunc)
 {
 	const UINT resCount = (UINT)resources.size();
 	ORION_ASSERT(resCount > 0u);
@@ -164,7 +164,7 @@ DescriptorHandle BaseAllocator<descType, pageSize>::createResourceViews(const Re
 }
 
 template <D3D12_DESCRIPTOR_HEAP_TYPE descType, UINT pageSize>
-void BaseAllocator<descType, pageSize>::createResourceViewsInHeap(const ResourceArray& resources,
+inline void BaseAllocator<descType, pageSize>::createResourceViewsInHeap(const ResourceArray& resources,
 	const createViewInHeapFunc& createFunc,
 	CD3DX12_CPU_DESCRIPTOR_HANDLE& heapCpuHandle,
 	CD3DX12_CPU_DESCRIPTOR_HANDLE& dstCpuHandle,
@@ -184,7 +184,7 @@ void BaseAllocator<descType, pageSize>::createResourceViewsInHeap(const Resource
 }
 
 template <D3D12_DESCRIPTOR_HEAP_TYPE descType, UINT pageSize>
-void BaseAllocator<descType, pageSize>::createHeap(ID3D12DescriptorHeap** buffer, UINT capacity)
+inline void BaseAllocator<descType, pageSize>::createHeap(ID3D12DescriptorHeap** buffer, UINT capacity)
 {
 	D3D12_DESCRIPTOR_HEAP_DESC heapDesc = {};
 	heapDesc.NumDescriptors = capacity;
@@ -200,7 +200,7 @@ void BaseAllocator<descType, pageSize>::createHeap(ID3D12DescriptorHeap** buffer
 }
 
 template <D3D12_DESCRIPTOR_HEAP_TYPE descType, UINT pageSize>
-void BaseAllocator<descType, pageSize>::increaseCapacity(UINT additionalCount)
+inline void BaseAllocator<descType, pageSize>::increaseCapacity(UINT additionalCount)
 {
 	// Copying descriptor is currently not possible with a shader visible source.
 	// These heaps must only have one page that is large enough.
