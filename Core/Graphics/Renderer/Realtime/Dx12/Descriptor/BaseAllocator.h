@@ -3,7 +3,7 @@
 //
 //	Author					: Yann Clotioloman Yeo
 //	E-Mail					: orionrenderer@gmail.com
-//========================================================================
+//=========================================================================
 
 #pragma once
 
@@ -171,19 +171,14 @@ void BaseAllocator<descType, pageSize>::createResourceViewsInHeap(const Resource
 	CD3DX12_GPU_DESCRIPTOR_HANDLE& dstGpuHandle,
 	UINT startIdx)
 {
+	dstCpuHandle = heapCpuHandle;
+
+	dstGpuHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(m_heap->GetGPUDescriptorHandleForHeapStart());
+	dstGpuHandle.Offset(startIdx, m_descriptorSize);
+
 	for (uint32_t i = 0u; i < resources.size(); ++i)
 	{
 		createFunc(resources[i], heapCpuHandle);
-
-		if (i == 0u)
-		{
-			dstCpuHandle = CD3DX12_CPU_DESCRIPTOR_HANDLE(m_heap->GetCPUDescriptorHandleForHeapStart());
-			dstGpuHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(m_heap->GetGPUDescriptorHandleForHeapStart());
-
-			dstCpuHandle.Offset(startIdx, m_descriptorSize);
-			dstGpuHandle.Offset(startIdx, m_descriptorSize);
-		}
-
 		heapCpuHandle.Offset(1, m_descriptorSize);
 	}
 }
@@ -207,8 +202,8 @@ void BaseAllocator<descType, pageSize>::createHeap(ID3D12DescriptorHeap** buffer
 template <D3D12_DESCRIPTOR_HEAP_TYPE descType, UINT pageSize>
 void BaseAllocator<descType, pageSize>::increaseCapacity(UINT additionalCount)
 {
-	// Copying descriptor is currently not possible with a shader visible sources.
-	// These heaps must only have one page that is large ebough.
+	// Copying descriptor is currently not possible with a shader visible source.
+	// These heaps must only have one page that is large enough.
 	ORION_ASSERT(descType != D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
 	uint32_t nbPages = additionalCount / pageSize;
