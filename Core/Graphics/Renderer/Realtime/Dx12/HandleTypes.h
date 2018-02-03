@@ -12,6 +12,10 @@
 #include <atlbase.h>
 #include <vector>
 
+#define DX12_GRAPHIC_ALLOC_PARAMETERS Dx12TextureHandle,\
+Dx12VertexBufferHandle,\
+Dx12IndexBufferHandle
+
 namespace Graphics { namespace Renderer { namespace Realtime { namespace Dx12
 {
 	struct ResourceBuffer
@@ -48,6 +52,8 @@ namespace Graphics { namespace Renderer { namespace Realtime { namespace Dx12
 		inline const CD3DX12_GPU_DESCRIPTOR_HANDLE& getGpuHandle() const { return m_gpuHandle;}
 		inline const D3D12_DESCRIPTOR_HEAP_TYPE& getDescriptorType() const { return m_descType;}
 		inline const Block& getBlock() const { return m_block;}
+
+		inline bool isEmpty() const { return m_block.count == 0u; }
 
 	private:
 		CD3DX12_CPU_DESCRIPTOR_HANDLE m_cpuHandle;

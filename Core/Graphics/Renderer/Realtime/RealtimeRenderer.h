@@ -8,14 +8,9 @@
 #pragma once
 
 #include "Graphics/Scene/BaseScene.h"
-#include "Graphics/Texture/CubeMap.h"
 
 namespace Graphics { namespace Renderer { namespace Realtime
 {
-constexpr uint32_t swapChainBufferCount = 3u;
-
-using MeshSelection = Graphics::Model::MeshGroupId;
-
 class RealtimeRenderer
 {
 public:
@@ -29,8 +24,9 @@ public:
 
 	virtual void release() = 0;
 	virtual void resizeBuffers(const glm::uvec2& newSize) = 0;
-	virtual void onMeshSelectionMaterialChanged(const Graphics::Scene::BaseScene& scene, const MeshSelection& currentSelection) = 0;
-	virtual void drawScene(const Graphics::Scene::BaseScene& scene, const MeshSelection& currentSelection) = 0;
+	virtual void onMeshSelectionMaterialChanged(const Graphics::Scene::BaseScene& scene, const Model::MeshSelectable* currentSelection) = 0;
+	virtual void onNewlightAdded(const Graphics::Scene::BaseScene& scene) = 0;
+	virtual void drawScene(const Graphics::Scene::BaseScene& scene, const ISelectable* currentSelection) = 0;
 	virtual void present() = 0;
 
 	virtual void finishTasks() {}

@@ -7,14 +7,7 @@
 
 #pragma once
 
-#include "Utilities/BaseException.h"
-
 namespace Graphics { namespace Renderer { namespace Realtime
 {
-class CreateTextureException : public Utilities::BaseException
-{
-public:
-	CreateTextureException(const char* msg) : BaseException(msg) {}
-	CreateTextureException(const std::string& msg) : BaseException(msg) {}
-};
+	constexpr unsigned int swapChainBufferCount = 3u;
 }}}

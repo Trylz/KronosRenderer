@@ -8,6 +8,8 @@
 #pragma once
 
 #include "../HandleTypes.h"
+#include "../../SwapChain.h"
+#include "Graphics/Renderer/Realtime/TGraphicResourceAllocator.h"
 
 // ORION_DEPLOYMENT_BUILD
 #include "Platform.h"
@@ -15,25 +17,22 @@
 #include <atlbase.h>
 #include <D3Dcompiler.h>
 
-#define ORION_DX12_SHADER_BASE_PATH std::wstring(L"Core/Graphics/Renderer/Realtime/Dx12/Effect/Shaders/")
+#define ORION_DX12_SHADER_BASE_PATH std::wstring(L"Graphics/Renderer/Realtime/Dx12/Effect/Shaders/")
 
-#if defined (ORION_DEPLOYMENT_BUILD)
-	#define ORION_DX12_SHADER_PATH(x) (std::wstring(L"../") + ORION_DX12_SHADER_BASE_PATH + x).c_str()
-#else
-	#define ORION_DX12_SHADER_PATH(x) (std::wstring(L"../../") + ORION_DX12_SHADER_BASE_PATH + x).c_str()
-#endif
+#define ORION_DX12_SHADER_PATH(x) (ORION_CORE_FOLDERW + ORION_DX12_SHADER_BASE_PATH + x).c_str()
 
 #define ORION_DX12_ATTRIBUTE_ALIGN __declspec(align(16))
 
 namespace Graphics { namespace Renderer { namespace Realtime { namespace Dx12{ namespace Effect
 {
+extern SharedDevicePtr D3d12Device;
+
 template <typename DataToProcessType>
 class BaseEffect
 {
 public:
-	inline BaseEffect(const SharedDevicePtr& device, const DXGI_SAMPLE_DESC& sampleDesc)
-	: m_device(device)
-	, m_sampleDesc(sampleDesc) {}
+	inline BaseEffect(const DXGI_SAMPLE_DESC& sampleDesc)
+	: m_sampleDesc(sampleDesc) {}
 
 	virtual ~BaseEffect() {}
 
@@ -59,8 +58,6 @@ protected:
 protected:
 	virtual void initRootSignature() = 0;
 	virtual void initPipelineStateObjects() = 0;
-
-	SharedDevicePtr m_device;
 };
 
 // Read range for resources that we do not intend to read on the CPU. (so end is less than or equal to begin)
@@ -107,7 +104,7 @@ void BaseEffect<DataToProcessType>::createRootSignature(const D3D12_ROOT_PARAMET
 		return;
 	}
 
-	hr = m_device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&m_rootSignature));
+	hr = D3d12Device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&m_rootSignature));
 	ORION_ASSERT(SUCCEEDED(hr));
 }
 
@@ -217,7 +214,7 @@ void BaseEffect<DataToProcessType>::compile(PipelineStatePtr& pipelineState,
 	ORION_TRACE("BaseEffect::compile - Disabled culling because seems wrong");
 
 	// create the pso
-	hr = m_device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&pipelineState));
+	hr = D3d12Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&pipelineState));
 	ORION_ASSERT(SUCCEEDED(hr));
 }
 }}}}}

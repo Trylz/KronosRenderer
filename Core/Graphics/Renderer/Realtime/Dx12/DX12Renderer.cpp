@@ -90,12 +90,20 @@ bool DX12Renderer::init(const InitArgs& args)
 		return false;
 	}
 
+	Realtime::GraphicResourceAllocatorPtr<DX12_GRAPHIC_ALLOC_PARAMETERS> = (TGraphicResourceAllocator<DX12_GRAPHIC_ALLOC_PARAMETERS>*) this;
 	s_screenAspectRatio = args.screenAspectRatio;
 
 	// Create effects
-	m_forwardLightningEffect = std::make_unique<Effect::ForwardLighningEffect>(m_device, m_sampleDesc);
-	m_cubeMappingEffect = std::make_unique<Effect::CubeMappingEffect>(m_device, m_sampleDesc);
-	m_highlightColorEffect = std::make_unique<Effect::HighlightColorEffect>(m_device, m_sampleDesc);;
+	Effect::D3d12Device = m_device;
+
+	startCommandRecording();
+
+	m_forwardLightningEffect = std::make_unique<Effect::ForwardLighning>(m_sampleDesc);
+	m_cubeMappingEffect = std::make_unique<Effect::CubeMapping>(m_sampleDesc);
+	m_highlightColorEffect = std::make_unique<Effect::HighlightColor>(m_sampleDesc);;
+	m_renderLightsEffect = std::make_unique<Effect::RenderLights>(m_sampleDesc);;
+
+	endCommandRecording();
 
 	return true;
 }
@@ -512,16 +520,6 @@ void DX12Renderer::createRGBATextureArray2D(const std::vector<const Texture::RGB
 	dst.descriptorHandle = m_cbs_srv_uavAllocator->allocate({ dst.buffer }, srvDesc);
 }
 
-bool DX12Renderer::createVertexBuffer(const std::vector<Model::Vertex>& data, Dx12VertexBufferHandle& dst)
-{
-	return createVertexBuffer<Model::Vertex>(data, dst);
-}
-
-bool DX12Renderer::createVertexBuffer(const std::vector<Graphics::Texture::CubeMap::Vertex>& data, Dx12VertexBufferHandle& dst)
-{
-	return createVertexBuffer<Graphics::Texture::CubeMap::Vertex>(data, dst);
-}
-
 bool DX12Renderer::createIndexBuffer(const std::vector<uint32_t>& data, Dx12IndexBufferHandle& dst)
 {
 	ArrayBufferResource resourceData = createArrayBufferRecource(data);
@@ -589,13 +587,14 @@ void DX12Renderer::endSceneLoadCommandRecording(const Graphics::Scene::BaseScene
 {
 	if (scene)
 	{
-		m_forwardLightningEffect->onNewScene(*scene, m_loadingResources, m_commandList);
+		m_forwardLightningEffect->onNewScene(*scene, m_commandList);
+		m_renderLightsEffect->onNewScene(*scene);
 	}
 
 	endCommandRecording();
 }
 
-void DX12Renderer::drawScene(const Graphics::Scene::BaseScene& scene, const MeshSelection& currentSelection)
+void DX12Renderer::drawScene(const Graphics::Scene::BaseScene& scene, const ISelectable* currentSelection)
 {
 	// here we start recording commands into the commandList (which all the commands will be stored in the commandAllocator)
 
@@ -627,7 +626,7 @@ void DX12Renderer::drawScene(const Graphics::Scene::BaseScene& scene, const Mesh
 	ID3D12DescriptorHeap* descriptorHeaps[] = { m_cbs_srv_uavAllocator->getHeap() };
 	m_commandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
 
-	// Draw cube map if there is one. Has to be first so that it can't override seletion highlights.
+	// Draw cubemap first so it can't override selection highlights
 	if (scene.hasCubeMap())
 	{
 		Effect::CubeMappingPushArgs args = { scene };
@@ -635,10 +634,18 @@ void DX12Renderer::drawScene(const Graphics::Scene::BaseScene& scene, const Mesh
 	}
 
 	// Selection hightlight
-	if (currentSelection.size())
+	const Model::Mesh* meshSelection = Model::Mesh::fromIselectable(currentSelection);
+	if (meshSelection)
 	{
-		Effect::HighlightColorEffectPushArgs args = { scene, currentSelection };
+		Effect::HighlightColorPushArgs args = { scene, meshSelection };
 		m_highlightColorEffect->pushDrawCommands(args, m_commandList, m_frameIndex);
+	}
+
+	// Now lights
+	if (scene.hasLights())
+	{
+		Effect::RenderLightsPushArgs lightPassArgs = { scene };
+		m_renderLightsEffect->pushDrawCommands(lightPassArgs, m_commandList, m_frameIndex);
 	}
 
 	// Draw scene.

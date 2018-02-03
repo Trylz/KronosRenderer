@@ -10,9 +10,10 @@
 #include "HandleTypes.h"
 #include "Descriptor/Allocators.h"
 #include "Graphics/Model/TModel.h"
-#include "Graphics/Renderer/Realtime/Dx12/Effect/CubeMappingEffect.h"
-#include "Graphics/Renderer/Realtime/Dx12/Effect/ForwardLighningEffect.h"
-#include "Graphics/Renderer/Realtime/Dx12/Effect/HighlightColorEffect.h"
+#include "Graphics/Renderer/Realtime/Dx12/Effect/CubeMapping.h"
+#include "Graphics/Renderer/Realtime/Dx12/Effect/ForwardLighning.h"
+#include "Graphics/Renderer/Realtime/Dx12/Effect/HighlightColor.h"
+#include "Graphics/Renderer/Realtime/Dx12/Effect/RenderLights.h"
 #include "Graphics/Renderer/Realtime/TRealtimeRenderer.h"
 #include "Graphics/Texture/TCubeMap.h"
 
@@ -26,10 +27,6 @@ struct InitArgs
 	HWND hwnd;
 	float screenAspectRatio;
 };
-
-#define DX12_GRAPHIC_ALLOC_PARAMETERS Dx12TextureHandle,\
-Dx12VertexBufferHandle,\
-Dx12IndexBufferHandle
 
 using DX12Model = Graphics::Model::TModel<DX12_GRAPHIC_ALLOC_PARAMETERS>;
 using DX12CubeMap = Graphics::Texture::TCubeMap<DX12_GRAPHIC_ALLOC_PARAMETERS>;
@@ -47,7 +44,7 @@ public:
 	Graphics::Texture::CubeMapPtr createCubeMapFromRaw(Graphics::Texture::CubeMapConstructRawArgs& args) const override;
 	Graphics::Texture::CubeMapPtr createCubeMapFromNode(const Graphics::Texture::CubeMapConstructNodeArgs& args) const override;
 
-	void drawScene(const Graphics::Scene::BaseScene& scene, const MeshSelection& currentSelection) override;
+	void drawScene(const Graphics::Scene::BaseScene& scene, const ISelectable* currentSelection) override;
 	void present() override;
 
 	void createRGBATexture2D(const Texture::RGBAImage* image, Dx12TextureHandle& dst) override;
@@ -55,15 +52,17 @@ public:
 
 	bool releaseTexture(const Dx12TextureHandle& textureHandle) const override;
 
-	bool createVertexBuffer(const std::vector<Model::Vertex>& data, Dx12VertexBufferHandle& dst) override;
-	bool createVertexBuffer(const std::vector<Graphics::Texture::CubeMap::Vertex>& data, Dx12VertexBufferHandle& dst) override;
+	bool createVertexBuffer(const std::vector<FullVertex>& data, Dx12VertexBufferHandle& dst) override;
+	bool createVertexBuffer(const std::vector<SimpleVertex>& data, Dx12VertexBufferHandle& dst) override;
+	bool createVertexBuffer(const std::vector<IntermediateVertex>& data, Dx12VertexBufferHandle& dst) override;
 	bool releaseVertexBuffer(const Dx12VertexBufferHandle& arrayBufferHandle) const override;
 
 	bool createIndexBuffer(const std::vector<uint32_t>& data, Dx12IndexBufferHandle& dst) override;
 	bool releaseIndexBuffer(const Dx12IndexBufferHandle& arrayBufferHandle) const override;
 
 	void resizeBuffers(const glm::uvec2& newSize) override;
-	void onMeshSelectionMaterialChanged(const Graphics::Scene::BaseScene& scene, const MeshSelection& currentSelection) override;
+	void onMeshSelectionMaterialChanged(const Graphics::Scene::BaseScene& scene, const  Model::MeshSelectable* currentSelection) override;
+	void onNewlightAdded(const Graphics::Scene::BaseScene& scene) override;
 
 	void startCommandRecording() override;
 	void endSceneLoadCommandRecording(const Graphics::Scene::BaseScene* scene) override;
@@ -159,9 +158,10 @@ private:
 
 	std::vector<ID3D12Resource*> m_loadingResources;
 
-	std::unique_ptr<Effect::ForwardLighningEffect> m_forwardLightningEffect;
-	std::unique_ptr<Effect::CubeMappingEffect> m_cubeMappingEffect;
-	std::unique_ptr<Effect::HighlightColorEffect> m_highlightColorEffect;
+	std::unique_ptr<Effect::ForwardLighning> m_forwardLightningEffect;
+	std::unique_ptr<Effect::CubeMapping> m_cubeMappingEffect;
+	std::unique_ptr<Effect::HighlightColor> m_highlightColorEffect;
+	std::unique_ptr<Effect::RenderLights> m_renderLightsEffect;
 
 	// describe our multi-sampling. We are not multi-sampling, so we set the count to 1 (we need at least one sample of course)
 	DXGI_SAMPLE_DESC m_sampleDesc = {};
@@ -169,27 +169,47 @@ private:
 
 inline Graphics::Model::ModelPtr DX12Renderer::createModelFromRaw(const std::string& path) const
 {
-	return std::make_unique<DX12Model>((TGraphicResourceAllocator<DX12_GRAPHIC_ALLOC_PARAMETERS>*) this, path);
+	return std::make_unique<DX12Model>(path);
 }
 
 inline Graphics::Model::ModelPtr DX12Renderer::createModelFromNode(const Utilities::Xml::XmlNode& node)const
 {
-	return std::make_unique<DX12Model>((TGraphicResourceAllocator<DX12_GRAPHIC_ALLOC_PARAMETERS>*) this, node);
+	return std::make_unique<DX12Model>(node);
 }
 
 inline Graphics::Texture::CubeMapPtr DX12Renderer::createCubeMapFromRaw(Graphics::Texture::CubeMapConstructRawArgs& args) const
 {
-	return std::make_unique<DX12CubeMap>((TGraphicResourceAllocator<DX12_GRAPHIC_ALLOC_PARAMETERS>*) this, args);
+	return std::make_unique<DX12CubeMap>(args);
 }
 
 inline Graphics::Texture::CubeMapPtr DX12Renderer::createCubeMapFromNode(const Graphics::Texture::CubeMapConstructNodeArgs& args) const
 {
-	return std::make_unique<DX12CubeMap>((TGraphicResourceAllocator<DX12_GRAPHIC_ALLOC_PARAMETERS>*) this, args);
+	return std::make_unique<DX12CubeMap>(args);
 }
 
-inline void DX12Renderer::onMeshSelectionMaterialChanged(const Graphics::Scene::BaseScene& scene, const MeshSelection& currentSelection)
+inline bool DX12Renderer::createVertexBuffer(const std::vector<FullVertex>& data, Dx12VertexBufferHandle& dst)
 {
-	m_forwardLightningEffect->onUpdateGroupMaterial(scene, currentSelection, m_commandList);
+	return createVertexBuffer<FullVertex>(data, dst);
+}
+
+inline bool DX12Renderer::createVertexBuffer(const std::vector<IntermediateVertex>& data, Dx12VertexBufferHandle& dst)
+{
+	return createVertexBuffer<IntermediateVertex>(data, dst);
+}
+
+inline bool DX12Renderer::createVertexBuffer(const std::vector<SimpleVertex>& data, Dx12VertexBufferHandle& dst)
+{
+	return createVertexBuffer<SimpleVertex>(data, dst);
+}
+
+inline void DX12Renderer::onMeshSelectionMaterialChanged(const Graphics::Scene::BaseScene& scene, const  Model::MeshSelectable* currentSelection)
+{
+	m_forwardLightningEffect->onUpdateGroupMaterial(scene, currentSelection->m_group, m_commandList);
+}
+
+inline void DX12Renderer::onNewlightAdded(const Graphics::Scene::BaseScene& scene)
+{
+	m_renderLightsEffect->onNewlightAdded(scene);
 }
 
 inline void DX12Renderer::createRGBATexture2D(const Texture::RGBAImage* image, Dx12TextureHandle& dst)
