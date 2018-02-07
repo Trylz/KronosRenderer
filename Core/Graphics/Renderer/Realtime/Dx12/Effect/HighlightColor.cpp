@@ -125,7 +125,7 @@ void HighlightColor::updateVertexShaderCB(HighlightColorPushArgs& data, int fram
 
 	// MVP
 	XMStoreFloat4x4(&vertexShaderCB.wvpMat,
-		camera->getTransposedMVP(DX12Renderer::s_screenAspectRatio));
+		camera->getDirectXTransposedMVP());
 
 	// Eye vector
 	glm::vec3 eyePosition = camera->getPosition();

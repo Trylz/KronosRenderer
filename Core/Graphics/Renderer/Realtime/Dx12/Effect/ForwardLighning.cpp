@@ -352,7 +352,7 @@ void ForwardLighning::updateVertexShaderCB(ForwardLightningPushArgs& data, int f
 	VertexShaderCB vertexShaderCB;
 
 	XMStoreFloat4x4(&vertexShaderCB.wvpMat,
-		data.scene.getCamera()->getTransposedMVP(DX12Renderer::s_screenAspectRatio));
+		data.scene.getCamera()->getDirectXTransposedMVP());
 
 	memcpy(m_vertexShaderCBGPUAddress[frameIndex], &vertexShaderCB, sizeof(VertexShaderCB));
 }
@@ -390,7 +390,7 @@ void ForwardLighning::updatePixelShaderLightsCB(ForwardLightningPushArgs& data, 
 		else if (lightIter.second->getType() == Graphics::Light::LightType::Directionnal)
 		{
 			auto* directionnalLight = static_cast<Graphics::Light::DirectionnalLight*>(lightIter.second.get());
-			const auto& direction = directionnalLight->getDirection();
+			const auto& direction = directionnalLight->getNormalizedDirection();
 
 			dx12Light.direction = { direction.x, direction.y, direction.z, 0.0f };
 		}

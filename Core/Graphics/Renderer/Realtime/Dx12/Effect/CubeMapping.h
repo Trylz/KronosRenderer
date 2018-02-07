@@ -9,10 +9,16 @@
 
 #include "BaseEffect.h"
 #include "Graphics/Scene/BaseScene.h"
+#include "Graphics/Texture/TCubeMap.h"
+
 #include <DirectXMath.h>
 
-namespace Graphics { namespace Renderer { namespace Realtime { namespace Dx12 { namespace Effect
-{
+namespace Graphics { namespace Renderer { namespace Realtime { namespace Dx12 {
+	
+using DX12CubeMap = Graphics::Texture::TCubeMap<DX12_GRAPHIC_ALLOC_PARAMETERS>;
+
+namespace Effect {
+
 struct CubeMappingPushArgs
 {
 	const Graphics::Scene::BaseScene& scene;

@@ -16,8 +16,6 @@ namespace Graphics { namespace Renderer { namespace Realtime { namespace Dx12
 using namespace DirectX; 
 using namespace Descriptor;
 
-float DX12Renderer::s_screenAspectRatio;
-
 bool DX12Renderer::init(const InitArgs& args)
 {
 	m_hwindow = args.hwnd;
@@ -91,7 +89,6 @@ bool DX12Renderer::init(const InitArgs& args)
 	}
 
 	Realtime::GraphicResourceAllocatorPtr<DX12_GRAPHIC_ALLOC_PARAMETERS> = (TGraphicResourceAllocator<DX12_GRAPHIC_ALLOC_PARAMETERS>*) this;
-	s_screenAspectRatio = args.screenAspectRatio;
 
 	// Create effects
 	Effect::D3d12Device = m_device;
@@ -100,8 +97,8 @@ bool DX12Renderer::init(const InitArgs& args)
 
 	m_forwardLightningEffect = std::make_unique<Effect::ForwardLighning>(m_sampleDesc);
 	m_cubeMappingEffect = std::make_unique<Effect::CubeMapping>(m_sampleDesc);
-	m_highlightColorEffect = std::make_unique<Effect::HighlightColor>(m_sampleDesc);;
-	m_renderLightsEffect = std::make_unique<Effect::RenderLights>(m_sampleDesc);;
+	m_highlightColorEffect = std::make_unique<Effect::HighlightColor>(m_sampleDesc);
+	m_renderLightsEffect = std::make_unique<Effect::RenderLights>(m_sampleDesc);
 
 	endCommandRecording();
 
@@ -594,7 +591,7 @@ void DX12Renderer::endSceneLoadCommandRecording(const Graphics::Scene::BaseScene
 	endCommandRecording();
 }
 
-void DX12Renderer::drawScene(const Graphics::Scene::BaseScene& scene, const ISelectable* currentSelection)
+void DX12Renderer::drawScene(const Graphics::Scene::BaseScene& scene)
 {
 	// here we start recording commands into the commandList (which all the commands will be stored in the commandAllocator)
 
@@ -634,7 +631,7 @@ void DX12Renderer::drawScene(const Graphics::Scene::BaseScene& scene, const ISel
 	}
 
 	// Selection hightlight
-	const Model::Mesh* meshSelection = Model::Mesh::fromIselectable(currentSelection);
+	const Model::Mesh* meshSelection = Model::Mesh::fromIselectable(scene.getCurrentSelection());
 	if (meshSelection)
 	{
 		Effect::HighlightColorPushArgs args = { scene, meshSelection };

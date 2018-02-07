@@ -227,7 +227,7 @@ void RenderLights::updateVertexShaderCenterCB(struct RenderLightsPushArgs& data,
 
 void RenderLights::updateVertexShaderSharedCB(RenderLightsPushArgs& data, int frameIndex)
 {
-	auto projMatrix = data.scene.getCamera()->getDirectXPerspectiveMatrix(DX12Renderer::s_screenAspectRatio);
+	auto projMatrix = data.scene.getCamera()->getDirectXPerspectiveMatrix();
 	projMatrix = XMMatrixTranspose(projMatrix);
 
 	VertexShaderSharedCB vertexShaderCB;

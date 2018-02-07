@@ -4,7 +4,6 @@
 //	Author					: Yann Clotioloman Yeo
 //	E-Mail					: orionrenderer@gmail.com
 //========================================================================
-
 #pragma once
 
 #include "HandleTypes.h"
@@ -15,7 +14,6 @@
 #include "Graphics/Renderer/Realtime/Dx12/Effect/HighlightColor.h"
 #include "Graphics/Renderer/Realtime/Dx12/Effect/RenderLights.h"
 #include "Graphics/Renderer/Realtime/TRealtimeRenderer.h"
-#include "Graphics/Texture/TCubeMap.h"
 
 #include <dxgi1_4.h>
 #include <memory>
@@ -25,11 +23,9 @@ namespace Graphics { namespace Renderer { namespace Realtime { namespace Dx12
 struct InitArgs
 {
 	HWND hwnd;
-	float screenAspectRatio;
 };
 
 using DX12Model = Graphics::Model::TModel<DX12_GRAPHIC_ALLOC_PARAMETERS>;
-using DX12CubeMap = Graphics::Texture::TCubeMap<DX12_GRAPHIC_ALLOC_PARAMETERS>;
 
 class DX12Renderer : public TRealtimeRenderer<DX12_GRAPHIC_ALLOC_PARAMETERS, InitArgs>
 {
@@ -44,7 +40,7 @@ public:
 	Graphics::Texture::CubeMapPtr createCubeMapFromRaw(Graphics::Texture::CubeMapConstructRawArgs& args) const override;
 	Graphics::Texture::CubeMapPtr createCubeMapFromNode(const Graphics::Texture::CubeMapConstructNodeArgs& args) const override;
 
-	void drawScene(const Graphics::Scene::BaseScene& scene, const ISelectable* currentSelection) override;
+	void drawScene(const Graphics::Scene::BaseScene& scene) override;
 	void present() override;
 
 	void createRGBATexture2D(const Texture::RGBAImage* image, Dx12TextureHandle& dst) override;
@@ -67,8 +63,6 @@ public:
 	void startCommandRecording() override;
 	void endSceneLoadCommandRecording(const Graphics::Scene::BaseScene* scene) override;
 	void endCommandRecording() override;
-
-	static float s_screenAspectRatio;
 
 private:
 	void waitCurrentBackBufferCommandsFinish();

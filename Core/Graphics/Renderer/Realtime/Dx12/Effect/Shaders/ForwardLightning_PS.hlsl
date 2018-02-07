@@ -133,7 +133,7 @@ float4 main(VS_OUTPUT input) : SV_TARGET
 		// Determinisic branch on a constant buffer so its ok.
 		if (Lights[i].type == 0)
 		{
-			L = -normalize(Lights[i].direction.xyz);
+			L = -Lights[i].direction.xyz;
 		}
 		else
 		{
