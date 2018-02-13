@@ -4,6 +4,7 @@
 //	Author					: Yann Clotioloman Yeo
 //	E-Mail					: orionrenderer@gmail.com
 //========================================================================
+
 #pragma once
 
 #include "HandleTypes.h"
@@ -16,7 +17,6 @@
 #include "Graphics/Renderer/Realtime/TRealtimeRenderer.h"
 
 #include <dxgi1_4.h>
-#include <memory>
 
 namespace Graphics { namespace Renderer { namespace Realtime { namespace Dx12
 {
@@ -92,7 +92,7 @@ private:
 	template<typename BufferDataType>
 	ArrayBufferResource createArrayBufferRecource(const std::vector<BufferDataType>& data);
 
-	void createRGBATextureArray2D(const std::vector<const Texture::RGBAImage*>& image, uint32_t width, uint32_t height, D3D12_SRV_DIMENSION viewDimension, Dx12TextureHandle& dst);
+	void createRGBATexture2DArray(const std::vector<const Texture::RGBAImage*>& image, uint32_t width, uint32_t height, D3D12_SRV_DIMENSION viewDimension, Dx12TextureHandle& dst);
 
 	// the window
 	HWND m_hwindow;
@@ -208,7 +208,7 @@ inline void DX12Renderer::onNewlightAdded(const Graphics::Scene::BaseScene& scen
 
 inline void DX12Renderer::createRGBATexture2D(const Texture::RGBAImage* image, Dx12TextureHandle& dst)
 {
-	createRGBATextureArray2D({ image }, image->getWidth(), image->getHeight(), D3D12_SRV_DIMENSION_TEXTURE2D, dst);
+	createRGBATexture2DArray({ image }, image->getWidth(), image->getHeight(), D3D12_SRV_DIMENSION_TEXTURE2D, dst);
 }
 
 inline bool DX12Renderer::releaseTexture(const Dx12TextureHandle& textureHandle) const

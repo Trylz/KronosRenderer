@@ -424,10 +424,10 @@ void DX12Renderer::createRGBATexture2DArray(const std::vector<const Texture::RGB
 			throw CreateTextureException("All images must have the same height. It is not the case for: " + im->getPath());
 	}
 
-	createRGBATextureArray2D(images, width, height, D3D12_SRV_DIMENSION_TEXTURECUBE, dst);
+	createRGBATexture2DArray(images, width, height, D3D12_SRV_DIMENSION_TEXTURECUBE, dst);
 }
 
-void DX12Renderer::createRGBATextureArray2D(const std::vector<const Texture::RGBAImage*>& images, uint32_t width, uint32_t height, D3D12_SRV_DIMENSION viewDimension, Dx12TextureHandle& dst)
+void DX12Renderer::createRGBATexture2DArray(const std::vector<const Texture::RGBAImage*>& images, uint32_t width, uint32_t height, D3D12_SRV_DIMENSION viewDimension, Dx12TextureHandle& dst)
 {
 	const uint32_t arraySize = (uint32_t)images.size();
 	ORION_ASSERT(arraySize < D3D12_REQ_TEXTURE2D_ARRAY_AXIS_DIMENSION);
