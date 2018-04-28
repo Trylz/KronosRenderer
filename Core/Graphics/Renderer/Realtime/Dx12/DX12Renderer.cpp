@@ -2,7 +2,7 @@
 // Copyright (c) Yann Clotioloman Yeo, 2017
 //
 //	Author					: Yann Clotioloman Yeo
-//	E-Mail					: orionrenderer@gmail.com
+//	E-Mail					: kronosrenderer@gmail.com
 //========================================================================
 
 #include "stdafx.h"
@@ -21,19 +21,19 @@ bool DX12Renderer::init(const InitArgs& args)
 	m_hwindow = args.hwnd;
 
 	RECT rect;
-	ORION_ASSERT(GetWindowRect(m_hwindow, &rect) > 0);
+	KRONOS_ASSERT(GetWindowRect(m_hwindow, &rect) > 0);
 	const glm::uvec2 bufferSize(rect.right - rect.left, rect.bottom - rect.top);
 
 	HRESULT hr = CreateDXGIFactory1(IID_PPV_ARGS(&m_dxgiFactory));
 	if (FAILED(hr))
 	{
-		ORION_TRACE("DX12Renderer::init - Unable to create device factory");
+		KRONOS_TRACE("DX12Renderer::init - Unable to create device factory");
 		return false;
 	}
 
 	if (!createDevice(m_dxgiFactory))
 	{
-		ORION_TRACE("DX12Renderer::init - Unable to create device");
+		KRONOS_TRACE("DX12Renderer::init - Unable to create device");
 		return false;
 	}
 
@@ -44,7 +44,7 @@ bool DX12Renderer::init(const InitArgs& args)
 
 	if (!createDirectCommandQueue())
 	{
-		ORION_TRACE("DX12Renderer::init - Unable to create direct command queue");
+		KRONOS_TRACE("DX12Renderer::init - Unable to create direct command queue");
 		return false;
 	}
 
@@ -52,13 +52,13 @@ bool DX12Renderer::init(const InitArgs& args)
 
 	if (!createSwapChain(m_dxgiFactory, bufferSize))
 	{
-		ORION_TRACE("DX12Renderer::init - Unable to create swap chain");
+		KRONOS_TRACE("DX12Renderer::init - Unable to create swap chain");
 		return false;
 	}
 
 	if (!createDepthStencilBuffer(bufferSize))
 	{
-		ORION_TRACE("DX12Renderer::init - Unable to create depth stencil buffer");
+		KRONOS_TRACE("DX12Renderer::init - Unable to create depth stencil buffer");
 		return false;
 	}
 
@@ -66,25 +66,25 @@ bool DX12Renderer::init(const InitArgs& args)
 
 	if (!createRTVsDescriptor())
 	{
-		ORION_TRACE("DX12Renderer::init - Unable to create render target descriptor views");
+		KRONOS_TRACE("DX12Renderer::init - Unable to create render target descriptor views");
 		return false;
 	}
 
 	if (!createDirectCommandAllocators())
 	{
-		ORION_TRACE("DX12Renderer::init - Unable to create command allocators");
+		KRONOS_TRACE("DX12Renderer::init - Unable to create command allocators");
 		return false;
 	}
 
 	if (!createDirectCommandList())
 	{
-		ORION_TRACE("DX12Renderer::init - Unable to create command list");
+		KRONOS_TRACE("DX12Renderer::init - Unable to create command list");
 		return false;
 	}
 
 	if (!createFencesAndFenceEvent())
 	{
-		ORION_TRACE("DX12Renderer::init - Unable to create fence and fence event");
+		KRONOS_TRACE("DX12Renderer::init - Unable to create fence and fence event");
 		return false;
 	}
 
@@ -379,7 +379,7 @@ void DX12Renderer::setUpViewportAndScissor(const glm::uvec2& bufferSize)
 
 void DX12Renderer::releaseSwapChainDynamicResources()
 {
-	ORION_ASSERT(m_depthStencilBuffer);
+	KRONOS_ASSERT(m_depthStencilBuffer);
 	m_depthStencilBuffer->Release();
 
 	for (int i = 0; i < swapChainBufferCount; i++)
@@ -396,11 +396,11 @@ void DX12Renderer::resizeBuffers(const glm::uvec2& newSize)
 	releaseSwapChainDynamicResources();
 
 	HRESULT hr = m_swapChain->ResizeBuffers(0, newSize.x, newSize.y, DXGI_FORMAT_UNKNOWN, m_swapChainDesc.Flags);
-	ORION_ASSERT(SUCCEEDED(hr));
+	KRONOS_ASSERT(SUCCEEDED(hr));
 
-	ORION_ASSERT(createDepthStencilBuffer(newSize));
+	KRONOS_ASSERT(createDepthStencilBuffer(newSize));
 
-	ORION_ASSERT(createRTVsDescriptor());
+	KRONOS_ASSERT(createRTVsDescriptor());
 
 	setUpViewportAndScissor(newSize);
 }
@@ -430,7 +430,7 @@ void DX12Renderer::createRGBATexture2DArray(const std::vector<const Texture::RGB
 void DX12Renderer::createRGBATexture2DArray(const std::vector<const Texture::RGBAImage*>& images, uint32_t width, uint32_t height, D3D12_SRV_DIMENSION viewDimension, Dx12TextureHandle& dst)
 {
 	const uint32_t arraySize = (uint32_t)images.size();
-	ORION_ASSERT(arraySize < D3D12_REQ_TEXTURE2D_ARRAY_AXIS_DIMENSION);
+	KRONOS_ASSERT(arraySize < D3D12_REQ_TEXTURE2D_ARRAY_AXIS_DIMENSION);
 
 	D3D12_RESOURCE_DESC textureDesc = {};
 	textureDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
@@ -441,7 +441,7 @@ void DX12Renderer::createRGBATexture2DArray(const std::vector<const Texture::RGB
 	textureDesc.MipLevels = 1; // Number of mipmaps. We are not generating mipmaps for this texture, so we have only one level
 
 	// Set is the dxgi format of the image (format of the pixels)
-#if ORION_IMAGE_COLORORDER == ORION_IMAGE_COLORORDER_BGR
+#if KRONOS_IMAGE_COLORORDER == KRONOS_IMAGE_COLORORDER_BGR
 	textureDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
 #else
 	textureDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
@@ -461,7 +461,7 @@ void DX12Renderer::createRGBATexture2DArray(const std::vector<const Texture::RGB
 		nullptr, // used for render targets and depth/stencil buffers
 		IID_PPV_ARGS(&dst.buffer));
 
-	ORION_ASSERT(SUCCEEDED(hr));
+	KRONOS_ASSERT(SUCCEEDED(hr));
 
 	dst.format = textureDesc.Format;
 
@@ -483,7 +483,7 @@ void DX12Renderer::createRGBATexture2DArray(const std::vector<const Texture::RGB
 		nullptr,
 		IID_PPV_ARGS(&textureBufferUploadHeap));
 
-	ORION_ASSERT(SUCCEEDED(hr));
+	KRONOS_ASSERT(SUCCEEDED(hr));
 
 	std::string uploadDebugString = "Texture Upload Resource Heap images first = " + images[0]->getPath() + ", size = " + std::to_string(arraySize);
 	std::wstring uploadDebugStringW(uploadDebugString.begin(), uploadDebugString.end());
@@ -542,7 +542,7 @@ void DX12Renderer::startCommandRecording()
 	HRESULT hr = m_commandAllocator[m_frameIndex]->Reset();
 	if (FAILED(hr))
 	{
-		ORION_TRACE("DX12Renderer::startCommandRecording - Failed to reset command allocator index = " << m_frameIndex);
+		KRONOS_TRACE("DX12Renderer::startCommandRecording - Failed to reset command allocator index = " << m_frameIndex);
 		return;
 	}
 
@@ -554,13 +554,13 @@ void DX12Renderer::startCommandRecording()
 	// the closed state (not recording).
 	// Here you will pass an initial pipeline state object as the second parameter.
 	hr = m_commandList->Reset(m_commandAllocator[m_frameIndex], nullptr);
-	ORION_ASSERT(SUCCEEDED(hr));
+	KRONOS_ASSERT(SUCCEEDED(hr));
 }
 
 void DX12Renderer::endCommandRecording()
 {
 	HRESULT hr = m_commandList->Close();
-	ORION_ASSERT(SUCCEEDED(hr));
+	KRONOS_ASSERT(SUCCEEDED(hr));
 
 	// create an array of command lists (only one command list here)
 	ID3D12CommandList* ppCommandLists[] = { m_commandList };
@@ -661,7 +661,7 @@ void DX12Renderer::present()
 	HRESULT	hr = m_swapChain->Present(0, 0);
 	if (FAILED(hr))
 	{
-		ORION_TRACE("DX12Renderer::render - Failed to present");
+		KRONOS_TRACE("DX12Renderer::render - Failed to present");
 	}
 }
 
@@ -678,12 +678,12 @@ void DX12Renderer::waitCurrentBackBufferCommandsFinish()
 	if (m_fence[m_frameIndex]->GetCompletedValue() < fence)
 	{
 		hr = m_fence[m_frameIndex]->SetEventOnCompletion(fence, m_fenceEvent);
-		ORION_ASSERT(SUCCEEDED(hr));
+		KRONOS_ASSERT(SUCCEEDED(hr));
 
 		WaitForSingleObject(m_fenceEvent, INFINITE);
 	}
 
-	ORION_ASSERT(SUCCEEDED(hr));
+	KRONOS_ASSERT(SUCCEEDED(hr));
 	m_fenceValue[m_frameIndex]++;
 }
 }}}}

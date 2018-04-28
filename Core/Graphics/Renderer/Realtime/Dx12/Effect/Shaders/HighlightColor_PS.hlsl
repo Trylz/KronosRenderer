@@ -2,7 +2,7 @@
 // Copyright (c) Yann Clotioloman Yeo, 2017
 //
 //	Author					: Yann Clotioloman Yeo
-//	E-Mail					: orionrenderer@gmail.com
+//	E-Mail					: kronosrenderer@gmail.com
 //========================================================================
 
 struct VS_OUTPUT

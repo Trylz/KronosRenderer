@@ -2,7 +2,7 @@
 // Copyright (c) Yann Clotioloman Yeo, 2017
 //
 //	Author					: Yann Clotioloman Yeo
-//	E-Mail					: orionrenderer@gmail.com
+//	E-Mail					: kronosrenderer@gmail.com
 //========================================================================
 
 #pragma once
@@ -11,17 +11,17 @@
 #include "../../SwapChain.h"
 #include "Graphics/Renderer/Realtime/TGraphicResourceAllocator.h"
 
-// ORION_DEPLOYMENT_BUILD
+// KRONOS_DEPLOYMENT_BUILD
 #include "Platform.h"
 
 #include <atlbase.h>
 #include <D3Dcompiler.h>
 
-#define ORION_DX12_SHADER_BASE_PATH std::wstring(L"Graphics/Renderer/Realtime/Dx12/Effect/Shaders/")
+#define KRONOS_DX12_SHADER_BASE_PATH std::wstring(L"Graphics/Renderer/Realtime/Dx12/Effect/Shaders/")
 
-#define ORION_DX12_SHADER_PATH(x) (ORION_CORE_FOLDERW + ORION_DX12_SHADER_BASE_PATH + x).c_str()
+#define KRONOS_DX12_SHADER_PATH(x) (KRONOS_CORE_FOLDERW + KRONOS_DX12_SHADER_BASE_PATH + x).c_str()
 
-#define ORION_DX12_ATTRIBUTE_ALIGN __declspec(align(16))
+#define KRONOS_DX12_ATTRIBUTE_ALIGN __declspec(align(16))
 
 namespace Graphics { namespace Renderer { namespace Realtime { namespace Dx12{ namespace Effect
 {
@@ -99,13 +99,13 @@ void BaseEffect<DataToProcessType>::createRootSignature(const D3D12_ROOT_PARAMET
 	HRESULT hr = D3D12SerializeRootSignature(&rootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1, &signature, &errorBuff);
 	if (FAILED(hr))
 	{
-		ORION_TRACE((char*)errorBuff->GetBufferPointer());
-		ORION_ASSERT(false);
+		KRONOS_TRACE((char*)errorBuff->GetBufferPointer());
+		KRONOS_ASSERT(false);
 		return;
 	}
 
 	hr = D3d12Device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&m_rootSignature));
-	ORION_ASSERT(SUCCEEDED(hr));
+	KRONOS_ASSERT(SUCCEEDED(hr));
 }
 
 template <typename DataToProcessType>
@@ -134,7 +134,7 @@ void BaseEffect<DataToProcessType>::compile(PipelineStatePtr& pipelineState,
 	// compile vertex shader
 	ID3DBlob* errorBuff;
 	ID3DBlob* vertexShader; // d3d blob for holding vertex shader bytecode
-	HRESULT hr = D3DCompileFromFile(ORION_DX12_SHADER_PATH(vShader),
+	HRESULT hr = D3DCompileFromFile(KRONOS_DX12_SHADER_PATH(vShader),
 		nullptr,
 		nullptr,
 		"main",
@@ -145,8 +145,8 @@ void BaseEffect<DataToProcessType>::compile(PipelineStatePtr& pipelineState,
 		&errorBuff);
 	if (FAILED(hr))
 	{
-		ORION_TRACE((char*)errorBuff->GetBufferPointer());
-		ORION_ASSERT(false);
+		KRONOS_TRACE((char*)errorBuff->GetBufferPointer());
+		KRONOS_ASSERT(false);
 		return;
 	}
 
@@ -158,7 +158,7 @@ void BaseEffect<DataToProcessType>::compile(PipelineStatePtr& pipelineState,
 
 	// compile pixel shader
 	ID3DBlob* pixelShader;
-	hr = D3DCompileFromFile(ORION_DX12_SHADER_PATH(pShader),
+	hr = D3DCompileFromFile(KRONOS_DX12_SHADER_PATH(pShader),
 		macros,
 		nullptr,
 		"main",
@@ -169,8 +169,8 @@ void BaseEffect<DataToProcessType>::compile(PipelineStatePtr& pipelineState,
 		&errorBuff);
 	if (FAILED(hr))
 	{
-		ORION_TRACE((char*)errorBuff->GetBufferPointer());
-		ORION_ASSERT(false);
+		KRONOS_TRACE((char*)errorBuff->GetBufferPointer());
+		KRONOS_ASSERT(false);
 		return;
 	}
 
@@ -211,10 +211,10 @@ void BaseEffect<DataToProcessType>::compile(PipelineStatePtr& pipelineState,
 	psoDesc.DepthStencilState = depthStencilDesc;
 	psoDesc.DSVFormat = defaultDSFormat;
 
-	ORION_TRACE("BaseEffect::compile - Disabled culling because seems wrong");
+	KRONOS_TRACE("BaseEffect::compile - Disabled culling because seems wrong");
 
 	// create the pso
 	hr = D3d12Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&pipelineState));
-	ORION_ASSERT(SUCCEEDED(hr));
+	KRONOS_ASSERT(SUCCEEDED(hr));
 }
 }}}}}

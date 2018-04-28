@@ -2,7 +2,7 @@
 // Copyright (c) Yann Clotioloman Yeo, 2017
 //
 //	Author					: Yann Clotioloman Yeo
-//	E-Mail					: orionrenderer@gmail.com
+//	E-Mail					: kronosrenderer@gmail.com
 //========================================================================
 
 #include "stdafx.h"
@@ -189,14 +189,14 @@ void ForwardLighning::initStaticConstantBuffers()
 			nullptr, // we do not have use an optimized clear value for constant buffers
 			IID_PPV_ARGS(&m_vertexShaderCBUploadHeaps[i]));
 
-		ORION_ASSERT(SUCCEEDED(hr));
+		KRONOS_ASSERT(SUCCEEDED(hr));
 
 		m_vertexShaderCBUploadHeaps[i]->SetName(L"Vertex shader Constant Buffer Upload heap");
-		ORION_ASSERT(SUCCEEDED(hr));
+		KRONOS_ASSERT(SUCCEEDED(hr));
 
 		// map the resource heap to get a gpu virtual address to the beginning of the heap
 		hr = m_vertexShaderCBUploadHeaps[i]->Map(0, &readRangeGPUOnly, reinterpret_cast<void**>(&m_vertexShaderCBGPUAddress[i]));
-		ORION_ASSERT(SUCCEEDED(hr));
+		KRONOS_ASSERT(SUCCEEDED(hr));
 		
 		// 1 : Pixel shader lights constant Buffer Upload Resource Heap"
 		//TODO: Put lights in a default heap instead since they does not change often(Not at all actually 2017/06/25)
@@ -207,11 +207,11 @@ void ForwardLighning::initStaticConstantBuffers()
 			nullptr,
 			IID_PPV_ARGS(&m_pixelShaderLightsCBUploadHeaps[i]));
 
-		ORION_ASSERT(SUCCEEDED(hr));
+		KRONOS_ASSERT(SUCCEEDED(hr));
 		m_pixelShaderLightsCBUploadHeaps[i]->SetName(L"Pixel shader lights Constant Buffer Upload heap");
 
 		hr = m_pixelShaderLightsCBUploadHeaps[i]->Map(0, &readRangeGPUOnly, reinterpret_cast<void**>(&m_pixelShaderLightsCBGPUAddress[i]));
-		ORION_ASSERT(SUCCEEDED(hr));
+		KRONOS_ASSERT(SUCCEEDED(hr));
 	}
 }
 
@@ -242,11 +242,11 @@ void ForwardLighning::initDynamicMaterialConstantBuffer(const Graphics::Scene::B
 			nullptr,
 			IID_PPV_ARGS(&m_pixelShaderMaterialCBUploadHeaps[i]));
 
-		ORION_ASSERT(SUCCEEDED(hr));
+		KRONOS_ASSERT(SUCCEEDED(hr));
 		m_pixelShaderMaterialCBUploadHeaps[i]->SetName(L"Pixel shader material Constant Buffer Upload heap");
 
 		hr = m_pixelShaderMaterialCBUploadHeaps[i]->Map(0, &readRangeGPUOnly, reinterpret_cast<void**>(&m_pixelShaderMaterialCBGPUAddress[i]));
-		ORION_ASSERT(SUCCEEDED(hr));
+		KRONOS_ASSERT(SUCCEEDED(hr));
 
 		// Create default heap
 		hr = D3d12Device->CreateCommittedResource(
@@ -257,7 +257,7 @@ void ForwardLighning::initDynamicMaterialConstantBuffer(const Graphics::Scene::B
 			nullptr,
 			IID_PPV_ARGS(&m_pixelShaderMaterialCBDefaultHeaps[i]));
 
-		ORION_ASSERT(SUCCEEDED(hr));
+		KRONOS_ASSERT(SUCCEEDED(hr));
 		m_pixelShaderMaterialCBDefaultHeaps[i]->SetName(L"Pixel shader material Constant Buffer Default Resource heap");
 	}
 
@@ -291,7 +291,7 @@ void ForwardLighning::updateGroupMaterial(const Graphics::Scene::BaseScene& scen
 
 	const auto& groups = dx12Model->getMeshHandlesByGroup();
 	auto groupIter = groups.find(groupId);
-	ORION_ASSERT(groupIter != groups.end());
+	KRONOS_ASSERT(groupIter != groups.end());
 
 	auto* mesh = groupIter->second[0];
 

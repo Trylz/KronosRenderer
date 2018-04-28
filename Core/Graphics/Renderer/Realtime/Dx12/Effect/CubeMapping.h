@@ -2,7 +2,7 @@
 // Copyright (c) Yann Clotioloman Yeo, 2017
 //
 //	Author					: Yann Clotioloman Yeo
-//	E-Mail					: orionrenderer@gmail.com
+//	E-Mail					: kronosrenderer@gmail.com
 //========================================================================
 
 #pragma once
@@ -31,7 +31,7 @@ public:
 	void pushDrawCommands(CubeMappingPushArgs& data, ID3D12GraphicsCommandList* commandList, int frameIndex) override;
 
 private:
-	ORION_DX12_ATTRIBUTE_ALIGN struct VertexShaderCB
+	KRONOS_DX12_ATTRIBUTE_ALIGN struct VertexShaderCB
 	{
 		DirectX::XMFLOAT4X4 wvpMat;
 		DirectX::XMFLOAT3 cubeMapCenter;

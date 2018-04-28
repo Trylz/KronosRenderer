@@ -2,7 +2,7 @@
 // Copyright (c) Yann Clotioloman Yeo, 2017
 //
 //	Author					: Yann Clotioloman Yeo
-//	E-Mail					: orionrenderer@gmail.com
+//	E-Mail					: kronosrenderer@gmail.com
 //========================================================================
 
 #pragma once
@@ -31,13 +31,13 @@ public:
 	void pushDrawCommands(RenderLightsPushArgs& data, ID3D12GraphicsCommandList* commandList, int frameIndex) override;
 
 private:
-	ORION_DX12_ATTRIBUTE_ALIGN struct VertexShaderSharedCB
+	KRONOS_DX12_ATTRIBUTE_ALIGN struct VertexShaderSharedCB
 	{
 		DirectX::XMFLOAT4X4 projMatrix;
 		FLOAT billboardScale;
 	};
 
-	ORION_DX12_ATTRIBUTE_ALIGN struct VertexShaderCenterCB
+	KRONOS_DX12_ATTRIBUTE_ALIGN struct VertexShaderCenterCB
 	{
 		DirectX::XMFLOAT4 centerCameraSpace;
 	};

@@ -2,7 +2,7 @@
 // Copyright (c) Yann Clotioloman Yeo, 2017
 //
 //	Author					: Yann Clotioloman Yeo
-//	E-Mail					: orionrenderer@gmail.com
+//	E-Mail					: kronosrenderer@gmail.com
 //========================================================================
 
 #include "stdafx.h"
@@ -110,11 +110,11 @@ void HighlightColor::initVertexShaderCB()
 			nullptr, 
 			IID_PPV_ARGS(&m_vertexShaderCBUploadHeaps[i][j]));
 
-		ORION_ASSERT(SUCCEEDED(hr));
+		KRONOS_ASSERT(SUCCEEDED(hr));
 		m_vertexShaderCBUploadHeaps[i][j]->SetName(L"SimpleColorEffect : Vertex shader Constant Buffer Upload heap");
 
 		hr = m_vertexShaderCBUploadHeaps[i][j]->Map(0, &readRangeGPUOnly, reinterpret_cast<void**>(&m_vertexShaderCBGPUAddress[i][j]));
-		ORION_ASSERT(SUCCEEDED(hr));
+		KRONOS_ASSERT(SUCCEEDED(hr));
 	}
 }
 
@@ -157,7 +157,7 @@ void HighlightColor::pushDrawCommands(HighlightColorPushArgs& data, ID3D12Graphi
 		const auto& groups = dx12Model->getMeshHandlesByGroup();
 
 		auto group = groups.find(data.selection->m_group);
-		ORION_ASSERT(group != groups.end());
+		KRONOS_ASSERT(group != groups.end());
 
 		for (auto* mesh : group->second)
 		{

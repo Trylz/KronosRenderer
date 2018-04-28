@@ -2,7 +2,7 @@
 // Copyright (c) Yann Clotioloman Yeo, 2017
 //
 //	Author					: Yann Clotioloman Yeo
-//	E-Mail					: orionrenderer@gmail.com
+//	E-Mail					: kronosrenderer@gmail.com
 //========================================================================
 
 #pragma once
@@ -265,7 +265,7 @@ DX12Renderer::ArrayBufferResource DX12Renderer::createArrayBufferRecource(const 
 		nullptr, // optimized clear value must be null for this type of resource. used for render targets and depth/stencil buffers
 		IID_PPV_ARGS(&retData.buffer));
 
-	ORION_ASSERT(SUCCEEDED(hr));
+	KRONOS_ASSERT(SUCCEEDED(hr));
 
 	// create upload heap
 	ID3D12Resource* vBufferUploadHeap;
@@ -277,7 +277,7 @@ DX12Renderer::ArrayBufferResource DX12Renderer::createArrayBufferRecource(const 
 		nullptr,
 		IID_PPV_ARGS(&vBufferUploadHeap));
 
-	ORION_ASSERT(SUCCEEDED(hr));
+	KRONOS_ASSERT(SUCCEEDED(hr));
 
 	// store buffer data in upload heap
 	D3D12_SUBRESOURCE_DATA bufferData = {};

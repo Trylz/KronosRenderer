@@ -2,7 +2,7 @@
 // Copyright (c) Yann Clotioloman Yeo, 2017
 //
 //	Author					: Yann Clotioloman Yeo
-//	E-Mail					: orionrenderer@gmail.com
+//	E-Mail					: kronosrenderer@gmail.com
 //========================================================================
 
 #include "stdafx.h"
@@ -86,11 +86,11 @@ void CubeMapping::initVertexShaderCB()
 			nullptr, 
 			IID_PPV_ARGS(&m_vertexShaderCBUploadHeaps[i]));
 
-		ORION_ASSERT(SUCCEEDED(hr));
+		KRONOS_ASSERT(SUCCEEDED(hr));
 		m_vertexShaderCBUploadHeaps[i]->SetName(L"CubeMappingEffect : Vertex shader Constant Buffer Upload heap");
 
 		hr = m_vertexShaderCBUploadHeaps[i]->Map(0, &readRangeGPUOnly, reinterpret_cast<void**>(&m_vertexShaderCBGPUAddress[i]));
-		ORION_ASSERT(SUCCEEDED(hr));
+		KRONOS_ASSERT(SUCCEEDED(hr));
 	}
 }
 
@@ -110,7 +110,7 @@ void CubeMapping::updateVertexShaderCB(CubeMappingPushArgs& data, int frameIndex
 void CubeMapping::pushDrawCommands(CubeMappingPushArgs& data, ID3D12GraphicsCommandList* commandList, int frameIndex)
 {
 	auto& cubeMap = data.scene.getCubeMap();
-	ORION_ASSERT(cubeMap);
+	KRONOS_ASSERT(cubeMap);
 
 	commandList->SetPipelineState(m_PSO);
 	commandList->SetGraphicsRootSignature(m_rootSignature);

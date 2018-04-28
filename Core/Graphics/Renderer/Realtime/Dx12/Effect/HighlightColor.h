@@ -2,7 +2,7 @@
 // Copyright (c) Yann Clotioloman Yeo, 2017
 //
 //	Author					: Yann Clotioloman Yeo
-//	E-Mail					: orionrenderer@gmail.com
+//	E-Mail					: kronosrenderer@gmail.com
 //========================================================================
 
 #pragma once
@@ -28,7 +28,7 @@ public:
 private:
 	static constexpr int s_nbPasses = 2;
 
-	ORION_DX12_ATTRIBUTE_ALIGN struct VertexShaderCB
+	KRONOS_DX12_ATTRIBUTE_ALIGN struct VertexShaderCB
 	{
 		DirectX::XMFLOAT4X4 wvpMat;
 		DirectX::XMFLOAT3 eyePosition;

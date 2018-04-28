@@ -2,7 +2,7 @@
 // Copyright (c) Yann Clotioloman Yeo, 2017
 //
 //	Author					: Yann Clotioloman Yeo
-//	E-Mail					: orionrenderer@gmail.com
+//	E-Mail					: kronosrenderer@gmail.com
 //========================================================================
 
 #pragma once
@@ -29,7 +29,7 @@ public:
 	void onUpdateGroupMaterial(const Graphics::Scene::BaseScene& scene, const Graphics::Model::MeshGroupId& groupId, ID3D12GraphicsCommandList* commandList);
 
 private:
-	ORION_DX12_ATTRIBUTE_ALIGN struct DX12Light
+	KRONOS_DX12_ATTRIBUTE_ALIGN struct DX12Light
 	{
 		DirectX::XMFLOAT4 position;
 		DirectX::XMFLOAT4 direction;
@@ -39,7 +39,7 @@ private:
 		INT type;
 	};
 
-	ORION_DX12_ATTRIBUTE_ALIGN struct DX12Material
+	KRONOS_DX12_ATTRIBUTE_ALIGN struct DX12Material
 	{
 		DirectX::XMFLOAT4 ambient;
 		DirectX::XMFLOAT4 diffuse;

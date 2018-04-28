@@ -2,7 +2,7 @@
 // Copyright (c) Yann Clotioloman Yeo, 2017
 //
 //	Author					: Yann Clotioloman Yeo
-//	E-Mail					: orionrenderer@gmail.com
+//	E-Mail					: kronosrenderer@gmail.com
 //========================================================================
 
 #include "stdafx.h"
@@ -130,12 +130,12 @@ void RenderLights::initVertexShaderSharedCB()
 			nullptr,
 			IID_PPV_ARGS(&m_vShaderSharedCBUploadHeaps[i]));
 
-		ORION_ASSERT(SUCCEEDED(hr));
+		KRONOS_ASSERT(SUCCEEDED(hr));
 
 		m_vShaderSharedCBUploadHeaps[i]->SetName(L"RenderLightsEffect : Vertex shader static constant Buffer Upload heap");
 
 		hr = m_vShaderSharedCBUploadHeaps[i]->Map(0, &readRangeGPUOnly, reinterpret_cast<void**>(&m_vShaderSharedCBGPUAddress[i]));
-		ORION_ASSERT(SUCCEEDED(hr));
+		KRONOS_ASSERT(SUCCEEDED(hr));
 	}
 }
 
@@ -161,21 +161,21 @@ void RenderLights::initVertexShaderCenterCB(const Graphics::Scene::BaseScene& sc
 			nullptr,
 			IID_PPV_ARGS(&m_vShaderCenterCBUploadHeaps[i]));
 
-		ORION_ASSERT(SUCCEEDED(hr));
+		KRONOS_ASSERT(SUCCEEDED(hr));
 		m_vShaderCenterCBUploadHeaps[i]->SetName(L"RenderLightsEffect : Center Constant Buffer Upload heap");
 
 		hr = m_vShaderCenterCBUploadHeaps[i]->Map(0, &readRangeGPUOnly, reinterpret_cast<void**>(&m_vShaderCenterCBGPUAddress[i]));
-		ORION_ASSERT(SUCCEEDED(hr));
+		KRONOS_ASSERT(SUCCEEDED(hr));
 	}
 }
 
 void RenderLights::initVertexAndIndexBuffer()
 {
-	ORION_ASSERT(GraphicResourceAllocatorPtr<DX12_GRAPHIC_ALLOC_PARAMETERS>->createVertexBuffer(
+	KRONOS_ASSERT(GraphicResourceAllocatorPtr<DX12_GRAPHIC_ALLOC_PARAMETERS>->createVertexBuffer(
 		Billboard::s_billboardVertices, m_vtxBuffer)
 	);
 
-	ORION_ASSERT(GraphicResourceAllocatorPtr<DX12_GRAPHIC_ALLOC_PARAMETERS>->createIndexBuffer(
+	KRONOS_ASSERT(GraphicResourceAllocatorPtr<DX12_GRAPHIC_ALLOC_PARAMETERS>->createIndexBuffer(
 		Billboard::s_billboardIndices, m_idxBuffer)
 	);
 }
@@ -199,12 +199,12 @@ void RenderLights::initTextures()
 		}
 		catch(CreateTextureException)
 		{
-			ORION_ASSERT(false);
+			KRONOS_ASSERT(false);
 		}
 	};
 
-	initTexture(Directionnal, ORION_CORE_FOLDER + "Resource/dirLight.jpg");
-	initTexture(Point, ORION_CORE_FOLDER + "Resource/omniLight.jpg");
+	initTexture(Directionnal, KRONOS_CORE_FOLDER + "Resource/dirLight.jpg");
+	initTexture(Point, KRONOS_CORE_FOLDER + "Resource/omniLight.jpg");
 }
 
 void RenderLights::updateVertexShaderCenterCB(struct RenderLightsPushArgs& data, int frameIndex)
@@ -258,7 +258,7 @@ void RenderLights::pushDrawCommands(RenderLightsPushArgs& data, ID3D12GraphicsCo
 		commandList->SetGraphicsRootConstantBufferView(1, i * VtxShaderCenterCBAlignedSize + m_vShaderCenterCBUploadHeaps[frameIndex]->GetGPUVirtualAddress());
 
 		auto tex = m_textures.find(lightIter.second->getType());
-		ORION_ASSERT(tex != m_textures.end());
+		KRONOS_ASSERT(tex != m_textures.end());
 
 		if (!tex->second.descriptorHandle.isEmpty())
 		{
