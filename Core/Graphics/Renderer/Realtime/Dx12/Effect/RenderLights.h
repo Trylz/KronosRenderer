@@ -1,5 +1,5 @@
 //========================================================================
-// Copyright (c) Yann Clotioloman Yeo, 2017
+// Copyright (c) Yann Clotioloman Yeo, 2018
 //
 //	Author					: Yann Clotioloman Yeo
 //	E-Mail					: kronosrenderer@gmail.com
@@ -8,7 +8,7 @@
 #pragma once
 
 #include "BaseEffect.h"
-#include "Graphics/Scene/BaseScene.h"
+#include "Scene/BaseScene.h"
 #include <DirectXMath.h>
 #include <unordered_map>
 

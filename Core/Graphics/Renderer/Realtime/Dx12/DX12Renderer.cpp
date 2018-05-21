@@ -1,5 +1,5 @@
 //========================================================================
-// Copyright (c) Yann Clotioloman Yeo, 2017
+// Copyright (c) Yann Clotioloman Yeo, 2018
 //
 //	Author					: Yann Clotioloman Yeo
 //	E-Mail					: kronosrenderer@gmail.com
@@ -146,7 +146,7 @@ bool DX12Renderer::createDevice(IDXGIFactory4* m_dxgiFactory)
 	// adapters are the graphics card (this includes the embedded graphics on the motherboard)
 	IDXGIAdapter1* adapter;
 
-	// we'll start looking for directx 12  compatible graphics devices starting at index 0
+	// we'll start looking for directx 12 compatible graphics devices starting at index 0
 	int adapterIndex = 0;
 
 	// set this to true when a good one was found
@@ -201,7 +201,7 @@ bool DX12Renderer::createDirectCommandQueue()
 	cqDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
 	cqDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;// direct means the gpu can directly execute this command queue
 
-	// create the command queuez
+	// create the command queue
 	auto hr = m_device->CreateCommandQueue(&cqDesc, IID_PPV_ARGS(&m_commandQueue));
 	if (FAILED(hr))
 	{
@@ -224,7 +224,7 @@ bool DX12Renderer::createSwapChain(IDXGIFactory4* m_dxgiFactory, const glm::uvec
 	m_swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT; // this says the pipeline will render to this swap chain
 	m_swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD; // dxgi will discard the buffer (data) after we call present
 	m_swapChainDesc.OutputWindow = m_hwindow; // handle to our window
-	m_swapChainDesc.SampleDesc = m_sampleDesc; // our multi-sampling description
+	m_swapChainDesc.SampleDesc = m_sampleDesc;
 	m_swapChainDesc.Windowed = true; // set to true, then if in fullscreen must call SetFullScreenState with true for full screen to get uncapped fps
 
 	IDXGISwapChain* tempSwapChain;
@@ -232,7 +232,7 @@ bool DX12Renderer::createSwapChain(IDXGIFactory4* m_dxgiFactory, const glm::uvec
 	HRESULT hr = m_dxgiFactory->CreateSwapChain(
 		m_commandQueue, // the queue will be flushed once the swap chain is created
 		&m_swapChainDesc, // give it the swap chain description we created above
-		&tempSwapChain // store the created swap chain in a temp IDXGISwapChain interface
+		&tempSwapChain
 	);
 
 	if (FAILED(hr))
@@ -452,7 +452,7 @@ void DX12Renderer::createRGBATexture2DArray(const std::vector<const Texture::RGB
 	textureDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN; // The arrangement of the pixels. Setting to unknown lets the driver choose the most efficient one
 	textureDesc.Flags = D3D12_RESOURCE_FLAG_NONE; // no flags
 
-	// create a default heap where the upload heap will copy its contents into (contents being the texture)
+	// create a default heap.
 	HRESULT hr = m_device->CreateCommittedResource(
 		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT), // a default heap
 		D3D12_HEAP_FLAG_NONE, // no flags
@@ -476,8 +476,8 @@ void DX12Renderer::createRGBATexture2DArray(const std::vector<const Texture::RGB
 	ID3D12Resource* textureBufferUploadHeap;
 
 	hr = m_device->CreateCommittedResource(
-		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD), // upload heap
-		D3D12_HEAP_FLAG_NONE, // no flags
+		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+		D3D12_HEAP_FLAG_NONE,
 		&CD3DX12_RESOURCE_DESC::Buffer(textureUploadBufferSize), // resource description for a buffer (storing the image data in this heap just to copy to the default heap)
 		D3D12_RESOURCE_STATE_GENERIC_READ, // We will copy the contents from this heap to the default heap above
 		nullptr,
@@ -519,7 +519,7 @@ void DX12Renderer::createRGBATexture2DArray(const std::vector<const Texture::RGB
 
 bool DX12Renderer::createIndexBuffer(const std::vector<uint32_t>& data, Dx12IndexBufferHandle& dst)
 {
-	ArrayBufferResource resourceData = createArrayBufferRecource(data);
+	ArrayBufferResource resourceData = createArrayBufferRecource(data.data(), sizeof(uint32_t), (uint32_t)data.size());
 	if (resourceData.bufferSize == 0u || resourceData.buffer == nullptr)
 	{
 		return false;
@@ -531,6 +531,53 @@ bool DX12Renderer::createIndexBuffer(const std::vector<uint32_t>& data, Dx12Inde
 	dst.bufferView.SizeInBytes = resourceData.bufferSize;
 
 	return true;
+}
+
+DX12Renderer::ArrayBufferResource DX12Renderer::createArrayBufferRecource(const void* data, uint32_t sizeofElem, uint32_t count)
+{
+	ArrayBufferResource retData;
+	retData.bufferSize = sizeofElem * count;
+
+	HRESULT hr;
+
+	// create default heap
+	hr = m_device->CreateCommittedResource(
+		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+		D3D12_HEAP_FLAG_NONE,
+		&CD3DX12_RESOURCE_DESC::Buffer(retData.bufferSize),
+		D3D12_RESOURCE_STATE_COPY_DEST,
+		nullptr,
+		IID_PPV_ARGS(&retData.buffer));
+
+	KRONOS_ASSERT(SUCCEEDED(hr));
+
+	// create upload heap
+	ID3D12Resource* vBufferUploadHeap;
+	hr = m_device->CreateCommittedResource(
+		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+		D3D12_HEAP_FLAG_NONE,
+		&CD3DX12_RESOURCE_DESC::Buffer(retData.bufferSize),
+		D3D12_RESOURCE_STATE_GENERIC_READ,
+		nullptr,
+		IID_PPV_ARGS(&vBufferUploadHeap));
+
+	KRONOS_ASSERT(SUCCEEDED(hr));
+
+	// store buffer data in upload heap
+	D3D12_SUBRESOURCE_DATA bufferData = {};
+	bufferData.pData = reinterpret_cast<BYTE*>(const_cast<void*>(data));
+	bufferData.RowPitch = retData.bufferSize;
+	bufferData.SlicePitch = retData.bufferSize;
+
+	// we are now creating a command with the command list to copy the data from the upload heap to the default heap
+	UpdateSubresources(m_commandList, retData.buffer, vBufferUploadHeap, 0, 0, 1, &bufferData);
+
+	// transition the vertex buffer data from copy destination state to vertex buffer state
+	m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(retData.buffer, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER));
+
+	m_loadingResources.push_back(vBufferUploadHeap);
+
+	return retData;
 }
 
 void DX12Renderer::startCommandRecording()
@@ -580,7 +627,7 @@ void DX12Renderer::endCommandRecording()
 	}
 }
 
-void DX12Renderer::endSceneLoadCommandRecording(const Graphics::Scene::BaseScene* scene)
+void DX12Renderer::endSceneLoadCommandRecording(const Scene::BaseScene* scene)
 {
 	if (scene)
 	{
@@ -591,10 +638,8 @@ void DX12Renderer::endSceneLoadCommandRecording(const Graphics::Scene::BaseScene
 	endCommandRecording();
 }
 
-void DX12Renderer::drawScene(const Graphics::Scene::BaseScene& scene)
+void DX12Renderer::drawScene(const Scene::BaseScene& scene)
 {
-	// here we start recording commands into the commandList (which all the commands will be stored in the commandAllocator)
-
 	// transition the "frameIndex" render target from the present state to the render target state so the command list draws to it starting from here
 	m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_renderTargets[m_frameIndex], D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
 
@@ -606,7 +651,7 @@ void DX12Renderer::drawScene(const Graphics::Scene::BaseScene& scene)
 	// set the render target for the output merger stage (the output of the pipeline)
 	m_commandList->OMSetRenderTargets(1, &rtvHandle, FALSE, &m_dsvDescriptorsHandle.getCpuHandle());
 
-	// Clear the render target by using the ClearRenderTargetView command
+	// Clear the render target
 	const float clearColor[] = { 0.0f, 0.0f, 0.0f, 1.0f };
 	m_commandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
 
@@ -650,15 +695,14 @@ void DX12Renderer::drawScene(const Graphics::Scene::BaseScene& scene)
 	Effect::ForwardLightningPushArgs args = { scene };
 	m_forwardLightningEffect->pushDrawCommands(args, m_commandList, m_frameIndex);
 
-	// transition the "frameIndex" render target from the render target state to the present state. If the debug layer is enabled, you will receive a
-	// warning if present is called on the render target when it's not in the present state
+	// transition the "frameIndex" render target from the render target state to the present state.
 	m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_renderTargets[m_frameIndex], D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
 }
 
 void DX12Renderer::present()
 {
 	// present the current backbuffer
-	HRESULT	hr = m_swapChain->Present(0, 0);
+	HRESULT	hr = m_swapChain->Present(KRONOS_REALTIME_VSYNC_ENABLED, 0);
 	if (FAILED(hr))
 	{
 		KRONOS_TRACE("DX12Renderer::render - Failed to present");

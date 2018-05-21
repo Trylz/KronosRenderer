@@ -1,5 +1,5 @@
 //========================================================================
-// Copyright (c) Yann Clotioloman Yeo, 2017
+// Copyright (c) Yann Clotioloman Yeo, 2018
 //
 //	Author					: Yann Clotioloman Yeo
 //	E-Mail					: kronosrenderer@gmail.com
@@ -40,7 +40,7 @@ public:
 	Graphics::Texture::CubeMapPtr createCubeMapFromRaw(Graphics::Texture::CubeMapConstructRawArgs& args) const override;
 	Graphics::Texture::CubeMapPtr createCubeMapFromNode(const Graphics::Texture::CubeMapConstructNodeArgs& args) const override;
 
-	void drawScene(const Graphics::Scene::BaseScene& scene) override;
+	void drawScene(const Scene::BaseScene& scene) override;
 	void present() override;
 
 	void createRGBATexture2D(const Texture::RGBAImage* image, Dx12TextureHandle& dst) override;
@@ -48,20 +48,20 @@ public:
 
 	bool releaseTexture(const Dx12TextureHandle& textureHandle) const override;
 
-	bool createVertexBuffer(const std::vector<FullVertex>& data, Dx12VertexBufferHandle& dst) override;
-	bool createVertexBuffer(const std::vector<SimpleVertex>& data, Dx12VertexBufferHandle& dst) override;
-	bool createVertexBuffer(const std::vector<IntermediateVertex>& data, Dx12VertexBufferHandle& dst) override;
+	bool createVertexBuffer(const void* data, Dx12VertexBufferHandle& dst, uint32_t sizeofElem, uint32_t count) override;
 	bool releaseVertexBuffer(const Dx12VertexBufferHandle& arrayBufferHandle) const override;
 
 	bool createIndexBuffer(const std::vector<uint32_t>& data, Dx12IndexBufferHandle& dst) override;
 	bool releaseIndexBuffer(const Dx12IndexBufferHandle& arrayBufferHandle) const override;
 
 	void resizeBuffers(const glm::uvec2& newSize) override;
-	void onMeshSelectionMaterialChanged(const Graphics::Scene::BaseScene& scene, const  Model::MeshSelectable* currentSelection) override;
-	void onNewlightAdded(const Graphics::Scene::BaseScene& scene) override;
+	void onMaterialChanged(const Scene::BaseScene& scene, const MaterialIdentifier& matId) override;
+
+	void updateLightBuffers(const Scene::BaseScene& scene) override;
+	void updateMaterialBuffers(const Scene::BaseScene& scene) override;
 
 	void startCommandRecording() override;
-	void endSceneLoadCommandRecording(const Graphics::Scene::BaseScene* scene) override;
+	void endSceneLoadCommandRecording(const Scene::BaseScene* scene) override;
 	void endCommandRecording() override;
 
 private:
@@ -85,12 +85,7 @@ private:
 		uint32_t bufferSize = 0u;
 	};
 
-	template<typename VertexDataType>
-	bool createVertexBuffer(const std::vector<VertexDataType>& data, Dx12VertexBufferHandle& dst);
-
-	// Create a resource given a vector of data. Used for vertex and index buffers.
-	template<typename BufferDataType>
-	ArrayBufferResource createArrayBufferRecource(const std::vector<BufferDataType>& data);
+	ArrayBufferResource createArrayBufferRecource(const void* data, uint32_t sizeofElem, uint32_t count);
 
 	void createRGBATexture2DArray(const std::vector<const Texture::RGBAImage*>& image, uint32_t width, uint32_t height, D3D12_SRV_DIMENSION viewDimension, Dx12TextureHandle& dst);
 
@@ -129,7 +124,7 @@ private:
 	// a command list we can record commands into, then execute them to render the frame
 	CComPtr<ID3D12GraphicsCommandList> m_commandList;
 
-	// an object that is locked while our command list is being executed by the gpu. We need as many 
+	// an object that is locked while our command list is being executed by the gpu.
 	CComPtr<ID3D12Fence> m_fence[swapChainBufferCount];
 
 	// a handle to an event when our fence is unlocked by the gpu
@@ -147,6 +142,9 @@ private:
 	// the area to draw in. pixels outside that area will not be drawn onto
 	D3D12_RECT m_scissorRect; 
 
+	// The multi-sampling description
+	DXGI_SAMPLE_DESC m_sampleDesc = {};
+
 	// This is the memory for our depth buffer.
 	ID3D12Resource* m_depthStencilBuffer =  nullptr;
 
@@ -156,9 +154,6 @@ private:
 	std::unique_ptr<Effect::CubeMapping> m_cubeMappingEffect;
 	std::unique_ptr<Effect::HighlightColor> m_highlightColorEffect;
 	std::unique_ptr<Effect::RenderLights> m_renderLightsEffect;
-
-	// describe our multi-sampling. We are not multi-sampling, so we set the count to 1 (we need at least one sample of course)
-	DXGI_SAMPLE_DESC m_sampleDesc = {};
 };
 
 inline Graphics::Model::ModelPtr DX12Renderer::createModelFromRaw(const std::string& path) const
@@ -181,29 +176,36 @@ inline Graphics::Texture::CubeMapPtr DX12Renderer::createCubeMapFromNode(const G
 	return std::make_unique<DX12CubeMap>(args);
 }
 
-inline bool DX12Renderer::createVertexBuffer(const std::vector<FullVertex>& data, Dx12VertexBufferHandle& dst)
+inline bool DX12Renderer::createVertexBuffer(const void* data, Dx12VertexBufferHandle& dst, uint32_t sizeofElem, uint32_t count)
 {
-	return createVertexBuffer<FullVertex>(data, dst);
+	ArrayBufferResource resourceData = createArrayBufferRecource(data, sizeofElem, count);
+	if (resourceData.bufferSize == 0u || resourceData.buffer == nullptr)
+	{
+		return false;
+	}
+
+	dst.buffer = resourceData.buffer;
+	dst.bufferView.BufferLocation = dst.buffer->GetGPUVirtualAddress();
+	dst.bufferView.StrideInBytes = sizeofElem;
+	dst.bufferView.SizeInBytes = resourceData.bufferSize;
+
+	return true;
 }
 
-inline bool DX12Renderer::createVertexBuffer(const std::vector<IntermediateVertex>& data, Dx12VertexBufferHandle& dst)
+
+inline void DX12Renderer::onMaterialChanged(const Scene::BaseScene& scene, const MaterialIdentifier& matId)
 {
-	return createVertexBuffer<IntermediateVertex>(data, dst);
+	m_forwardLightningEffect->onUpdateMaterial(scene, matId, m_commandList);
 }
 
-inline bool DX12Renderer::createVertexBuffer(const std::vector<SimpleVertex>& data, Dx12VertexBufferHandle& dst)
+inline void DX12Renderer::updateMaterialBuffers(const Scene::BaseScene& scene)
 {
-	return createVertexBuffer<SimpleVertex>(data, dst);
+	m_forwardLightningEffect->updateMaterialBuffers(scene, m_commandList);
 }
 
-inline void DX12Renderer::onMeshSelectionMaterialChanged(const Graphics::Scene::BaseScene& scene, const  Model::MeshSelectable* currentSelection)
+inline void DX12Renderer::updateLightBuffers(const Scene::BaseScene& scene)
 {
-	m_forwardLightningEffect->onUpdateGroupMaterial(scene, currentSelection->m_group, m_commandList);
-}
-
-inline void DX12Renderer::onNewlightAdded(const Graphics::Scene::BaseScene& scene)
-{
-	m_renderLightsEffect->onNewlightAdded(scene);
+	m_renderLightsEffect->updateLightBuffers(scene);
 }
 
 inline void DX12Renderer::createRGBATexture2D(const Texture::RGBAImage* image, Dx12TextureHandle& dst)
@@ -227,72 +229,4 @@ inline bool DX12Renderer::releaseIndexBuffer(const Dx12IndexBufferHandle& arrayB
 	return arrayBufferHandle.buffer->Release();
 }
 
-template<typename VertexDataType>
-bool DX12Renderer::createVertexBuffer(const std::vector<VertexDataType>& data, Dx12VertexBufferHandle& dst)
-{
-	ArrayBufferResource resourceData = createArrayBufferRecource(data);
-	if (resourceData.bufferSize == 0u || resourceData.buffer == nullptr)
-	{
-		return false;
-	}
-
-	dst.buffer = resourceData.buffer;
-	dst.bufferView.BufferLocation = dst.buffer->GetGPUVirtualAddress();
-	dst.bufferView.StrideInBytes = sizeof(VertexDataType);
-	dst.bufferView.SizeInBytes = resourceData.bufferSize;
-
-	return true;
-}
-
-template<typename BufferDataType>
-DX12Renderer::ArrayBufferResource DX12Renderer::createArrayBufferRecource(const std::vector<BufferDataType>& data)
-{
-	ArrayBufferResource retData;
-
-	BufferDataType* dataArray = const_cast<BufferDataType*>(&data[0]);
-	uint32_t arraySize = (uint32_t)data.size();
-
-	retData.bufferSize = sizeof(BufferDataType) * arraySize;
-
-	HRESULT hr;
-
-	// create default heap
-	hr = m_device->CreateCommittedResource(
-		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
-		D3D12_HEAP_FLAG_NONE,
-		&CD3DX12_RESOURCE_DESC::Buffer(retData.bufferSize),
-		D3D12_RESOURCE_STATE_COPY_DEST, // we will start this heap in the copy destination state since we will copy data from the upload heap to this heap
-		nullptr, // optimized clear value must be null for this type of resource. used for render targets and depth/stencil buffers
-		IID_PPV_ARGS(&retData.buffer));
-
-	KRONOS_ASSERT(SUCCEEDED(hr));
-
-	// create upload heap
-	ID3D12Resource* vBufferUploadHeap;
-	hr = m_device->CreateCommittedResource(
-		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
-		D3D12_HEAP_FLAG_NONE,
-		&CD3DX12_RESOURCE_DESC::Buffer(retData.bufferSize), // resource description for a buffer
-		D3D12_RESOURCE_STATE_GENERIC_READ, // GPU will read from this buffer and copy its contents to the default heap
-		nullptr,
-		IID_PPV_ARGS(&vBufferUploadHeap));
-
-	KRONOS_ASSERT(SUCCEEDED(hr));
-
-	// store buffer data in upload heap
-	D3D12_SUBRESOURCE_DATA bufferData = {};
-	bufferData.pData = reinterpret_cast<BYTE*>(dataArray);
-	bufferData.RowPitch = retData.bufferSize;
-	bufferData.SlicePitch = retData.bufferSize;
-
-	// we are now creating a command with the command list to copy the data from the upload heap to the default heap
-	UpdateSubresources(m_commandList, retData.buffer, vBufferUploadHeap, 0, 0, 1, &bufferData);
-
-	// transition the vertex buffer data from copy destination state to vertex buffer state
-	m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(retData.buffer, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER));
-
-	m_loadingResources.push_back(vBufferUploadHeap);
-
-	return retData;
-}
 }}}}
