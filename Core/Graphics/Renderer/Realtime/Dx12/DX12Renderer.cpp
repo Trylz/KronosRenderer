@@ -702,7 +702,7 @@ void DX12Renderer::drawScene(const Scene::BaseScene& scene)
 void DX12Renderer::present()
 {
 	// present the current backbuffer
-	HRESULT	hr = m_swapChain->Present(KRONOS_REALTIME_VSYNC_ENABLED, 0);
+	HRESULT	hr = m_swapChain->Present(0, 0);
 	if (FAILED(hr))
 	{
 		KRONOS_TRACE("DX12Renderer::render - Failed to present");

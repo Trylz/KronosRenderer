@@ -9,8 +9,6 @@
 
 #include "Scene/BaseScene.h"
 
-#define KRONOS_REALTIME_VSYNC_ENABLED 1
-
 namespace Graphics { namespace Renderer { namespace Realtime
 {
 class RealtimeRenderer
