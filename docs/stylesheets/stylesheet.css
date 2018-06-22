@@ -401,16 +401,11 @@ Full-Width Styles
 }
 
 #header_wrap {
-#  background: #0071C5;
-#  background: -moz-linear-gradient(top, #373737, #212121);
-#  background: -webkit-linear-gradient(top, #373737, #212121);
-#  background: -ms-linear-gradient(top, #373737, #212121);
-#  background: -o-linear-gradient(top, #373737, #212121);
-#  background: linear-gradient(top, #373737, #212121);
-#  color: #000000;
-  background: #EEEEEE;
-  background-image: url('../gallery/Banner.png');
-  background-repeat:no-repeat;
+  background: url(../gallery/Banner.png) no-repeat center;
+  -webkit-background-size: cover;
+  -moz-background-size: cover;
+  -o-background-size: cover;
+  background-size: cover;
 }
 
 #header_wrap .inner {
