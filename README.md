@@ -7,7 +7,7 @@ You can download the last version on the [release page.](https://github.com/Tryl
 
 This repository contains the initial source code of:    
 - The CPU raytracer's integrators    
-- The DirectX 12 renderer    
+- The DirectX 12 renderer as well as the realtime effects used.   
 
 ![Dragon scene](docs/gallery/DragonScene.png?raw=true "DragonScene")  
 ![Editor](Editor.png?raw=true "Editor")  
