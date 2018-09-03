@@ -19,6 +19,6 @@ template <TREALTIME_RENDERER_PARAMETER_LIST>
 class TRealtimeRenderer : TGraphicResourceAllocator<TGRAPHIC_ALLOC_PARAMETERS>, public RealtimeRenderer
 {
 public:
-	virtual bool init(const InitDataType& initData) = 0;
+	virtual kBool init(const InitDataType& initData) = 0;
 };
 }}}

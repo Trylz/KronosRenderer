@@ -30,14 +30,14 @@ RenderLights::RenderLights(const DXGI_SAMPLE_DESC& sampleDesc)
 	initVertexAndIndexBuffer();
 	initTextures();
 
-	for (int i = 0; i < swapChainBufferCount; ++i)
+	for (kInt32 i = 0; i < swapChainBufferCount; ++i)
 		m_vShaderCenterCBUploadHeaps[i] = nullptr;
 }
 
 RenderLights::~RenderLights()
 {
 	// Heaps
-	for (int i = 0; i < swapChainBufferCount; ++i)
+	for (kInt32 i = 0; i < swapChainBufferCount; ++i)
 	{
 		if (m_vShaderCenterCBUploadHeaps[i])
 			m_vShaderCenterCBUploadHeaps[i]->Release();
@@ -70,7 +70,7 @@ void RenderLights::initRootSignature()
 	rootCBVDescriptor.RegisterSpace = 0;
 
 	// 0 & 1 : vertex shader constant buffers
-	int paramIdx;
+	kInt32 paramIdx;
 	for (paramIdx = 0; paramIdx < 2; ++paramIdx)
 	{
 		rootCBVDescriptor.ShaderRegister = paramIdx;
@@ -107,12 +107,43 @@ void RenderLights::initPipelineStateObjects()
 		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
 	};
 
-	compile(m_PSO,
-		std::wstring(L"Billboard_VS.hlsl"),
-		std::wstring(L"Billboard_PS.hlsl"),
+	ID3DBlob* vertexShader = compileShader(std::wstring(L"Billboard_VS.hlsl"), true);
+	ID3DBlob* pixelShader = compileShader(std::wstring(L"Billboard_PS.hlsl"), false);
+
+	// The rasterizer desc
+	D3D12_RASTERIZER_DESC rasterizerDesc = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
+	rasterizerDesc.MultisampleEnable = TRUE;
+
+	// Depth stencil description
+	D3D12_DEPTH_STENCIL_DESC dsDesc = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
+	dsDesc.DepthEnable = TRUE;
+	dsDesc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
+	dsDesc.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
+
+	dsDesc.StencilEnable = TRUE;
+	dsDesc.StencilReadMask = 0xFF;
+	dsDesc.StencilWriteMask = 0xFF;
+
+	// Front-facing pixels.
+	dsDesc.FrontFace.StencilFailOp = D3D12_STENCIL_OP_KEEP;
+	dsDesc.FrontFace.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
+	dsDesc.FrontFace.StencilPassOp = D3D12_STENCIL_OP_KEEP;
+	dsDesc.FrontFace.StencilFunc = D3D12_COMPARISON_FUNC_GREATER_EQUAL;
+
+	// Back-facing pixels.
+	dsDesc.BackFace.StencilFailOp = D3D12_STENCIL_OP_KEEP;
+	dsDesc.BackFace.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
+	dsDesc.BackFace.StencilPassOp = D3D12_STENCIL_OP_KEEP;
+	dsDesc.BackFace.StencilFunc = D3D12_COMPARISON_FUNC_GREATER_EQUAL;
+
+	compilePipeline(m_PSO,
+		vertexShader,
+		pixelShader,
 		inputLayoutElement,
 		sizeof(inputLayoutElement) / sizeof(D3D12_INPUT_ELEMENT_DESC),
-		nullptr
+		CD3DX12_BLEND_DESC(D3D12_DEFAULT),
+		dsDesc,
+		rasterizerDesc
 	);
 
 	m_PSO->SetName(L"Render lights PSO");
@@ -120,7 +151,7 @@ void RenderLights::initPipelineStateObjects()
 
 void RenderLights::initVertexShaderSharedCB()
 {
-	for (int i = 0; i < swapChainBufferCount; ++i)
+	for (kInt32 i = 0; i < swapChainBufferCount; ++i)
 	{
 		HRESULT hr = D3d12Device->CreateCommittedResource(
 			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
@@ -139,16 +170,15 @@ void RenderLights::initVertexShaderSharedCB()
 	}
 }
 
-void RenderLights::initVertexShaderCenterCB(const Graphics::Scene::BaseScene& scene)
+void RenderLights::initVertexShaderCenterCB(const Scene::BaseScene& scene)
 {
 	if (!scene.hasLights())
 		return;
 
 	const auto& lights = scene.getLights();
-	const uint32_t nbLights = (uint32_t)lights.size();
+	const kUint32 nbLights = (kUint32)lights.size();
 
-	// 0 : Init heaps.
-	for (int i = 0; i < swapChainBufferCount; ++i)
+	for (kInt32 i = 0; i < swapChainBufferCount; ++i)
 	{
 		if (m_vShaderCenterCBUploadHeaps[i])
 			m_vShaderCenterCBUploadHeaps[i]->Release();
@@ -187,7 +217,7 @@ void RenderLights::initTextures()
 	auto initTexture = [this](LightType lType, const std::string& path){
 		try
 		{
-			m_images.emplace(lType, new Texture::RGBAImage(path)) ;
+			m_images.emplace(lType, Texture::Helper::createRGBAImage(path)) ;
 			GraphicResourceAllocatorPtr<DX12_GRAPHIC_ALLOC_PARAMETERS>->createRGBATexture2D(m_images[lType], m_textures[lType]);
 		}
 		catch(Texture::CreateImageException)
@@ -207,9 +237,9 @@ void RenderLights::initTextures()
 	initTexture(Point, KRONOS_CORE_FOLDER + "Resource/omniLight.jpg");
 }
 
-void RenderLights::updateVertexShaderCenterCB(struct RenderLightsPushArgs& data, int frameIndex)
+void RenderLights::updateVertexShaderCenterCB(struct RenderLightsPushArgs& data, kInt32 frameIndex)
 {
-	int i = 0;
+	kInt32 i = 0;
 	for (auto& light : data.scene.getLights())
 	{
 		const glm::vec3& lightPos = light.second->getPosition();
@@ -218,14 +248,14 @@ void RenderLights::updateVertexShaderCenterCB(struct RenderLightsPushArgs& data,
 		VertexShaderCenterCB buffer;
 		buffer.centerCameraSpace = { centerCameraSpace.x, centerCameraSpace.y, centerCameraSpace.z, 1.0f};
 
-		uint64_t posInCB = i * VtxShaderCenterCBAlignedSize;
+		kUint64 posInCB = i * VtxShaderCenterCBAlignedSize;
 		memcpy(m_vShaderCenterCBGPUAddress[frameIndex] + posInCB, &buffer, sizeof(VertexShaderCenterCB));
 
 		++i;
 	}
 }
 
-void RenderLights::updateVertexShaderSharedCB(RenderLightsPushArgs& data, int frameIndex)
+void RenderLights::updateVertexShaderSharedCB(RenderLightsPushArgs& data, kInt32 frameIndex)
 {
 	auto projMatrix = data.scene.getCamera()->getDirectXPerspectiveMatrix();
 	projMatrix = XMMatrixTranspose(projMatrix);
@@ -237,7 +267,7 @@ void RenderLights::updateVertexShaderSharedCB(RenderLightsPushArgs& data, int fr
 	memcpy(m_vShaderSharedCBGPUAddress[frameIndex], &vertexShaderCB, sizeof(VertexShaderSharedCB));
 }
 
-void RenderLights::pushDrawCommands(RenderLightsPushArgs& data, ID3D12GraphicsCommandList* commandList, int frameIndex)
+void RenderLights::pushDrawCommands(RenderLightsPushArgs& data, ID3D12GraphicsCommandList* commandList, kInt32 frameIndex)
 {
 	using Graphics::Light::LightType;
 
@@ -250,10 +280,8 @@ void RenderLights::pushDrawCommands(RenderLightsPushArgs& data, ID3D12GraphicsCo
 
 	commandList->SetGraphicsRootConstantBufferView(0, m_vShaderSharedCBUploadHeaps[frameIndex]->GetGPUVirtualAddress());
 
-	auto& lights = data.scene.getLights();
-
-	int i = 0;
-	for (auto& lightIter : lights)
+	kInt32 i = 0;
+	for (auto& lightIter : data.scene.getLights())
 	{
 		commandList->SetGraphicsRootConstantBufferView(1, i * VtxShaderCenterCBAlignedSize + m_vShaderCenterCBUploadHeaps[frameIndex]->GetGPUVirtualAddress());
 

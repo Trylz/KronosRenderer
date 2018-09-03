@@ -15,7 +15,7 @@ namespace Graphics { namespace Renderer { namespace Realtime { namespace Dx12 { 
 {
 struct HighlightColorPushArgs
 {
-	const Graphics::Scene::BaseScene& scene;
+	const Scene::BaseScene& scene;
 	const Graphics::Model::Mesh* selection;
 };
 
@@ -23,10 +23,10 @@ class HighlightColor : public BaseEffect<HighlightColorPushArgs&>
 {
 public:
 	HighlightColor(const DXGI_SAMPLE_DESC& sampleDesc);
-	void pushDrawCommands(HighlightColorPushArgs& data, ID3D12GraphicsCommandList* commandList, int frameIndex) override;
+	void pushDrawCommands(HighlightColorPushArgs& data, ID3D12GraphicsCommandList* commandList, kInt32 frameIndex) override;
 
 private:
-	static constexpr int s_nbPasses = 2;
+	static constexpr kInt32 s_nbPasses = 2;
 
 	KRONOS_DX12_ATTRIBUTE_ALIGN struct VertexShaderCB
 	{
@@ -38,7 +38,7 @@ private:
 	void initRootSignature() override;
 	void initPipelineStateObjects() override;
 	void initVertexShaderCB();
-	void updateVertexShaderCB(HighlightColorPushArgs& data, int frameIndex, int passIndex);
+	void updateVertexShaderCB(HighlightColorPushArgs& data, kInt32 frameIndex, kInt32 passIndex);
 
 	PipelineStatePtr m_PSOs[s_nbPasses];
 	CComPtr<ID3D12Resource> m_vertexShaderCBUploadHeaps[s_nbPasses][swapChainBufferCount];

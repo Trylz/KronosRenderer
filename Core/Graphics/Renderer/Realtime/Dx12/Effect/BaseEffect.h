@@ -36,21 +36,25 @@ public:
 
 	virtual ~BaseEffect() {}
 
-	virtual void pushDrawCommands(DataToProcessType data, ID3D12GraphicsCommandList* commandList, int frameIndex) = 0;
+	virtual void pushDrawCommands(DataToProcessType data, ID3D12GraphicsCommandList* commandList, kInt32 frameIndex) = 0;
 
 protected:
 	using PipelineStatePtr = CComPtr<ID3D12PipelineState>;
 
 	void createRootSignature(const D3D12_ROOT_PARAMETER* rootParams, UINT nbParams);
 
-	void compile(PipelineStatePtr& pipelineState,
-		const std::wstring& vShader,
-		const std::wstring& pShader,
+	ID3DBlob* compileShader(const std::wstring& shaderPath,
+		kBool isVertexShader,
+		const D3D_SHADER_MACRO* macros = nullptr);
+
+	void compilePipeline(PipelineStatePtr& pipelineState,
+		ID3DBlob* vertexShader,
+		ID3DBlob* pixelShader,
 		const D3D12_INPUT_ELEMENT_DESC* inputLayoutElementDesc,
 		const UINT inputLayoutNumElements,
-		const D3D_SHADER_MACRO* macros = nullptr,
 		const D3D12_BLEND_DESC& blendDesc = CD3DX12_BLEND_DESC(D3D12_DEFAULT),
-		const D3D12_DEPTH_STENCIL_DESC& depthStencilDesc = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT));
+		const D3D12_DEPTH_STENCIL_DESC& depthStencilDesc = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT),
+		const D3D12_RASTERIZER_DESC& rasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT));
 
 	DXGI_SAMPLE_DESC m_sampleDesc;
 	CComPtr<ID3D12RootSignature> m_rootSignature;
@@ -63,7 +67,7 @@ protected:
 // Read range for resources that we do not intend to read on the CPU. (so end is less than or equal to begin)
 const CD3DX12_RANGE readRangeGPUOnly = CD3DX12_RANGE(0, 0);
 
-const DXGI_FORMAT defaultDSFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
+const DXGI_FORMAT defaultDSFormat = DXGI_FORMAT_D32_FLOAT_S8X24_UINT;
 
 template <typename DataToProcessType>
 void BaseEffect<DataToProcessType>::createRootSignature(const D3D12_ROOT_PARAMETER* rootParams, UINT nbParams)
@@ -109,19 +113,12 @@ void BaseEffect<DataToProcessType>::createRootSignature(const D3D12_ROOT_PARAMET
 }
 
 template <typename DataToProcessType>
-void BaseEffect<DataToProcessType>::compile(PipelineStatePtr& pipelineState,
-	const std::wstring& vShader,
-	const std::wstring& pShader,
-	const D3D12_INPUT_ELEMENT_DESC* inputLayoutElementDesc,
-	const UINT inputLayoutNumElements,
-	const D3D_SHADER_MACRO* macros,
-	const D3D12_BLEND_DESC& blendDesc,
-	const D3D12_DEPTH_STENCIL_DESC& depthStencilDesc)
+ID3DBlob* BaseEffect<DataToProcessType>::compileShader(const std::wstring& shaderPath, kBool isVertexShader, const D3D_SHADER_MACRO* macros)
 {
 #if defined(_DEBUG)
 	UINT compileFlags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
 #else
-	UINT compileFlags = 0;
+	UINT compileFlags = 0u;
 #endif
 
 	// when debugging, we can compile the shader files at runtime.
@@ -133,46 +130,42 @@ void BaseEffect<DataToProcessType>::compile(PipelineStatePtr& pipelineState,
 
 	// compile vertex shader
 	ID3DBlob* errorBuff;
-	ID3DBlob* vertexShader; // d3d blob for holding vertex shader bytecode
-	HRESULT hr = D3DCompileFromFile(KRONOS_DX12_SHADER_PATH(vShader),
-		nullptr,
+	ID3DBlob* shader; // d3d blob for holding vertex shader bytecode
+	HRESULT hr = D3DCompileFromFile(KRONOS_DX12_SHADER_PATH(shaderPath),
+		macros,
 		nullptr,
 		"main",
-		"vs_5_0",
+		isVertexShader ? "vs_5_0" : "ps_5_0",
 		compileFlags,
 		0,
-		&vertexShader,
+		&shader,
 		&errorBuff);
 	if (FAILED(hr))
 	{
 		KRONOS_TRACE((char*)errorBuff->GetBufferPointer());
 		KRONOS_ASSERT(false);
-		return;
+
+		return nullptr;
 	}
 
+	return shader;
+}
+
+template <typename DataToProcessType>
+void BaseEffect<DataToProcessType>::compilePipeline(PipelineStatePtr& pipelineState,
+	ID3DBlob* vertexShader,
+	ID3DBlob* pixelShader,
+	const D3D12_INPUT_ELEMENT_DESC* inputLayoutElementDesc,
+	const UINT inputLayoutNumElements,
+	const D3D12_BLEND_DESC& blendDesc,
+	const D3D12_DEPTH_STENCIL_DESC& depthStencilDesc,
+	const D3D12_RASTERIZER_DESC& rasterizerDesc)
+{
 	// fill out a shader bytecode structure, which is basically just a pointer
 	// to the shader bytecode and the size of the shader bytecode
 	D3D12_SHADER_BYTECODE vertexShaderBytecode = {};
 	vertexShaderBytecode.BytecodeLength = vertexShader->GetBufferSize();
 	vertexShaderBytecode.pShaderBytecode = vertexShader->GetBufferPointer();
-
-	// compile pixel shader
-	ID3DBlob* pixelShader;
-	hr = D3DCompileFromFile(KRONOS_DX12_SHADER_PATH(pShader),
-		macros,
-		nullptr,
-		"main",
-		"ps_5_0",
-		compileFlags,
-		0,
-		&pixelShader,
-		&errorBuff);
-	if (FAILED(hr))
-	{
-		KRONOS_TRACE((char*)errorBuff->GetBufferPointer());
-		KRONOS_ASSERT(false);
-		return;
-	}
 
 	// fill out shader bytecode structure for pixel shader
 	D3D12_SHADER_BYTECODE pixelShaderBytecode = {};
@@ -204,17 +197,17 @@ void BaseEffect<DataToProcessType>::compile(PipelineStatePtr& pipelineState,
 	psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM; // format of the render target
 	psoDesc.SampleDesc = m_sampleDesc; // must be the same sample description as the swapchain and depth/stencil buffer
 	psoDesc.SampleMask = 0xffffffff; // sample mask has to do with multi-sampling. 0xffffffff means point sampling is done
-	psoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT); // a default rasterizer state.
+	psoDesc.RasterizerState = rasterizerDesc;
 	psoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
 	psoDesc.BlendState = blendDesc;
 	psoDesc.NumRenderTargets = 1; // we are only binding one render target
 	psoDesc.DepthStencilState = depthStencilDesc;
 	psoDesc.DSVFormat = defaultDSFormat;
 
-	KRONOS_TRACE("BaseEffect::compile - Disabled culling because seems wrong");
+	// KRONOS_TRACE("BaseEffect::compile - Disabled culling because seems wrong");
 
 	// create the pso
-	hr = D3d12Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&pipelineState));
+	HRESULT hr = D3d12Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&pipelineState));
 	KRONOS_ASSERT(SUCCEEDED(hr));
 }
 }}}}}

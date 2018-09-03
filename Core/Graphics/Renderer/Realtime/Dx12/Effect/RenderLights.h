@@ -16,7 +16,7 @@ namespace Graphics { namespace Renderer { namespace Realtime { namespace Dx12 { 
 {
 struct RenderLightsPushArgs
 {
-	const Graphics::Scene::BaseScene& scene;
+	const Scene::BaseScene& scene;
 };
 
 class RenderLights : public BaseEffect<RenderLightsPushArgs&>
@@ -25,10 +25,10 @@ public:
 	RenderLights(const DXGI_SAMPLE_DESC& sampleDesc);
 	~RenderLights();
 
-	void onNewScene(const Graphics::Scene::BaseScene& scene);
-	void onNewlightAdded(const Graphics::Scene::BaseScene& scene);
+	void onNewScene(const Scene::BaseScene& scene);
+	void updateLightBuffers(const Scene::BaseScene& scene);
 
-	void pushDrawCommands(RenderLightsPushArgs& data, ID3D12GraphicsCommandList* commandList, int frameIndex) override;
+	void pushDrawCommands(RenderLightsPushArgs& data, ID3D12GraphicsCommandList* commandList, kInt32 frameIndex) override;
 
 private:
 	KRONOS_DX12_ATTRIBUTE_ALIGN struct VertexShaderSharedCB
@@ -42,18 +42,18 @@ private:
 		DirectX::XMFLOAT4 centerCameraSpace;
 	};
 
-	uint32_t VtxShaderCenterCBAlignedSize = (sizeof(VertexShaderCenterCB) + (D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT - 1)) & ~(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT - 1);
+	kUint32 VtxShaderCenterCBAlignedSize = (sizeof(VertexShaderCenterCB) + (D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT - 1)) & ~(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT - 1);
 
 	void initRootSignature() override;
 	void initPipelineStateObjects() override;
 	void initVertexShaderSharedCB();
-	void initVertexShaderCenterCB(const Graphics::Scene::BaseScene& scene);
+	void initVertexShaderCenterCB(const Scene::BaseScene& scene);
 
 	void initVertexAndIndexBuffer();
 	void initTextures();
 
-	void updateVertexShaderSharedCB(RenderLightsPushArgs& data, int frameIndex);
-	void updateVertexShaderCenterCB(RenderLightsPushArgs& data, int frameIndex);
+	void updateVertexShaderSharedCB(RenderLightsPushArgs& data, kInt32 frameIndex);
+	void updateVertexShaderCenterCB(RenderLightsPushArgs& data, kInt32 frameIndex);
 
 	PipelineStatePtr m_PSO;
 
@@ -70,12 +70,12 @@ private:
 	UINT8* m_vShaderCenterCBGPUAddress[swapChainBufferCount];
 };
 
-inline void RenderLights::onNewScene(const Graphics::Scene::BaseScene& scene)
+inline void RenderLights::onNewScene(const Scene::BaseScene& scene)
 {
 	initVertexShaderCenterCB(scene);
 }
 
-inline void RenderLights::onNewlightAdded(const Graphics::Scene::BaseScene& scene)
+inline void RenderLights::updateLightBuffers(const Scene::BaseScene& scene)
 {
 	initVertexShaderCenterCB(scene);
 }

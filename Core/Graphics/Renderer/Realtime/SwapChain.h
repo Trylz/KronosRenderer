@@ -9,5 +9,5 @@
 
 namespace Graphics { namespace Renderer { namespace Realtime
 {
-	constexpr unsigned int swapChainBufferCount = 3u;
+	constexpr kUint32 swapChainBufferCount = 3u;
 }}}

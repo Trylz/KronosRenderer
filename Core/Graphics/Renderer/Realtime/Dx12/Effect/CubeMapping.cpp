@@ -63,12 +63,14 @@ void CubeMapping::initPipelineStateObjects()
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 	};
 
-	compile(m_PSO,
-		std::wstring(L"CubeMapping_VS.hlsl"),
-		std::wstring(L"CubeMapping_PS.hlsl"),
+	ID3DBlob* vertexShader = compileShader(std::wstring(L"CubeMapping_VS.hlsl"), true);
+	ID3DBlob* pixelShader = compileShader(std::wstring(L"CubeMapping_PS.hlsl"), false);
+
+	compilePipeline(m_PSO,
+		vertexShader,
+		pixelShader,
 		inputLayoutElement,
-		sizeof(inputLayoutElement) / sizeof(D3D12_INPUT_ELEMENT_DESC),
-		nullptr
+		sizeof(inputLayoutElement) / sizeof(D3D12_INPUT_ELEMENT_DESC)
 	);
 
 	m_PSO->SetName(L"Cube mapping PSO");
@@ -76,7 +78,7 @@ void CubeMapping::initPipelineStateObjects()
 
 void CubeMapping::initVertexShaderCB()
 {
-	for (int i = 0; i < swapChainBufferCount; ++i)
+	for (kInt32 i = 0; i < swapChainBufferCount; ++i)
 	{
 		HRESULT hr = D3d12Device->CreateCommittedResource(
 			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
@@ -94,20 +96,20 @@ void CubeMapping::initVertexShaderCB()
 	}
 }
 
-void CubeMapping::updateVertexShaderCB(CubeMappingPushArgs& data, int frameIndex)
+void CubeMapping::updateVertexShaderCB(CubeMappingPushArgs& data, kInt32 frameIndex)
 {
 	VertexShaderCB vertexShaderCB;
 
 	XMStoreFloat4x4(&vertexShaderCB.wvpMat,
 		data.scene.getCamera()->getDirectXTransposedMVP());
 
-	auto& center = data.scene.getCubeMap()->getCenter();
+	auto center = data.scene.getCubeMap()->getBox().getCenter();
 	vertexShaderCB.cubeMapCenter = { center.x, center.y, center.z};
 
 	memcpy(m_vertexShaderCBGPUAddress[frameIndex], &vertexShaderCB, sizeof(VertexShaderCB));
 }
 
-void CubeMapping::pushDrawCommands(CubeMappingPushArgs& data, ID3D12GraphicsCommandList* commandList, int frameIndex)
+void CubeMapping::pushDrawCommands(CubeMappingPushArgs& data, ID3D12GraphicsCommandList* commandList, kInt32 frameIndex)
 {
 	auto& cubeMap = data.scene.getCubeMap();
 	KRONOS_ASSERT(cubeMap);

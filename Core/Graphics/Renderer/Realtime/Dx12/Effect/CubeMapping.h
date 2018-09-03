@@ -8,8 +8,8 @@
 #pragma once
 
 #include "BaseEffect.h"
-#include "Scene/BaseScene.h"
 #include "Graphics/Texture/TCubeMap.h"
+#include "Scene/BaseScene.h"
 
 #include <DirectXMath.h>
 
@@ -21,14 +21,14 @@ namespace Effect {
 
 struct CubeMappingPushArgs
 {
-	const Graphics::Scene::BaseScene& scene;
+	const Scene::BaseScene& scene;
 };
 
 class CubeMapping : public BaseEffect<CubeMappingPushArgs&>
 {
 public:
 	CubeMapping(const DXGI_SAMPLE_DESC& sampleDesc);
-	void pushDrawCommands(CubeMappingPushArgs& data, ID3D12GraphicsCommandList* commandList, int frameIndex) override;
+	void pushDrawCommands(CubeMappingPushArgs& data, ID3D12GraphicsCommandList* commandList, kInt32 frameIndex) override;
 
 private:
 	KRONOS_DX12_ATTRIBUTE_ALIGN struct VertexShaderCB
@@ -40,7 +40,7 @@ private:
 	void initRootSignature() override;
 	void initPipelineStateObjects() override;
 	void initVertexShaderCB();
-	void updateVertexShaderCB(CubeMappingPushArgs& data, int frameIndex);
+	void updateVertexShaderCB(CubeMappingPushArgs& data, kInt32 frameIndex);
 
 	PipelineStatePtr m_PSO;
 

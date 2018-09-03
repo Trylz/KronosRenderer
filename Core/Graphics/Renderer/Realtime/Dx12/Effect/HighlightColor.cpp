@@ -40,12 +40,23 @@ void HighlightColor::initRootSignature()
 
 void HighlightColor::initPipelineStateObjects()
 {
+	// Compile shaders
+	ID3DBlob* vertexShader = compileShader(std::wstring(L"HighlightColor_VS.hlsl"), true);
+	ID3DBlob* pixelShader = compileShader(std::wstring(L"HighlightColor_PS.hlsl"), false);
+
+	// Compile PSOs
 	D3D12_INPUT_ELEMENT_DESC inputLayoutElement[] =
 	{
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+		{ "TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "BITANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 36, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 48, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
 	};
+
+	// The rasterizer desc
+	D3D12_RASTERIZER_DESC rasterizerDesc = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
+	rasterizerDesc.MultisampleEnable = TRUE;
 
 	// Create depth stencil desc
 	D3D12_DEPTH_STENCIL_DESC dsDesc = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
@@ -64,14 +75,14 @@ void HighlightColor::initPipelineStateObjects()
 	dsDesc.BackFace.StencilPassOp = D3D12_STENCIL_OP_INCR_SAT;
 	dsDesc.BackFace.StencilFunc = D3D12_COMPARISON_FUNC_ALWAYS;
 
-	compile(m_PSOs[0],
-		std::wstring(L"HighlightColor_VS.hlsl"),
-		std::wstring(L"HighlightColor_PS.hlsl"),
+	compilePipeline(m_PSOs[0],
+		vertexShader,
+		pixelShader,
 		inputLayoutElement,
 		sizeof(inputLayoutElement) / sizeof(D3D12_INPUT_ELEMENT_DESC),
-		nullptr,
 		CD3DX12_BLEND_DESC(D3D12_DEFAULT),
-		dsDesc
+		dsDesc,
+		rasterizerDesc
 	);
 
 	// Compile second PSO
@@ -85,22 +96,21 @@ void HighlightColor::initPipelineStateObjects()
 	dsDesc.BackFace.StencilPassOp = D3D12_STENCIL_OP_DECR_SAT;
 	dsDesc.BackFace.StencilFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
 
-	// TODO: Share shaders bytecode with previous compile.
-	compile(m_PSOs[1],
-		std::wstring(L"HighlightColor_VS.hlsl"),
-		std::wstring(L"HighlightColor_PS.hlsl"),
+	compilePipeline(m_PSOs[1],
+		vertexShader,
+		pixelShader,
 		inputLayoutElement,
 		sizeof(inputLayoutElement) / sizeof(D3D12_INPUT_ELEMENT_DESC),
-		nullptr,
 		CD3DX12_BLEND_DESC(D3D12_DEFAULT),
-		dsDesc
+		dsDesc,
+		rasterizerDesc
 	);
 }
 
 void HighlightColor::initVertexShaderCB()
 {
-	for (int i = 0; i < s_nbPasses; ++i)
-	for (int j = 0; j < swapChainBufferCount; ++j)
+	for (kInt32 i = 0; i < s_nbPasses; ++i)
+	for (kInt32 j = 0; j < swapChainBufferCount; ++j)
 	{
 		HRESULT hr = D3d12Device->CreateCommittedResource(
 			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
@@ -118,7 +128,7 @@ void HighlightColor::initVertexShaderCB()
 	}
 }
 
-void HighlightColor::updateVertexShaderCB(HighlightColorPushArgs& data, int frameIndex, int passIndex)
+void HighlightColor::updateVertexShaderCB(HighlightColorPushArgs& data, kInt32 frameIndex, kInt32 passIndex)
 {
 	auto& camera = data.scene.getCamera();
 	VertexShaderCB vertexShaderCB;
@@ -138,14 +148,14 @@ void HighlightColor::updateVertexShaderCB(HighlightColorPushArgs& data, int fram
 	memcpy(m_vertexShaderCBGPUAddress[passIndex][frameIndex], &vertexShaderCB, sizeof(VertexShaderCB));
 }
 
-void HighlightColor::pushDrawCommands(HighlightColorPushArgs& data, ID3D12GraphicsCommandList* commandList, int frameIndex)
+void HighlightColor::pushDrawCommands(HighlightColorPushArgs& data, ID3D12GraphicsCommandList* commandList, kInt32 frameIndex)
 {
 	commandList->OMSetStencilRef(0);
 
 	commandList->SetGraphicsRootSignature(m_rootSignature);
 	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-	for (int i = 0; i < s_nbPasses; ++i)
+	for (kInt32 i = 0; i < s_nbPasses; ++i)
 	{
 		updateVertexShaderCB(data, frameIndex, i);
 

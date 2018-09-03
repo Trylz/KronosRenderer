@@ -5,19 +5,23 @@
 //	E-Mail					: kronosrenderer@gmail.com
 //========================================================================
 
-#define PI 3.14159265359f
-#define PI8 25.132741228f
+#define InvPI 0.31830988618f
+#define InvPI8 0.03978873577f
 
 struct VS_OUTPUT
 {
 	float4 position: SV_POSITION;
 	float4 worldPosition : POSITION;
+	float3 tangent : Tangent;
+	float3 bitangent : Bitangent;
 	float3 normal : NORMAL;
 	float2 texCoord: TEXCOORD;
 };
 
 Texture2D diffuseTex : register(t0);
 Texture2D specularTex : register(t1);
+Texture2D normalTex : register(t2);
+
 SamplerState tSampler : register(s0);
 
 struct MaterialStruct
@@ -29,12 +33,14 @@ struct MaterialStruct
 
 	float opacity;
 	float shininess;
+	float roughness;
 
 	float fresnel0;
 	int type;
 
     bool hasDiffuseTex;
 	bool hasSpecularTex;
+	bool hasNormalTex;
 }; 
 
 struct LightStruct
@@ -47,13 +53,14 @@ struct LightStruct
 	int type;
 };
 
-cbuffer LightsCB : register(b0)
+cbuffer EnvironmentCB : register(b0)
 {
+	float4 MediaInfo;
+
     float4 EyePosition;
 	float4 SceneAmbient;
 
 	int NbLights;
-
 	LightStruct Lights[MAX_LIGHTS];
 }; 
 
@@ -67,21 +74,45 @@ float4 ambientLighning(float4 matDiffuse)
 	return SceneAmbient * Material.ambient * matDiffuse;
 }
 
-float4 diffuseLighning(float4 matDiffuse, float fresnel)
+float4 diffuseLighning(float4 matDiffuse, float roughness, float fresnel, float NoL, float NoV, float VoL)
 {
-	if (Material.type == 1)
+	if (Material.type == DEFAULT_METAL_IDX)
 	{
-		// Metal no diffusion.
+		// No diffusion.
 		return float4(0.0f, 0.0f, 0.0f, 0.0f);
 	}
 
-	return (1.0f - fresnel) * matDiffuse / PI;
+	if (Material.type == PERFECT_MIRROR_IDX)
+	{
+		// Mirror we give it a low grey.
+		return float4(0.32f, 0.32f, 0.32f, 0.0f);
+	}
+
+	// Dielectrics
+	float4 diffuse = matDiffuse * InvPI;
+	if (Material.type == PLASTIC_IDX)
+	{
+		// Plastic. Oren Nayar reflectance model from the Unreal Engine
+		float a = roughness * roughness;
+		float s = a;
+		float s2 = s * s;
+		float Cosri = VoL - NoV * NoL;
+		float C1 = 1.0f - 0.5f * s2 / (s2 + 0.33f);
+		float C2 = 0.45f * s2 / (s2 + 0.09f) * Cosri * (Cosri >= 0.0f ? (1.0f / max(NoL, NoV)) : 1.0f);
+
+		diffuse *= (C1 + C2) * (1.0f + roughness * 0.5f);
+	}
+
+	return (1.0f - fresnel) * diffuse;
 }
 
 float4 specularLightning(float4 matDiffuse, float2 texCoord, float HoN, float fresnel)
 {
+	if (Material.type == PERFECT_MIRROR_IDX)
+		return float4(0.0f, 0.0f, 0.0f, 0.0f);
+
 	float4 matSpecular;
-	if (Material.type == 0)
+	if (Material.type == DEFAULT_DIELECTRIC_IDX || Material.type == PLASTIC_IDX)
 	{
 		matSpecular = Material.specular;
 		if (Material.hasSpecularTex)
@@ -95,9 +126,11 @@ float4 specularLightning(float4 matDiffuse, float2 texCoord, float HoN, float fr
 		matSpecular = matDiffuse;
 	}
 
-	float normalizationFactor = (Material.shininess + 8) / PI8;
+	float normalizationFactor = (Material.shininess + 8) * InvPI8;
 
-	return matSpecular * fresnel * pow(HoN, Material.shininess) * normalizationFactor;
+	return saturate(
+		matSpecular * fresnel * pow(HoN, Material.shininess) * normalizationFactor
+	);
 }
 
 float schlick(float HoN)
@@ -105,19 +138,30 @@ float schlick(float HoN)
 	return saturate(Material.fresnel0 + (1.0f - Material.fresnel0) * pow(1.0f - HoN, 5.0f));
 }
 
-float getLightAttenuation(int lightIdx, float3 vertexPos)
+float3 computeNormal(VS_OUTPUT input)
 {
-	if (Lights[lightIdx].type == 0)
-		return 1.0f;
+	float3 N = input.normal;
+	if (Material.hasNormalTex)
+	{
+		float3 bumpMapNormal = normalTex.Sample(tSampler, input.texCoord) * 2.0f - 1.0f;
+		float3x3 tbn = float3x3(input.tangent, input.bitangent, N);
 
-	return length(Lights[lightIdx].position.xyz - vertexPos) * 0.018f;
+		N = normalize(mul(bumpMapNormal, tbn));
+	}
+
+	return N;
 }
 
 float4 main(VS_OUTPUT input) : SV_TARGET
 {
 	const float3 P = input.worldPosition.xyz;
-	const float3 V = normalize(EyePosition.xyz - P);
-	const float3 N = normalize(input.normal);
+	const float3 N = computeNormal(input);
+
+	float3 V = EyePosition.xyz - P;
+	const float vLength = length(V);
+	V /= vLength;
+
+	const float NoV = dot(N, V);
 
 	float4 matDiffuse = Material.diffuse;
 	if (Material.hasDiffuseTex)
@@ -152,11 +196,13 @@ float4 main(VS_OUTPUT input) : SV_TARGET
 		const float3 H = normalize(L + V);
 		const float HoN = max(dot(N, H), 0.0f);
 
+		const float VoL = dot(V, L);
+
 		// Compute fresnel
 		const float fresnel = schlick(HoN);
 
 		// Diffuse contribution
-		float4 color = diffuseLighning(matDiffuse, fresnel);
+		float4 color = diffuseLighning(matDiffuse, Material.roughness, fresnel, NoL, NoV, VoL);
 
 		// Specular contribution
 		color += specularLightning(matDiffuse, input.texCoord, HoN, fresnel);
@@ -167,11 +213,15 @@ float4 main(VS_OUTPUT input) : SV_TARGET
 		// Multiply by light intensity
 		color *= Lights[i].color;
 
-		// Irradiance falloff hack
-		color /= getLightAttenuation(i, P);
-
 		// Finally add light contribution to pixel color
 		pixelColor += color;
+	}
+
+	if (MediaInfo.x > 0.001f)
+	{
+		pixelColor = lerp(float4(MediaInfo.y, MediaInfo.y, MediaInfo.y, MediaInfo.y),
+			pixelColor,
+			exp2(-MediaInfo.z * vLength));
 	}
 
 	pixelColor.a = Material.opacity;
