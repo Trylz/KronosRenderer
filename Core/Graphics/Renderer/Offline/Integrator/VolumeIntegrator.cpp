@@ -62,7 +62,7 @@ namespace Graphics { namespace Renderer { namespace Offline { namespace Integrat
 						const Math::Ray sRay(currentPt, sampleToLight.L, sampleToLight.length);
 						const kFloat32 occlusionStrength = intersector->occlusion(sRay);
 
-						if (!Math::isApprox(occlusionStrength, 1.0f, 1e-6f))
+						if (occlusionStrength != 1.0f)
 						{
 							kFloat32 phase = media->sample(direction, sampleToLight.L);
 							directRadiance += phase *

@@ -24,14 +24,14 @@ namespace Graphics { namespace Renderer { namespace Offline { namespace Integrat
 			if (!sampleToLight.canProcess)
 				continue;
 
-			kFloat32 NoL = glm::dot(isectProps.N, sampleToLight.L);
+			const kFloat32 NoL = glm::dot(isectProps.N, sampleToLight.L);
 			if (NoL <= 0.0f)
 				continue;
 
 			Math::Ray sRay(isectProps.deltaP, sampleToLight.L, sampleToLight.length);
-			kFloat32 occlusionStrength = intersector->occlusion(sRay);
+			const kFloat32 occlusionStrength = intersector->occlusion(sRay);
 
-			if (!Math::isApprox(occlusionStrength, 1.0f, 1e-6f))
+			if (occlusionStrength != 1.0f)
 			{
 				// Sample the brdf to get the scale
 				auto sampledBrdf = material.sampleBsdf(colorCache, sampleToLight.L, isectProps.V, isectProps.N, NoL, false);
