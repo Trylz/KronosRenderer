@@ -2,7 +2,7 @@
 // Copyright (c) Yann Clotioloman Yeo, 2018
 //
 //	Author					: Yann Clotioloman Yeo
-//	E-Mail					: kronosrenderer@gmail.com
+//	E-Mail					: nebularender@gmail.com
 //========================================================================
 
 #pragma once
