@@ -28,7 +28,7 @@ public:
 	void onNewScene(const Scene::BaseScene& scene);
 	void updateLightBuffers(const Scene::BaseScene& scene);
 
-	void pushDrawCommands(RenderLightsPushArgs& data, ID3D12GraphicsCommandList* commandList, kInt32 frameIndex) override;
+	void pushDrawCommands(RenderLightsPushArgs& data, ID3D12GraphicsCommandList* commandList, nbInt32 frameIndex) override;
 
 private:
 	KRONOS_DX12_ATTRIBUTE_ALIGN struct VertexShaderSharedCB
@@ -42,7 +42,7 @@ private:
 		DirectX::XMFLOAT4 centerCameraSpace;
 	};
 
-	kUint32 VtxShaderCenterCBAlignedSize = (sizeof(VertexShaderCenterCB) + (D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT - 1)) & ~(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT - 1);
+	nbUint32 VtxShaderCenterCBAlignedSize = (sizeof(VertexShaderCenterCB) + (D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT - 1)) & ~(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT - 1);
 
 	void initRootSignature() override;
 	void initPipelineStateObjects() override;
@@ -52,8 +52,8 @@ private:
 	void initVertexAndIndexBuffer();
 	void initTextures();
 
-	void updateVertexShaderSharedCB(RenderLightsPushArgs& data, kInt32 frameIndex);
-	void updateVertexShaderCenterCB(RenderLightsPushArgs& data, kInt32 frameIndex);
+	void updateVertexShaderSharedCB(RenderLightsPushArgs& data, nbInt32 frameIndex);
+	void updateVertexShaderCenterCB(RenderLightsPushArgs& data, nbInt32 frameIndex);
 
 	PipelineStatePtr m_PSO;
 

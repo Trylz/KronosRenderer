@@ -27,7 +27,7 @@ ForwardLighning::ForwardLighning(const DXGI_SAMPLE_DESC& sampleDesc)
 	initPipelineStateObjects();
 	initStaticConstantBuffers();
 
-	for (kInt32 i = 0; i < swapChainBufferCount; ++i)
+	for (nbInt32 i = 0; i < swapChainBufferCount; ++i)
 	{
 		m_pixelShaderMaterialCBUploadHeaps[i] = nullptr;
 		m_pixelShaderMaterialCBDefaultHeaps[i] =  nullptr;
@@ -36,7 +36,7 @@ ForwardLighning::ForwardLighning(const DXGI_SAMPLE_DESC& sampleDesc)
 
 ForwardLighning::~ForwardLighning()
 {
-	for (kInt32 i = 0; i < swapChainBufferCount; ++i)
+	for (nbInt32 i = 0; i < swapChainBufferCount; ++i)
 	{
 		if (m_pixelShaderMaterialCBUploadHeaps[i])
 			m_pixelShaderMaterialCBUploadHeaps[i]->Release();
@@ -48,7 +48,7 @@ ForwardLighning::~ForwardLighning()
 
 void ForwardLighning::onUpdateMaterial(const Scene::BaseScene& scene, const MaterialIdentifier& matId, ID3D12GraphicsCommandList* commandList)
 {
-	for (kInt32 i = 0; i < swapChainBufferCount; ++i)
+	for (nbInt32 i = 0; i < swapChainBufferCount; ++i)
 	{
 		commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_pixelShaderMaterialCBDefaultHeaps[i], D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_DEST));
 	}
@@ -68,14 +68,14 @@ void ForwardLighning::initRootSignature()
 	rootCBVDescriptor.ShaderRegister = 0;
 
 	// 0 : Root parameter for the vertex shader constant buffer
-	kInt32 paramIdx = 0;
+	nbInt32 paramIdx = 0;
 	rootParameters[paramIdx].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // this is a constant buffer view root descriptor
 	rootParameters[paramIdx].Descriptor = rootCBVDescriptor; // this is the root descriptor for this root parameter
 	rootParameters[paramIdx].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX; // our vertex shader will be the only shader accessing this parameter for now
 	++paramIdx;
 
 	// 1 & 2 : Root parameter for the light and material pixel shader constant buffer
-	for (kInt32 i = 0; i < 2; ++i, ++paramIdx)
+	for (nbInt32 i = 0; i < 2; ++i, ++paramIdx)
 	{
 		rootCBVDescriptor.ShaderRegister = i;
 		rootParameters[paramIdx].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
@@ -86,10 +86,10 @@ void ForwardLighning::initRootSignature()
 	// 3 & 4 & 5 Root parameter for the pixel shader textures.
 	// create a descriptor range and fill it out
 	// this is a range of descriptors inside a descriptor heap
-	static const kInt32 nbTextures = 3;
+	static const nbInt32 nbTextures = 3;
 	D3D12_DESCRIPTOR_RANGE descriptorTableRanges[nbTextures];
 
-	for (kInt32 i = 0; i < nbTextures; ++i, ++paramIdx)
+	for (nbInt32 i = 0; i < nbTextures; ++i, ++paramIdx)
 	{
 		descriptorTableRanges[i].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; // this is a range of shader resource views (descriptors)
 		descriptorTableRanges[i].NumDescriptors = 1;
@@ -217,7 +217,7 @@ void ForwardLighning::initPipelineStateObjects()
 
 void ForwardLighning::initStaticConstantBuffers()
 {
-	for (kInt32 i = 0; i < swapChainBufferCount; ++i)
+	for (nbInt32 i = 0; i < swapChainBufferCount; ++i)
 	{
 		// 0 : Vertex shader constant Buffer Upload Resource Heap
 		HRESULT hr = D3d12Device->CreateCommittedResource(
@@ -261,14 +261,14 @@ void ForwardLighning::initDynamicMaterialConstantBuffer(const Scene::BaseScene& 
 
 	// Allocate the maximal possible number of materials.
 	// This allow material references to be still be valid during deletion.
-	const kUint32 bufferSize = (--materials.end())->second->getId() + 1;
+	const nbUint32 bufferSize = (--materials.end())->second->getId() + 1;
 
 	if (bufferSize > m_materialBufferSize)
 	{
 		m_materialBufferSize = bufferSize;
 
 		// 0 : Init heaps
-		for (kInt32 i = 0; i < swapChainBufferCount; ++i)
+		for (nbInt32 i = 0; i < swapChainBufferCount; ++i)
 		{
 			if (m_pixelShaderMaterialCBUploadHeaps[i])
 				m_pixelShaderMaterialCBUploadHeaps[i]->Release();
@@ -316,7 +316,7 @@ void ForwardLighning::initDynamicMaterialConstantBuffer(const Scene::BaseScene& 
 
 void ForwardLighning::fromMaterialUploadHeapToDefaulHeap(ID3D12GraphicsCommandList* commandList)
 {
-	for (kInt32 i = 0; i < swapChainBufferCount; ++i)
+	for (nbInt32 i = 0; i < swapChainBufferCount; ++i)
 	{
 		// Copy upload heap to default
 		commandList->CopyResource(m_pixelShaderMaterialCBDefaultHeaps[i], m_pixelShaderMaterialCBUploadHeaps[i]);
@@ -333,7 +333,7 @@ void ForwardLighning::updateMaterial(const Scene::BaseScene& scene, const Materi
 	const DX12Model* dx12Model = static_cast<const DX12Model*>(scene.getModel().get());
 	auto materialHandle = dx12Model->getMaterialHandle(matId);
 
-	for (kInt32 i = 0; i < swapChainBufferCount; ++i)
+	for (nbInt32 i = 0; i < swapChainBufferCount; ++i)
 	{
 		PixelShaderMaterialCB pixelShaderMaterialCB;
 		auto& materialCB = pixelShaderMaterialCB.material;
@@ -375,12 +375,12 @@ void ForwardLighning::updateMaterial(const Scene::BaseScene& scene, const Materi
 		materialCB.hasSpecularTex = materialHandle->specularTexture.isValid();
 		materialCB.hasNormalTex = materialHandle->normalTexture.isValid();
 
-		kUint64 posInCB = matId * PixelShaderMaterialCBAlignedSize;
+		nbUint64 posInCB = matId * PixelShaderMaterialCBAlignedSize;
 		memcpy(m_pixelShaderMaterialCBGPUAddress[i] + posInCB, &pixelShaderMaterialCB, sizeof(PixelShaderMaterialCB));
 	}
 }
 
-void ForwardLighning::updateVertexShaderCB(ForwardLightningPushArgs& data, kInt32 frameIndex)
+void ForwardLighning::updateVertexShaderCB(ForwardLightningPushArgs& data, nbInt32 frameIndex)
 {
 	VertexShaderCB vertexShaderCB;
 
@@ -391,7 +391,7 @@ void ForwardLighning::updateVertexShaderCB(ForwardLightningPushArgs& data, kInt3
 	memcpy(m_vertexShaderCBGPUAddress[frameIndex], &vertexShaderCB, sizeof(VertexShaderCB));
 }
 
-void ForwardLighning::updatePixelShaderLightsCB(ForwardLightningPushArgs& data, kInt32 frameIndex)
+void ForwardLighning::updatePixelShaderLightsCB(ForwardLightningPushArgs& data, nbInt32 frameIndex)
 {
 	ZeroMemory(&m_pixelShaderLightsCB, sizeof(PixelShaderEnvironmentCb));
 
@@ -405,7 +405,7 @@ void ForwardLighning::updatePixelShaderLightsCB(ForwardLightningPushArgs& data, 
 
 	const auto& lights = data.scene.getLights();
 
-	const kUint32 lightSize = static_cast<kUint32>(lights.size());
+	const nbUint32 lightSize = static_cast<nbUint32>(lights.size());
 	m_pixelShaderLightsCB.nbLights = lightSize;
 
 	const glm::vec3 cameraPos = data.scene.getCamera().get()->getPosition();
@@ -414,14 +414,14 @@ void ForwardLighning::updatePixelShaderLightsCB(ForwardLightningPushArgs& data, 
 	const auto& ambientColor = data.scene.getAmbientColor();
 	m_pixelShaderLightsCB.sceneAmbient = { ambientColor.x, ambientColor.y, ambientColor.z, 0.0f};
 
-	kInt32 pos = 0;
+	nbInt32 pos = 0;
 
 	for (auto& lightIter : lights)
 	{
 		auto& dx12Light = m_pixelShaderLightsCB.lights[pos];
 		auto lightType = lightIter.second->getType();
 
-		dx12Light.type = static_cast<kInt32>(lightType);
+		dx12Light.type = static_cast<nbInt32>(lightType);
 
 		if (lightIter.second->getType() == Graphics::Light::LightType::Point)
 		{
@@ -448,7 +448,7 @@ void ForwardLighning::updatePixelShaderLightsCB(ForwardLightningPushArgs& data, 
 	memcpy(m_pixelShaderLightsCBGPUAddress[frameIndex], &m_pixelShaderLightsCB, sizeof(PixelShaderEnvironmentCb));
 }
 
-void ForwardLighning::pushDrawCommands(ForwardLightningPushArgs& data, ID3D12GraphicsCommandList* commandList, kInt32 frameIndex)
+void ForwardLighning::pushDrawCommands(ForwardLightningPushArgs& data, ID3D12GraphicsCommandList* commandList, nbInt32 frameIndex)
 {
 	// Set Pso
 	commandList->SetPipelineState(data.scene.isWireframeEnabled() ? m_wireframePSO : m_solidPSO);
@@ -470,7 +470,7 @@ void ForwardLighning::pushDrawCommands(ForwardLightningPushArgs& data, ID3D12Gra
 	const auto* dx12Model = static_cast<const DX12Model*>(data.scene.getModel().get());
 	const auto& meshByGroup = dx12Model->getMeshesByGroup();
 
-	auto& getPSReadyTextureHandle = [dx12Model, commandList](const ImageIdentifier& imageId, const DX12Model::SharedTMaterialHandlePtr& materialHandle, kInt32 rootParamIdx)
+	auto& getPSReadyTextureHandle = [dx12Model, commandList](const ImageIdentifier& imageId, const DX12Model::SharedTMaterialHandlePtr& materialHandle, nbInt32 rootParamIdx)
 	{
 		const auto tex = imageId.isValid() ? dx12Model->getTexture(imageId) : nullptr;
 		if (tex)
@@ -488,7 +488,7 @@ void ForwardLighning::pushDrawCommands(ForwardLightningPushArgs& data, ID3D12Gra
 			meshByGroup.find(group.first)->second[0]->m_materialId
 		);
 
-		const kUint32 matPosInCB = materialHandle->matId * PixelShaderMaterialCBAlignedSize;
+		const nbUint32 matPosInCB = materialHandle->matId * PixelShaderMaterialCBAlignedSize;
 		commandList->SetGraphicsRootConstantBufferView(2, m_pixelShaderMaterialCBDefaultHeaps[frameIndex]->GetGPUVirtualAddress() + matPosInCB);
 		
 		// Set textures states.

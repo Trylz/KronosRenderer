@@ -24,7 +24,7 @@ public:
 	ForwardLighning(const DXGI_SAMPLE_DESC& sampleDesc);
 	~ForwardLighning();
 
-	void pushDrawCommands(ForwardLightningPushArgs& data, ID3D12GraphicsCommandList* commandList, kInt32 frameIndex) override;
+	void pushDrawCommands(ForwardLightningPushArgs& data, ID3D12GraphicsCommandList* commandList, nbInt32 frameIndex) override;
 
 	void onNewScene(const Scene::BaseScene& scene, ID3D12GraphicsCommandList* commandList);
 	void updateMaterialBuffers(const Scene::BaseScene& scene, ID3D12GraphicsCommandList* commandList);
@@ -82,8 +82,8 @@ private:
 		DX12Material material;
 	};
 
-	kUint32 PixelShaderLightCBAlignedSize = (sizeof(PixelShaderEnvironmentCb) + (D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT - 1)) & ~(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT - 1);
-	kUint32 PixelShaderMaterialCBAlignedSize = (sizeof(PixelShaderMaterialCB) + (D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT - 1)) & ~(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT - 1);
+	nbUint32 PixelShaderLightCBAlignedSize = (sizeof(PixelShaderEnvironmentCb) + (D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT - 1)) & ~(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT - 1);
+	nbUint32 PixelShaderMaterialCBAlignedSize = (sizeof(PixelShaderMaterialCB) + (D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT - 1)) & ~(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT - 1);
 
 	void initRootSignature() override;
 	void initPipelineStateObjects() override;
@@ -92,8 +92,8 @@ private:
 	void fromMaterialUploadHeapToDefaulHeap(ID3D12GraphicsCommandList* commandList);
 	void updateMaterial(const Scene::BaseScene& scene, const MaterialIdentifier& matId, ID3D12GraphicsCommandList* commandList);
 
-	void updateVertexShaderCB(ForwardLightningPushArgs& data, kInt32 frameIndex);
-	void updatePixelShaderLightsCB(ForwardLightningPushArgs& data, kInt32 frameIndex);
+	void updateVertexShaderCB(ForwardLightningPushArgs& data, nbInt32 frameIndex);
+	void updatePixelShaderLightsCB(ForwardLightningPushArgs& data, nbInt32 frameIndex);
 
 	PipelineStatePtr m_solidPSO;
 	PipelineStatePtr m_wireframePSO;
@@ -111,7 +111,7 @@ private:
 	ID3D12Resource* m_pixelShaderMaterialCBUploadHeaps[swapChainBufferCount];
 	ID3D12Resource* m_pixelShaderMaterialCBDefaultHeaps[swapChainBufferCount];
 
-	kUint32 m_materialBufferSize = 0u;
+	nbUint32 m_materialBufferSize = 0u;
 };
 
 inline void ForwardLighning::onNewScene(const Scene::BaseScene& scene, ID3D12GraphicsCommandList* commandList)

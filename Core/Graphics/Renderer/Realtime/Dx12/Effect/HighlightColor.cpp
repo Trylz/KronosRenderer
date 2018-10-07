@@ -109,8 +109,8 @@ void HighlightColor::initPipelineStateObjects()
 
 void HighlightColor::initVertexShaderCB()
 {
-	for (kInt32 i = 0; i < s_nbPasses; ++i)
-	for (kInt32 j = 0; j < swapChainBufferCount; ++j)
+	for (nbInt32 i = 0; i < s_nbPasses; ++i)
+	for (nbInt32 j = 0; j < swapChainBufferCount; ++j)
 	{
 		HRESULT hr = D3d12Device->CreateCommittedResource(
 			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
@@ -128,7 +128,7 @@ void HighlightColor::initVertexShaderCB()
 	}
 }
 
-void HighlightColor::updateVertexShaderCB(HighlightColorPushArgs& data, kInt32 frameIndex, kInt32 passIndex)
+void HighlightColor::updateVertexShaderCB(HighlightColorPushArgs& data, nbInt32 frameIndex, nbInt32 passIndex)
 {
 	auto& camera = data.scene.getCamera();
 	VertexShaderCB vertexShaderCB;
@@ -148,14 +148,14 @@ void HighlightColor::updateVertexShaderCB(HighlightColorPushArgs& data, kInt32 f
 	memcpy(m_vertexShaderCBGPUAddress[passIndex][frameIndex], &vertexShaderCB, sizeof(VertexShaderCB));
 }
 
-void HighlightColor::pushDrawCommands(HighlightColorPushArgs& data, ID3D12GraphicsCommandList* commandList, kInt32 frameIndex)
+void HighlightColor::pushDrawCommands(HighlightColorPushArgs& data, ID3D12GraphicsCommandList* commandList, nbInt32 frameIndex)
 {
 	commandList->OMSetStencilRef(0);
 
 	commandList->SetGraphicsRootSignature(m_rootSignature);
 	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-	for (kInt32 i = 0; i < s_nbPasses; ++i)
+	for (nbInt32 i = 0; i < s_nbPasses; ++i)
 	{
 		updateVertexShaderCB(data, frameIndex, i);
 

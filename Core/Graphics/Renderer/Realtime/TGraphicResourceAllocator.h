@@ -27,18 +27,18 @@ class TGraphicResourceAllocator
 public:
 	virtual void createRGBATexture2D(const Texture::RGBAImage* image, TextureHandle& dst) = 0;
 	virtual void createRGBATexture2DArray(const std::vector<const Texture::RGBAImage*>& images, TextureHandle& dst) = 0;
-	virtual kBool releaseTexture(const TextureHandle& textureHandle) const = 0;
+	virtual nbBool releaseTexture(const TextureHandle& textureHandle) const = 0;
 
-	virtual kBool createVertexBuffer(const void* data, VertexBufferHandle& dst, kUint32 sizeofElem, kUint32 count) = 0;;
-	virtual kBool releaseVertexBuffer(const VertexBufferHandle& arrayBufferHandle) const = 0;
+	virtual nbBool createVertexBuffer(const void* data, VertexBufferHandle& dst, nbUint32 sizeofElem, nbUint32 count) = 0;;
+	virtual nbBool releaseVertexBuffer(const VertexBufferHandle& arrayBufferHandle) const = 0;
 
-	virtual kBool createIndexBuffer(const std::vector<kUint32>& data, IndexBufferHandle& dst) = 0;
-	virtual kBool releaseIndexBuffer(const IndexBufferHandle& arrayBufferHandle) const = 0;
+	virtual nbBool createIndexBuffer(const std::vector<nbUint32>& data, IndexBufferHandle& dst) = 0;
+	virtual nbBool releaseIndexBuffer(const IndexBufferHandle& arrayBufferHandle) const = 0;
 
 	template<typename T>
-	kBool createVertexBuffer(const std::vector<T>& data, VertexBufferHandle& dst)
+	nbBool createVertexBuffer(const std::vector<T>& data, VertexBufferHandle& dst)
 	{
-		return createVertexBuffer(data.data(), dst, sizeof(T), (kUint32)data.size());
+		return createVertexBuffer(data.data(), dst, sizeof(T), (nbUint32)data.size());
 	}
 };
 

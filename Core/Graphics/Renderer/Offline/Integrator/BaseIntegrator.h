@@ -16,6 +16,6 @@ namespace Graphics { namespace Renderer { namespace Offline { namespace Integrat
 struct BaseIntegrator
 {
 protected:
-	static Math::Generator::RandomNumberGenerator<kFloat32> s_nbGenerator;
+	static Math::Generator::RandomNumberGenerator<nbFloat32> s_nbGenerator;
 };
 }}}}

@@ -23,10 +23,10 @@ class HighlightColor : public BaseEffect<HighlightColorPushArgs&>
 {
 public:
 	HighlightColor(const DXGI_SAMPLE_DESC& sampleDesc);
-	void pushDrawCommands(HighlightColorPushArgs& data, ID3D12GraphicsCommandList* commandList, kInt32 frameIndex) override;
+	void pushDrawCommands(HighlightColorPushArgs& data, ID3D12GraphicsCommandList* commandList, nbInt32 frameIndex) override;
 
 private:
-	static constexpr kInt32 s_nbPasses = 2;
+	static constexpr nbInt32 s_nbPasses = 2;
 
 	KRONOS_DX12_ATTRIBUTE_ALIGN struct VertexShaderCB
 	{
@@ -38,7 +38,7 @@ private:
 	void initRootSignature() override;
 	void initPipelineStateObjects() override;
 	void initVertexShaderCB();
-	void updateVertexShaderCB(HighlightColorPushArgs& data, kInt32 frameIndex, kInt32 passIndex);
+	void updateVertexShaderCB(HighlightColorPushArgs& data, nbInt32 frameIndex, nbInt32 passIndex);
 
 	PipelineStatePtr m_PSOs[s_nbPasses];
 	CComPtr<ID3D12Resource> m_vertexShaderCBUploadHeaps[s_nbPasses][swapChainBufferCount];

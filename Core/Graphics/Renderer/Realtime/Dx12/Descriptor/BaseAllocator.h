@@ -43,7 +43,7 @@ protected:
 private:
 	void createHeap(ID3D12DescriptorHeap** buffer, UINT capacity);
 	void increaseCapacity(UINT additionalCount);
-	kInt32 retrieveFreeBlock(UINT count);
+	nbInt32 retrieveFreeBlock(UINT count);
 
 	ID3D12DescriptorHeap* m_heap = nullptr;
 	CD3DX12_CPU_DESCRIPTOR_HANDLE m_heapCpuHandle;
@@ -95,9 +95,9 @@ inline void BaseAllocator<descType, pageSize>::release(const DescriptorHandle& h
 }
 
 template <D3D12_DESCRIPTOR_HEAP_TYPE descType, UINT pageSize>
-inline kInt32 BaseAllocator<descType, pageSize>::retrieveFreeBlock(UINT count)
+inline nbInt32 BaseAllocator<descType, pageSize>::retrieveFreeBlock(UINT count)
 {
-	kInt32 blockStart = -1;
+	nbInt32 blockStart = -1;
 
 	for (UINT i = 0u; i < m_freeBlocks.size(); ++i)
 	{
@@ -133,7 +133,7 @@ inline DescriptorHandle BaseAllocator<descType, pageSize>::createResourceViews(c
 	CD3DX12_GPU_DESCRIPTOR_HANDLE gpuHandle;
 	Block block;
 
-	const kInt32 freeBlockStart = retrieveFreeBlock(resCount);
+	const nbInt32 freeBlockStart = retrieveFreeBlock(resCount);
 	if (freeBlockStart >= 0)
 	{
 		block.start = freeBlockStart;
@@ -176,7 +176,7 @@ inline void BaseAllocator<descType, pageSize>::createResourceViewsInHeap(const R
 	dstGpuHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(m_heap->GetGPUDescriptorHandleForHeapStart());
 	dstGpuHandle.Offset(startIdx, m_descriptorSize);
 
-	for (kUint32 i = 0u; i < resources.size(); ++i)
+	for (nbUint32 i = 0u; i < resources.size(); ++i)
 	{
 		createFunc(resources[i], heapCpuHandle);
 		heapCpuHandle.Offset(1, m_descriptorSize);
@@ -206,7 +206,7 @@ inline void BaseAllocator<descType, pageSize>::increaseCapacity(UINT additionalC
 	// These heaps must only have one page that is large enough.
 	KRONOS_ASSERT(descType != D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
-	kUint32 nbPages = additionalCount / pageSize;
+	nbUint32 nbPages = additionalCount / pageSize;
 	if (additionalCount % pageSize)
 		++nbPages;
 

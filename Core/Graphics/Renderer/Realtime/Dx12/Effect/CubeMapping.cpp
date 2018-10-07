@@ -78,7 +78,7 @@ void CubeMapping::initPipelineStateObjects()
 
 void CubeMapping::initVertexShaderCB()
 {
-	for (kInt32 i = 0; i < swapChainBufferCount; ++i)
+	for (nbInt32 i = 0; i < swapChainBufferCount; ++i)
 	{
 		HRESULT hr = D3d12Device->CreateCommittedResource(
 			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
@@ -96,7 +96,7 @@ void CubeMapping::initVertexShaderCB()
 	}
 }
 
-void CubeMapping::updateVertexShaderCB(CubeMappingPushArgs& data, kInt32 frameIndex)
+void CubeMapping::updateVertexShaderCB(CubeMappingPushArgs& data, nbInt32 frameIndex)
 {
 	VertexShaderCB vertexShaderCB;
 
@@ -109,7 +109,7 @@ void CubeMapping::updateVertexShaderCB(CubeMappingPushArgs& data, kInt32 frameIn
 	memcpy(m_vertexShaderCBGPUAddress[frameIndex], &vertexShaderCB, sizeof(VertexShaderCB));
 }
 
-void CubeMapping::pushDrawCommands(CubeMappingPushArgs& data, ID3D12GraphicsCommandList* commandList, kInt32 frameIndex)
+void CubeMapping::pushDrawCommands(CubeMappingPushArgs& data, ID3D12GraphicsCommandList* commandList, nbInt32 frameIndex)
 {
 	auto& cubeMap = data.scene.getCubeMap();
 	KRONOS_ASSERT(cubeMap);

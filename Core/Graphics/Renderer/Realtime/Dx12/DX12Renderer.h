@@ -30,7 +30,7 @@ using DX12Model = Graphics::Model::TModel<DX12_GRAPHIC_ALLOC_PARAMETERS>;
 class DX12Renderer : public TRealtimeRenderer<DX12_GRAPHIC_ALLOC_PARAMETERS, InitArgs>
 {
 public:
-	kBool init(const InitArgs& args) override;
+	nbBool init(const InitArgs& args) override;
 	void finishTasks() override;
 	void release() override;
 
@@ -46,13 +46,13 @@ public:
 	void createRGBATexture2D(const Texture::RGBAImage* image, Dx12TextureHandle& dst) override;
 	void createRGBATexture2DArray(const std::vector<const Texture::RGBAImage*>& images, Dx12TextureHandle& dst) override;
 
-	kBool releaseTexture(const Dx12TextureHandle& textureHandle) const override;
+	nbBool releaseTexture(const Dx12TextureHandle& textureHandle) const override;
 
-	kBool createVertexBuffer(const void* data, Dx12VertexBufferHandle& dst, kUint32 sizeofElem, kUint32 count) override;
-	kBool releaseVertexBuffer(const Dx12VertexBufferHandle& arrayBufferHandle) const override;
+	nbBool createVertexBuffer(const void* data, Dx12VertexBufferHandle& dst, nbUint32 sizeofElem, nbUint32 count) override;
+	nbBool releaseVertexBuffer(const Dx12VertexBufferHandle& arrayBufferHandle) const override;
 
-	kBool createIndexBuffer(const std::vector<kUint32>& data, Dx12IndexBufferHandle& dst) override;
-	kBool releaseIndexBuffer(const Dx12IndexBufferHandle& arrayBufferHandle) const override;
+	nbBool createIndexBuffer(const std::vector<nbUint32>& data, Dx12IndexBufferHandle& dst) override;
+	nbBool releaseIndexBuffer(const Dx12IndexBufferHandle& arrayBufferHandle) const override;
 
 	void resizeBuffers(const glm::uvec2& newSize) override;
 	void onMaterialChanged(const Scene::BaseScene& scene, const MaterialIdentifier& matId) override;
@@ -69,26 +69,26 @@ private:
 
 	// Dx12 initilization helpers
 	// @See: // https://www.braynzarsoft.net/viewtutorial/q16390-03-initializing-directx-12
-	kBool createDevice(IDXGIFactory4* m_dxgiFactory);
-	kBool createDirectCommandQueue();
-	kBool createSwapChain(IDXGIFactory4* m_dxgiFactory, const glm::uvec2& bufferSize);
-	kBool createMSAARenderTarget(const glm::uvec2& bufferSize);
-	kBool createDepthStencilBuffer(const glm::uvec2& bufferSize);
+	nbBool createDevice(IDXGIFactory4* m_dxgiFactory);
+	nbBool createDirectCommandQueue();
+	nbBool createSwapChain(IDXGIFactory4* m_dxgiFactory, const glm::uvec2& bufferSize);
+	nbBool createMSAARenderTarget(const glm::uvec2& bufferSize);
+	nbBool createDepthStencilBuffer(const glm::uvec2& bufferSize);
 	void setUpViewportAndScissor(const glm::uvec2& bufferSize);
-	kBool bindSwapChainRenderTargets();
-	kBool createDirectCommandAllocators();
-	kBool createDirectCommandList();
-	kBool createFencesAndFenceEvent();
+	nbBool bindSwapChainRenderTargets();
+	nbBool createDirectCommandAllocators();
+	nbBool createDirectCommandList();
+	nbBool createFencesAndFenceEvent();
 	void releaseSwapChainDynamicResources();
 
 	struct ArrayBufferResource : ResourceBuffer
 	{
-		kUint32 bufferSize = 0u;
+		nbUint32 bufferSize = 0u;
 	};
 
-	ArrayBufferResource createArrayBufferRecource(const void* data, kUint32 sizeofElem, kUint32 count);
+	ArrayBufferResource createArrayBufferRecource(const void* data, nbUint32 sizeofElem, nbUint32 count);
 
-	void createRGBATexture2DArray(const std::vector<const Texture::RGBAImage*>& image, kUint32 width, kUint32 height, D3D12_SRV_DIMENSION viewDimension, Dx12TextureHandle& dst);
+	void createRGBATexture2DArray(const std::vector<const Texture::RGBAImage*>& image, nbUint32 width, nbUint32 height, D3D12_SRV_DIMENSION viewDimension, Dx12TextureHandle& dst);
 
 	// the window
 	HWND m_hwindow;
@@ -135,7 +135,7 @@ private:
 	UINT64 m_fenceValue[swapChainBufferCount];
 
 	// current rtv we are on
-	kInt32 m_frameIndex;
+	nbInt32 m_frameIndex;
 
 	// area that output from rasterizer will be stretched to.
 	D3D12_VIEWPORT m_viewport; 
@@ -180,7 +180,7 @@ inline Graphics::Texture::CubeMapPtr DX12Renderer::createCubeMapFromNode(const G
 	return std::make_unique<DX12CubeMap>(args);
 }
 
-inline kBool DX12Renderer::createVertexBuffer(const void* data, Dx12VertexBufferHandle& dst, kUint32 sizeofElem, kUint32 count)
+inline nbBool DX12Renderer::createVertexBuffer(const void* data, Dx12VertexBufferHandle& dst, nbUint32 sizeofElem, nbUint32 count)
 {
 	ArrayBufferResource resourceData = createArrayBufferRecource(data, sizeofElem, count);
 	if (resourceData.bufferSize == 0u || resourceData.buffer == nullptr)
@@ -216,18 +216,18 @@ inline void DX12Renderer::createRGBATexture2D(const Texture::RGBAImage* image, D
 	createRGBATexture2DArray({ image }, image->getWidth(), image->getHeight(), D3D12_SRV_DIMENSION_TEXTURE2D, dst);
 }
 
-inline kBool DX12Renderer::releaseTexture(const Dx12TextureHandle& textureHandle) const
+inline nbBool DX12Renderer::releaseTexture(const Dx12TextureHandle& textureHandle) const
 {
 	m_cbs_srv_uavAllocator->release(textureHandle.descriptorHandle);
 	return textureHandle.buffer->Release();
 }
 
-inline kBool DX12Renderer::releaseVertexBuffer(const Dx12VertexBufferHandle& arrayBufferHandle) const
+inline nbBool DX12Renderer::releaseVertexBuffer(const Dx12VertexBufferHandle& arrayBufferHandle) const
 {
 	return arrayBufferHandle.buffer->Release();
 }
 
-inline kBool DX12Renderer::releaseIndexBuffer(const Dx12IndexBufferHandle& arrayBufferHandle) const
+inline nbBool DX12Renderer::releaseIndexBuffer(const Dx12IndexBufferHandle& arrayBufferHandle) const
 {
 	return arrayBufferHandle.buffer->Release();
 }

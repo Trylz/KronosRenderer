@@ -16,10 +16,10 @@ namespace Graphics { namespace Renderer { namespace Offline { namespace Integrat
 		const auto mesh = info.object;
 		const auto P = ray.getPoint(info.meshIntersectData.packetIntersectionResult.t);
 
-		const kInt32 trianglePacketIdx = info.meshIntersectData.trianglePacketIdx;
-		const kInt32 packedInternalIdx = info.meshIntersectData.packetIntersectionResult.triIdx;
+		const nbInt32 trianglePacketIdx = info.meshIntersectData.trianglePacketIdx;
+		const nbInt32 packedInternalIdx = info.meshIntersectData.packetIntersectionResult.triIdx;
 
-		const kUint32 triStartIdx = (KRONOS_INTRINSICS_NB_FLOAT * trianglePacketIdx + packedInternalIdx) * KRONOS_PRIMITIVE_NB_VTX;
+		const nbUint32 triStartIdx = (KRONOS_INTRINSICS_NB_FLOAT * trianglePacketIdx + packedInternalIdx) * KRONOS_PRIMITIVE_NB_VTX;
 
 		const auto& v1 = mesh->m_vertices[mesh->m_indices[triStartIdx]];
 		const auto& v2 = mesh->m_vertices[mesh->m_indices[triStartIdx + 1]];
@@ -28,21 +28,21 @@ namespace Graphics { namespace Renderer { namespace Offline { namespace Integrat
 		// Compute barycentric interpolation weights
 		//see <-- https://en.wikibooks.org/wiki/GLSL_Programming/Rasterization ->
 		const auto& packedTriangles = mesh->m_trianglePackets[trianglePacketIdx];
-		const kFloat32 alpha1 = 0.5f * glm::length(glm::cross(v2.position - P, v3.position - P)) * packedTriangles.invArea[packedInternalIdx];
-		const kFloat32 alpha2 = 0.5f * glm::length(glm::cross(v1.position - P, v3.position - P)) * packedTriangles.invArea[packedInternalIdx];
-		const kFloat32 alpha3 = 0.5f * glm::length(glm::cross(v1.position - P, v2.position - P)) * packedTriangles.invArea[packedInternalIdx];
+		const nbFloat32 alpha1 = 0.5f * glm::length(glm::cross(v2.position - P, v3.position - P)) * packedTriangles.invArea[packedInternalIdx];
+		const nbFloat32 alpha2 = 0.5f * glm::length(glm::cross(v1.position - P, v3.position - P)) * packedTriangles.invArea[packedInternalIdx];
+		const nbFloat32 alpha3 = 0.5f * glm::length(glm::cross(v1.position - P, v2.position - P)) * packedTriangles.invArea[packedInternalIdx];
 
 		// Texture coordinates
 		auto texCoord = (v1.texCoord * alpha1) + (v2.texCoord * alpha2) + (v3.texCoord * alpha3);
 		texCoord.s = std::abs(texCoord.s);
 		texCoord.t = std::abs(texCoord.t);
 
-		kFloat64 dummy;
+		nbFloat64 dummy;
 		if (texCoord.s > 1.0f)
-			texCoord.s = (kFloat32)std::modf(texCoord.s, &dummy);
+			texCoord.s = (nbFloat32)std::modf(texCoord.s, &dummy);
 
 		if (texCoord.t > 1.0f)
-			texCoord.t = (kFloat32)std::modf(texCoord.t, &dummy);
+			texCoord.t = (nbFloat32)std::modf(texCoord.t, &dummy);
 
 		// Eye vector
 		auto V = -ray.m_direction;

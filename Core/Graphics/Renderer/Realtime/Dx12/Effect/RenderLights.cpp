@@ -30,14 +30,14 @@ RenderLights::RenderLights(const DXGI_SAMPLE_DESC& sampleDesc)
 	initVertexAndIndexBuffer();
 	initTextures();
 
-	for (kInt32 i = 0; i < swapChainBufferCount; ++i)
+	for (nbInt32 i = 0; i < swapChainBufferCount; ++i)
 		m_vShaderCenterCBUploadHeaps[i] = nullptr;
 }
 
 RenderLights::~RenderLights()
 {
 	// Heaps
-	for (kInt32 i = 0; i < swapChainBufferCount; ++i)
+	for (nbInt32 i = 0; i < swapChainBufferCount; ++i)
 	{
 		if (m_vShaderCenterCBUploadHeaps[i])
 			m_vShaderCenterCBUploadHeaps[i]->Release();
@@ -70,7 +70,7 @@ void RenderLights::initRootSignature()
 	rootCBVDescriptor.RegisterSpace = 0;
 
 	// 0 & 1 : vertex shader constant buffers
-	kInt32 paramIdx;
+	nbInt32 paramIdx;
 	for (paramIdx = 0; paramIdx < 2; ++paramIdx)
 	{
 		rootCBVDescriptor.ShaderRegister = paramIdx;
@@ -151,7 +151,7 @@ void RenderLights::initPipelineStateObjects()
 
 void RenderLights::initVertexShaderSharedCB()
 {
-	for (kInt32 i = 0; i < swapChainBufferCount; ++i)
+	for (nbInt32 i = 0; i < swapChainBufferCount; ++i)
 	{
 		HRESULT hr = D3d12Device->CreateCommittedResource(
 			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
@@ -176,9 +176,9 @@ void RenderLights::initVertexShaderCenterCB(const Scene::BaseScene& scene)
 		return;
 
 	const auto& lights = scene.getLights();
-	const kUint32 nbLights = (kUint32)lights.size();
+	const nbUint32 nbLights = (nbUint32)lights.size();
 
-	for (kInt32 i = 0; i < swapChainBufferCount; ++i)
+	for (nbInt32 i = 0; i < swapChainBufferCount; ++i)
 	{
 		if (m_vShaderCenterCBUploadHeaps[i])
 			m_vShaderCenterCBUploadHeaps[i]->Release();
@@ -237,9 +237,9 @@ void RenderLights::initTextures()
 	initTexture(Point, KRONOS_CORE_FOLDER + "Resource/omniLight.jpg");
 }
 
-void RenderLights::updateVertexShaderCenterCB(struct RenderLightsPushArgs& data, kInt32 frameIndex)
+void RenderLights::updateVertexShaderCenterCB(struct RenderLightsPushArgs& data, nbInt32 frameIndex)
 {
-	kInt32 i = 0;
+	nbInt32 i = 0;
 	for (auto& light : data.scene.getLights())
 	{
 		const glm::vec3& lightPos = light.second->getPosition();
@@ -248,14 +248,14 @@ void RenderLights::updateVertexShaderCenterCB(struct RenderLightsPushArgs& data,
 		VertexShaderCenterCB buffer;
 		buffer.centerCameraSpace = { centerCameraSpace.x, centerCameraSpace.y, centerCameraSpace.z, 1.0f};
 
-		kUint64 posInCB = i * VtxShaderCenterCBAlignedSize;
+		nbUint64 posInCB = i * VtxShaderCenterCBAlignedSize;
 		memcpy(m_vShaderCenterCBGPUAddress[frameIndex] + posInCB, &buffer, sizeof(VertexShaderCenterCB));
 
 		++i;
 	}
 }
 
-void RenderLights::updateVertexShaderSharedCB(RenderLightsPushArgs& data, kInt32 frameIndex)
+void RenderLights::updateVertexShaderSharedCB(RenderLightsPushArgs& data, nbInt32 frameIndex)
 {
 	auto projMatrix = data.scene.getCamera()->getDirectXPerspectiveMatrix();
 	projMatrix = XMMatrixTranspose(projMatrix);
@@ -267,7 +267,7 @@ void RenderLights::updateVertexShaderSharedCB(RenderLightsPushArgs& data, kInt32
 	memcpy(m_vShaderSharedCBGPUAddress[frameIndex], &vertexShaderCB, sizeof(VertexShaderSharedCB));
 }
 
-void RenderLights::pushDrawCommands(RenderLightsPushArgs& data, ID3D12GraphicsCommandList* commandList, kInt32 frameIndex)
+void RenderLights::pushDrawCommands(RenderLightsPushArgs& data, ID3D12GraphicsCommandList* commandList, nbInt32 frameIndex)
 {
 	using Graphics::Light::LightType;
 
@@ -280,7 +280,7 @@ void RenderLights::pushDrawCommands(RenderLightsPushArgs& data, ID3D12GraphicsCo
 
 	commandList->SetGraphicsRootConstantBufferView(0, m_vShaderSharedCBUploadHeaps[frameIndex]->GetGPUVirtualAddress());
 
-	kInt32 i = 0;
+	nbInt32 i = 0;
 	for (auto& lightIter : data.scene.getLights())
 	{
 		commandList->SetGraphicsRootConstantBufferView(1, i * VtxShaderCenterCBAlignedSize + m_vShaderCenterCBUploadHeaps[frameIndex]->GetGPUVirtualAddress());

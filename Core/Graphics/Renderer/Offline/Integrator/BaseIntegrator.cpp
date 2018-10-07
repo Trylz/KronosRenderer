@@ -10,5 +10,5 @@
 
 namespace Graphics { namespace Renderer { namespace Offline { namespace Integrator
 {
-	Math::Generator::RandomNumberGenerator<kFloat32> BaseIntegrator::s_nbGenerator;
+	Math::Generator::RandomNumberGenerator<nbFloat32> BaseIntegrator::s_nbGenerator;
 }}}}

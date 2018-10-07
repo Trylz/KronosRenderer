@@ -13,7 +13,7 @@ namespace Graphics { namespace Renderer { namespace Offline { namespace Integrat
 {
 struct AOIntegrator : public BaseIntegrator
 {
-	static kFloat32 sample(const Intersector::BaseIntersectorPtr& intersector,
+	static nbFloat32 sample(const Intersector::BaseIntersectorPtr& intersector,
 		const IntersectionProperties& isectProps);
 };
 }}}}

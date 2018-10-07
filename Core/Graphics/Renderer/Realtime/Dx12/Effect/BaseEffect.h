@@ -36,7 +36,7 @@ public:
 
 	virtual ~BaseEffect() {}
 
-	virtual void pushDrawCommands(DataToProcessType data, ID3D12GraphicsCommandList* commandList, kInt32 frameIndex) = 0;
+	virtual void pushDrawCommands(DataToProcessType data, ID3D12GraphicsCommandList* commandList, nbInt32 frameIndex) = 0;
 
 protected:
 	using PipelineStatePtr = CComPtr<ID3D12PipelineState>;
@@ -44,7 +44,7 @@ protected:
 	void createRootSignature(const D3D12_ROOT_PARAMETER* rootParams, UINT nbParams);
 
 	ID3DBlob* compileShader(const std::wstring& shaderPath,
-		kBool isVertexShader,
+		nbBool isVertexShader,
 		const D3D_SHADER_MACRO* macros = nullptr);
 
 	void compilePipeline(PipelineStatePtr& pipelineState,
@@ -113,7 +113,7 @@ void BaseEffect<DataToProcessType>::createRootSignature(const D3D12_ROOT_PARAMET
 }
 
 template <typename DataToProcessType>
-ID3DBlob* BaseEffect<DataToProcessType>::compileShader(const std::wstring& shaderPath, kBool isVertexShader, const D3D_SHADER_MACRO* macros)
+ID3DBlob* BaseEffect<DataToProcessType>::compileShader(const std::wstring& shaderPath, nbBool isVertexShader, const D3D_SHADER_MACRO* macros)
 {
 #if defined(_DEBUG)
 	UINT compileFlags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;

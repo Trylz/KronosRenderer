@@ -24,31 +24,31 @@ namespace Graphics { namespace Renderer { namespace Offline { namespace Integrat
 		const MediaSettings& mediaSettings = media->getSettings();
 
 		const glm::vec3 direction = endPt - startPt;
-		const kFloat32 dirLength = glm::length(direction);
+		const nbFloat32 dirLength = glm::length(direction);
 
-		kUint32 nbSamples = mediaSettings.m_nbSamples;
+		nbUint32 nbSamples = mediaSettings.m_nbSamples;
 		if (mediaSettings.m_dynamicNbSamples)
 		{
 			// Compute dynamic nb samples based on line size.
-			const kFloat32 sceneSize = glm::length(scene->getModel()->getBounds().getSize());
-			const kFloat32 lengthOverSceneSize = dirLength / sceneSize;
+			const nbFloat32 sceneSize = glm::length(scene->getModel()->getBounds().getSize());
+			const nbFloat32 lengthOverSceneSize = dirLength / sceneSize;
 
-			nbSamples = (kUint32)(nbSamples * lengthOverSceneSize);
+			nbSamples = (nbUint32)(nbSamples * lengthOverSceneSize);
 		}
 
 		RGBSpectrum accInRadiance;
 		{
 			// Accumulated in-scattering radiance
-			const glm::vec3 step = direction / (kFloat32)nbSamples;
+			const glm::vec3 step = direction / (nbFloat32)nbSamples;
 
-			//const kFloat32 stepSize = dirLength / nbSamples;
-			//const kFloat32 segmentTransmittance = std::exp2f(-stepSize * media->getExtinctionCoeff());
-			//const kFloat32 scatteringTransmitance = segmentTransmittance * mediaSettings.m_scatteringCoeff;
+			//const nbFloat32 stepSize = dirLength / nbSamples;
+			//const nbFloat32 segmentTransmittance = std::exp2f(-stepSize * media->getExtinctionCoeff());
+			//const nbFloat32 scatteringTransmitance = segmentTransmittance * mediaSettings.m_scatteringCoeff;
 
 			std::vector<glm::vec3> indirectSamples(2);
 			glm::vec3 currentPt = startPt;
 
-			for (kUint32 i = 0u; i < nbSamples; ++i, currentPt += step)
+			for (nbUint32 i = 0u; i < nbSamples; ++i, currentPt += step)
 			{
 				RGBSpectrum directRadiance;
 				{
@@ -60,11 +60,11 @@ namespace Graphics { namespace Renderer { namespace Offline { namespace Integrat
 							continue;
 
 						const Math::Ray sRay(currentPt, sampleToLight.L, sampleToLight.length);
-						const kFloat32 occlusionStrength = intersector->occlusion(sRay);
+						const nbFloat32 occlusionStrength = intersector->occlusion(sRay);
 
 						if (occlusionStrength != 1.0f)
 						{
-							kFloat32 phase = media->sample(direction, sampleToLight.L);
+							nbFloat32 phase = media->sample(direction, sampleToLight.L);
 							directRadiance += phase *
 								lightIter.second->getFinalColor() *
 								(1.0f - occlusionStrength);
@@ -77,8 +77,8 @@ namespace Graphics { namespace Renderer { namespace Offline { namespace Integrat
 				{
 					// Compute indirect contributions.
 					// Compute two samples. One randomly chosen and its opposite.
-					const kFloat32 r1 = s_nbGenerator.generateSignedNormalized();
-					const kFloat32 r2 = s_nbGenerator.generateUnsignedNormalized();
+					const nbFloat32 r1 = s_nbGenerator.generateSignedNormalized();
+					const nbFloat32 r2 = s_nbGenerator.generateUnsignedNormalized();
 
 					indirectSamples[0] = Math::uniformSphericalSample(r1, r2);
 					indirectSamples[1] = -indirectSamples[0];
@@ -105,7 +105,7 @@ namespace Graphics { namespace Renderer { namespace Offline { namespace Integrat
 						}
 						else if (auto& cubeMap = scene->getCubeMap())
 						{
-							kFloat32 phase = media->sample(direction, sample);
+							nbFloat32 phase = media->sample(direction, sample);
 							indirectRadiance += phase * glm::swizzle<glm::X, glm::Y, glm::Z>(
 									cubeMap->sample(ray)
 								);
@@ -120,7 +120,7 @@ namespace Graphics { namespace Renderer { namespace Offline { namespace Integrat
 		}
 
 		// Reduced surface radiance
-		const kFloat32 transmittance = std::exp2f(-dirLength * media->getExtinctionCoeff());
+		const nbFloat32 transmittance = std::exp2f(-dirLength * media->getExtinctionCoeff());
 
 		const RGBSpectrum reducedRadiance = inRadiance * transmittance;
 

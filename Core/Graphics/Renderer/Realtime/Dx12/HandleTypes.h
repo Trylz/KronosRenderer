@@ -54,7 +54,7 @@ namespace Graphics { namespace Renderer { namespace Realtime { namespace Dx12
 		inline const D3D12_DESCRIPTOR_HEAP_TYPE& getDescriptorType() const { return m_descType;}
 		inline const Block& getBlock() const { return m_block;}
 
-		inline kBool isEmpty() const { return m_block.count == 0u; }
+		inline nbBool isEmpty() const { return m_block.count == 0u; }
 
 	private:
 		CD3DX12_CPU_DESCRIPTOR_HANDLE m_cpuHandle;

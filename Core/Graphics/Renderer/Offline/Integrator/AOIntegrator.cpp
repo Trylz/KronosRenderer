@@ -11,15 +11,15 @@
 
 namespace Graphics { namespace Renderer { namespace Offline { namespace Integrator
 {
-	kFloat32 AOIntegrator::sample(const Intersector::BaseIntersectorPtr& intersector,
+	nbFloat32 AOIntegrator::sample(const Intersector::BaseIntersectorPtr& intersector,
 		const IntersectionProperties& isectProps)
 	{
 		// Perform one ao sample
-		const kFloat32 r1 = s_nbGenerator.generateSignedNormalized();
-		const kFloat32 r2 = s_nbGenerator.generateUnsignedNormalized();
+		const nbFloat32 r1 = s_nbGenerator.generateSignedNormalized();
+		const nbFloat32 r2 = s_nbGenerator.generateUnsignedNormalized();
 		glm::vec3 aoSample = Math::uniformSphericalSample(r1, r2);
 
-		kFloat32 NoL = glm::dot(isectProps.N, aoSample);
+		nbFloat32 NoL = glm::dot(isectProps.N, aoSample);
 		if (NoL < 0.0f)
 		{
 			NoL *= -1.0f;
@@ -27,7 +27,7 @@ namespace Graphics { namespace Renderer { namespace Offline { namespace Integrat
 		}
 
 		Math::Ray aoRay(isectProps.deltaP, aoSample);
-		kFloat32 occlusionStrength = intersector->occlusion(aoRay);
+		nbFloat32 occlusionStrength = intersector->occlusion(aoRay);
 
 		return (1.0f - occlusionStrength) * NoL;
 	}

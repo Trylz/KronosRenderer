@@ -19,7 +19,7 @@ using namespace Descriptor;
 #define MSAA_SAMPLES 4
 #define SWAP_CHAIN_FORMAT DXGI_FORMAT_R8G8B8A8_UNORM
 
-kBool DX12Renderer::init(const InitArgs& args)
+nbBool DX12Renderer::init(const InitArgs& args)
 {
 	m_hwindow = args.hwnd;
 
@@ -117,7 +117,7 @@ kBool DX12Renderer::init(const InitArgs& args)
 void DX12Renderer::finishTasks()
 {
 	// wait for the gpu to finish all frames
-	for (kInt32 i = 0; i < swapChainBufferCount; ++i)
+	for (nbInt32 i = 0; i < swapChainBufferCount; ++i)
 	{
 		m_frameIndex = i;
 		waitCurrentBackBufferCommandsFinish();
@@ -139,7 +139,7 @@ void DX12Renderer::release()
 	releaseSwapChainDynamicResources();
 }
 
-kBool DX12Renderer::createDevice(IDXGIFactory4* m_dxgiFactory)
+nbBool DX12Renderer::createDevice(IDXGIFactory4* m_dxgiFactory)
 {
 #if defined(_DEBUG)
 	//Enable the debug layer
@@ -156,10 +156,10 @@ kBool DX12Renderer::createDevice(IDXGIFactory4* m_dxgiFactory)
 	IDXGIAdapter1* adapter;
 
 	// we'll start looking for directx 12 compatible graphics devices starting at index 0
-	kInt32 adapterIndex = 0;
+	nbInt32 adapterIndex = 0;
 
 	// set this to true when a good one was found
-	kBool adapterFound = false;
+	nbBool adapterFound = false;
 
 	// find first hardware gpu that supports d3d 12
 	while (m_dxgiFactory->EnumAdapters1(adapterIndex, &adapter) != DXGI_ERROR_NOT_FOUND)
@@ -204,7 +204,7 @@ kBool DX12Renderer::createDevice(IDXGIFactory4* m_dxgiFactory)
 	return true;
 }
 
-kBool DX12Renderer::createDirectCommandQueue()
+nbBool DX12Renderer::createDirectCommandQueue()
 {
 	D3D12_COMMAND_QUEUE_DESC cqDesc = {};
 	cqDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
@@ -220,7 +220,7 @@ kBool DX12Renderer::createDirectCommandQueue()
 	return true;
 }
 
-kBool DX12Renderer::createSwapChain(IDXGIFactory4* m_dxgiFactory, const glm::uvec2& bufferSize)
+nbBool DX12Renderer::createSwapChain(IDXGIFactory4* m_dxgiFactory, const glm::uvec2& bufferSize)
 {
 	DXGI_MODE_DESC backBufferDesc = {}; // this is to describe our display mode
 	backBufferDesc.Width = bufferSize.x; // buffer width
@@ -257,10 +257,10 @@ kBool DX12Renderer::createSwapChain(IDXGIFactory4* m_dxgiFactory, const glm::uve
 	return true;
 }
 
-kBool DX12Renderer::bindSwapChainRenderTargets()
+nbBool DX12Renderer::bindSwapChainRenderTargets()
 {
 	// Create a RTV for each buffer (double buffering is two buffers, tripple buffering is 3).
-	for (kInt32 i = 0; i < swapChainBufferCount; i++)
+	for (nbInt32 i = 0; i < swapChainBufferCount; i++)
 	{
 		// first we get the n'th buffer in the swap chain and store it in the n'th
 		// position of our ID3D12Resource array
@@ -274,9 +274,9 @@ kBool DX12Renderer::bindSwapChainRenderTargets()
 	return true;
 }
 
-kBool DX12Renderer::createDirectCommandAllocators()
+nbBool DX12Renderer::createDirectCommandAllocators()
 {
-	for (kInt32 i = 0; i < swapChainBufferCount; i++)
+	for (nbInt32 i = 0; i < swapChainBufferCount; i++)
 	{
 		HRESULT hr = m_device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_commandAllocator[i]));
 		if (FAILED(hr))
@@ -288,7 +288,7 @@ kBool DX12Renderer::createDirectCommandAllocators()
 	return true;
 }
 
-kBool DX12Renderer::createDirectCommandList()
+nbBool DX12Renderer::createDirectCommandList()
 {
 	// create the command list with the first allocator
 	HRESULT hr = m_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_commandAllocator[m_frameIndex], NULL, IID_PPV_ARGS(&m_commandList));
@@ -303,12 +303,12 @@ kBool DX12Renderer::createDirectCommandList()
 	return true;
 }
 
-kBool DX12Renderer::createFencesAndFenceEvent()
+nbBool DX12Renderer::createFencesAndFenceEvent()
 {
 	HRESULT hr;
 
 	// create the fences
-	for (kInt32 i = 0; i < swapChainBufferCount; i++)
+	for (nbInt32 i = 0; i < swapChainBufferCount; i++)
 	{
 		hr = m_device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&m_fence[i]));
 		if (FAILED(hr))
@@ -330,7 +330,7 @@ kBool DX12Renderer::createFencesAndFenceEvent()
 	return true;
 }
 
-kBool DX12Renderer::createMSAARenderTarget(const glm::uvec2& bufferSize)
+nbBool DX12Renderer::createMSAARenderTarget(const glm::uvec2& bufferSize)
 {
 	D3D12_RESOURCE_DESC resDesc = CD3DX12_RESOURCE_DESC::Tex2D(
 		SWAP_CHAIN_FORMAT,
@@ -345,8 +345,8 @@ kBool DX12Renderer::createMSAARenderTarget(const glm::uvec2& bufferSize)
 	D3D12_CLEAR_VALUE msaaOptimizedClearValue = {};
 	msaaOptimizedClearValue.Format = SWAP_CHAIN_FORMAT;
 
-	const kFloat32 clearColor[] = { 0.0f, 0.0f, 0.0f, 1.0f };
-	memcpy(msaaOptimizedClearValue.Color, clearColor, sizeof(kFloat32) * 4);
+	const nbFloat32 clearColor[] = { 0.0f, 0.0f, 0.0f, 1.0f };
+	memcpy(msaaOptimizedClearValue.Color, clearColor, sizeof(nbFloat32) * 4);
 
 	HRESULT hr = m_device->CreateCommittedResource(
 		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
@@ -367,7 +367,7 @@ kBool DX12Renderer::createMSAARenderTarget(const glm::uvec2& bufferSize)
 	return true;
 }
 
-kBool DX12Renderer::createDepthStencilBuffer(const glm::uvec2& bufferSize)
+nbBool DX12Renderer::createDepthStencilBuffer(const glm::uvec2& bufferSize)
 {
 	const DXGI_FORMAT format = Effect::defaultDSFormat;
 
@@ -425,7 +425,7 @@ void DX12Renderer::releaseSwapChainDynamicResources()
 	KRONOS_ASSERT(m_msaaRenderTarget);
 	m_msaaRenderTarget->Release();
 
-	for (kInt32 i = 0; i < swapChainBufferCount; i++)
+	for (nbInt32 i = 0; i < swapChainBufferCount; i++)
 	{
 		m_renderTargets[i]->Release();
 	}
@@ -452,8 +452,8 @@ void DX12Renderer::resizeBuffers(const glm::uvec2& newSize)
 
 void DX12Renderer::createRGBATexture2DArray(const std::vector<const Texture::RGBAImage*>& images, Dx12TextureHandle& dst)
 {
-	const kUint32 width = images[0]->getWidth();
-	const kUint32 height = images[0]->getHeight();
+	const nbUint32 width = images[0]->getWidth();
+	const nbUint32 height = images[0]->getHeight();
 
 	if (width != height)
 		throw CreateTextureException("Images width and height must be the same.");
@@ -480,9 +480,9 @@ void DX12Renderer::createRGBATexture2DArray(const std::vector<const Texture::RGB
 	createRGBATexture2DArray(images, width, height, D3D12_SRV_DIMENSION_TEXTURECUBE, dst);
 }
 
-void DX12Renderer::createRGBATexture2DArray(const std::vector<const Texture::RGBAImage*>& images, kUint32 width, kUint32 height, D3D12_SRV_DIMENSION viewDimension, Dx12TextureHandle& dst)
+void DX12Renderer::createRGBATexture2DArray(const std::vector<const Texture::RGBAImage*>& images, nbUint32 width, nbUint32 height, D3D12_SRV_DIMENSION viewDimension, Dx12TextureHandle& dst)
 {
-	const kUint32 arraySize = (kUint32)images.size();
+	const nbUint32 arraySize = (nbUint32)images.size();
 	KRONOS_ASSERT(arraySize < D3D12_REQ_TEXTURE2D_ARRAY_AXIS_DIMENSION);
 
 	D3D12_RESOURCE_DESC textureDesc = {};
@@ -549,7 +549,7 @@ void DX12Renderer::createRGBATexture2DArray(const std::vector<const Texture::RGB
 
 	// Initialize subresources
 	std::vector<D3D12_SUBRESOURCE_DATA> subResourceData(arraySize);
-	for (kUint32 i = 0u; i < arraySize; ++i)
+	for (nbUint32 i = 0u; i < arraySize; ++i)
 	{
 		subResourceData[i].pData = images[i]->getRawData();
 		subResourceData[i].RowPitch = images[i]->getBytesPerRow();
@@ -572,9 +572,9 @@ void DX12Renderer::createRGBATexture2DArray(const std::vector<const Texture::RGB
 	dst.descriptorHandle = m_cbs_srv_uavAllocator->allocate({ dst.buffer }, srvDesc);
 }
 
-kBool DX12Renderer::createIndexBuffer(const std::vector<kUint32>& data, Dx12IndexBufferHandle& dst)
+nbBool DX12Renderer::createIndexBuffer(const std::vector<nbUint32>& data, Dx12IndexBufferHandle& dst)
 {
-	ArrayBufferResource resourceData = createArrayBufferRecource(data.data(), sizeof(kUint32), (kUint32)data.size());
+	ArrayBufferResource resourceData = createArrayBufferRecource(data.data(), sizeof(nbUint32), (nbUint32)data.size());
 	if (resourceData.bufferSize == 0u || resourceData.buffer == nullptr)
 	{
 		return false;
@@ -588,7 +588,7 @@ kBool DX12Renderer::createIndexBuffer(const std::vector<kUint32>& data, Dx12Inde
 	return true;
 }
 
-DX12Renderer::ArrayBufferResource DX12Renderer::createArrayBufferRecource(const void* data, kUint32 sizeofElem, kUint32 count)
+DX12Renderer::ArrayBufferResource DX12Renderer::createArrayBufferRecource(const void* data, nbUint32 sizeofElem, nbUint32 count)
 {
 	ArrayBufferResource retData;
 
@@ -705,7 +705,7 @@ void DX12Renderer::drawScene(const Scene::BaseScene& scene)
 	m_commandList->OMSetRenderTargets(1, &rtvHandle, FALSE, &m_dsvDescriptorsHandle.getCpuHandle());
 
 	// Clear the render target
-	const kFloat32 clearColor[] = { 0.0f, 0.0f, 0.0f, 1.0f };
+	const nbFloat32 clearColor[] = { 0.0f, 0.0f, 0.0f, 1.0f };
 	m_commandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
 
 	// clear the depth/stencil buffer

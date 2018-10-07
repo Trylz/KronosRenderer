@@ -28,7 +28,7 @@ class CubeMapping : public BaseEffect<CubeMappingPushArgs&>
 {
 public:
 	CubeMapping(const DXGI_SAMPLE_DESC& sampleDesc);
-	void pushDrawCommands(CubeMappingPushArgs& data, ID3D12GraphicsCommandList* commandList, kInt32 frameIndex) override;
+	void pushDrawCommands(CubeMappingPushArgs& data, ID3D12GraphicsCommandList* commandList, nbInt32 frameIndex) override;
 
 private:
 	KRONOS_DX12_ATTRIBUTE_ALIGN struct VertexShaderCB
@@ -40,7 +40,7 @@ private:
 	void initRootSignature() override;
 	void initPipelineStateObjects() override;
 	void initVertexShaderCB();
-	void updateVertexShaderCB(CubeMappingPushArgs& data, kInt32 frameIndex);
+	void updateVertexShaderCB(CubeMappingPushArgs& data, nbInt32 frameIndex);
 
 	PipelineStatePtr m_PSO;
 
