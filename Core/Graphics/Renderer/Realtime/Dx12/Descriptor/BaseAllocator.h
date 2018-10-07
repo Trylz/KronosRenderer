@@ -85,11 +85,11 @@ inline ID3D12DescriptorHeap* BaseAllocator<descType, pageSize>::getHeap()
 template <D3D12_DESCRIPTOR_HEAP_TYPE descType, UINT pageSize>
 inline void BaseAllocator<descType, pageSize>::release(const DescriptorHandle& handle)
 {
-	KRONOS_ASSERT(handle.getDescriptorType() == descType);
+	NEBULA_ASSERT(handle.getDescriptorType() == descType);
 
 	const Block& block = handle.getBlock();
-	KRONOS_ASSERT(block.count > 0u);
-	KRONOS_ASSERT(block.start + block.count <= m_count);
+	NEBULA_ASSERT(block.count > 0u);
+	NEBULA_ASSERT(block.start + block.count <= m_count);
 
 	m_freeBlocks.push_back(block);
 }
@@ -127,7 +127,7 @@ template <D3D12_DESCRIPTOR_HEAP_TYPE descType, UINT pageSize>
 inline DescriptorHandle BaseAllocator<descType, pageSize>::createResourceViews(const ResourceArray& resources, const createViewInHeapFunc& createFunc)
 {
 	const UINT resCount = (UINT)resources.size();
-	KRONOS_ASSERT(resCount > 0u);
+	NEBULA_ASSERT(resCount > 0u);
 
 	CD3DX12_CPU_DESCRIPTOR_HANDLE cpuHandle;
 	CD3DX12_GPU_DESCRIPTOR_HANDLE gpuHandle;
@@ -196,7 +196,7 @@ inline void BaseAllocator<descType, pageSize>::createHeap(ID3D12DescriptorHeap**
 		heapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 
 	HRESULT hr = m_device->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(buffer));
-	KRONOS_ASSERT(SUCCEEDED(hr));
+	NEBULA_ASSERT(SUCCEEDED(hr));
 }
 
 template <D3D12_DESCRIPTOR_HEAP_TYPE descType, UINT pageSize>
@@ -204,7 +204,7 @@ inline void BaseAllocator<descType, pageSize>::increaseCapacity(UINT additionalC
 {
 	// Copying descriptor is currently not possible with a shader visible source.
 	// These heaps must only have one page that is large enough.
-	KRONOS_ASSERT(descType != D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+	NEBULA_ASSERT(descType != D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
 	nbUint32 nbPages = additionalCount / pageSize;
 	if (additionalCount % pageSize)

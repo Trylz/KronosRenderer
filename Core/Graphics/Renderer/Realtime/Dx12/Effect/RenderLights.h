@@ -31,13 +31,13 @@ public:
 	void pushDrawCommands(RenderLightsPushArgs& data, ID3D12GraphicsCommandList* commandList, nbInt32 frameIndex) override;
 
 private:
-	KRONOS_DX12_ATTRIBUTE_ALIGN struct VertexShaderSharedCB
+	NEBULA_DX12_ATTRIBUTE_ALIGN struct VertexShaderSharedCB
 	{
 		DirectX::XMFLOAT4X4 projMatrix;
 		FLOAT billboardScale;
 	};
 
-	KRONOS_DX12_ATTRIBUTE_ALIGN struct VertexShaderCenterCB
+	NEBULA_DX12_ATTRIBUTE_ALIGN struct VertexShaderCenterCB
 	{
 		DirectX::XMFLOAT4 centerCameraSpace;
 	};

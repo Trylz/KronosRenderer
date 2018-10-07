@@ -31,7 +31,7 @@ public:
 	void pushDrawCommands(CubeMappingPushArgs& data, ID3D12GraphicsCommandList* commandList, nbInt32 frameIndex) override;
 
 private:
-	KRONOS_DX12_ATTRIBUTE_ALIGN struct VertexShaderCB
+	NEBULA_DX12_ATTRIBUTE_ALIGN struct VertexShaderCB
 	{
 		DirectX::XMFLOAT4X4 wvpMat;
 		DirectX::XMFLOAT3 cubeMapCenter;

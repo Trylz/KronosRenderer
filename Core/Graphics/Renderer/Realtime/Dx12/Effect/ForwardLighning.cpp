@@ -228,14 +228,14 @@ void ForwardLighning::initStaticConstantBuffers()
 			nullptr, // we do not have use an optimized clear value for constant buffers
 			IID_PPV_ARGS(&m_vertexShaderCBUploadHeaps[i]));
 
-		KRONOS_ASSERT(SUCCEEDED(hr));
+		NEBULA_ASSERT(SUCCEEDED(hr));
 
 		m_vertexShaderCBUploadHeaps[i]->SetName(L"Vertex shader Constant Buffer Upload heap");
-		KRONOS_ASSERT(SUCCEEDED(hr));
+		NEBULA_ASSERT(SUCCEEDED(hr));
 
 		// map the resource heap to get a gpu virtual address to the beginning of the heap
 		hr = m_vertexShaderCBUploadHeaps[i]->Map(0, &readRangeGPUOnly, reinterpret_cast<void**>(&m_vertexShaderCBGPUAddress[i]));
-		KRONOS_ASSERT(SUCCEEDED(hr));
+		NEBULA_ASSERT(SUCCEEDED(hr));
 		
 		// 1 : Pixel shader lights constant Buffer Upload Resource Heap
 		hr = D3d12Device->CreateCommittedResource(&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
@@ -245,11 +245,11 @@ void ForwardLighning::initStaticConstantBuffers()
 			nullptr,
 			IID_PPV_ARGS(&m_pixelShaderLightsCBUploadHeaps[i]));
 
-		KRONOS_ASSERT(SUCCEEDED(hr));
+		NEBULA_ASSERT(SUCCEEDED(hr));
 		m_pixelShaderLightsCBUploadHeaps[i]->SetName(L"Pixel shader lights Constant Buffer Upload heap");
 
 		hr = m_pixelShaderLightsCBUploadHeaps[i]->Map(0, &readRangeGPUOnly, reinterpret_cast<void**>(&m_pixelShaderLightsCBGPUAddress[i]));
-		KRONOS_ASSERT(SUCCEEDED(hr));
+		NEBULA_ASSERT(SUCCEEDED(hr));
 	}
 }
 
@@ -284,11 +284,11 @@ void ForwardLighning::initDynamicMaterialConstantBuffer(const Scene::BaseScene& 
 				nullptr,
 				IID_PPV_ARGS(&m_pixelShaderMaterialCBUploadHeaps[i]));
 
-			KRONOS_ASSERT(SUCCEEDED(hr));
+			NEBULA_ASSERT(SUCCEEDED(hr));
 			m_pixelShaderMaterialCBUploadHeaps[i]->SetName(L"Pixel shader material Constant Buffer Upload heap");
 
 			hr = m_pixelShaderMaterialCBUploadHeaps[i]->Map(0, &readRangeGPUOnly, reinterpret_cast<void**>(&m_pixelShaderMaterialCBGPUAddress[i]));
-			KRONOS_ASSERT(SUCCEEDED(hr));
+			NEBULA_ASSERT(SUCCEEDED(hr));
 
 			// Create default heap
 			hr = D3d12Device->CreateCommittedResource(
@@ -299,7 +299,7 @@ void ForwardLighning::initDynamicMaterialConstantBuffer(const Scene::BaseScene& 
 				nullptr,
 				IID_PPV_ARGS(&m_pixelShaderMaterialCBDefaultHeaps[i]));
 
-			KRONOS_ASSERT(SUCCEEDED(hr));
+			NEBULA_ASSERT(SUCCEEDED(hr));
 			m_pixelShaderMaterialCBDefaultHeaps[i]->SetName(L"Pixel shader material Constant Buffer Default Resource heap");
 		}
 	}

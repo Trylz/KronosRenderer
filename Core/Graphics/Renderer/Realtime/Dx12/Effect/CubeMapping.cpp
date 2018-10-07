@@ -88,11 +88,11 @@ void CubeMapping::initVertexShaderCB()
 			nullptr, 
 			IID_PPV_ARGS(&m_vertexShaderCBUploadHeaps[i]));
 
-		KRONOS_ASSERT(SUCCEEDED(hr));
+		NEBULA_ASSERT(SUCCEEDED(hr));
 		m_vertexShaderCBUploadHeaps[i]->SetName(L"CubeMappingEffect : Vertex shader Constant Buffer Upload heap");
 
 		hr = m_vertexShaderCBUploadHeaps[i]->Map(0, &readRangeGPUOnly, reinterpret_cast<void**>(&m_vertexShaderCBGPUAddress[i]));
-		KRONOS_ASSERT(SUCCEEDED(hr));
+		NEBULA_ASSERT(SUCCEEDED(hr));
 	}
 }
 
@@ -112,7 +112,7 @@ void CubeMapping::updateVertexShaderCB(CubeMappingPushArgs& data, nbInt32 frameI
 void CubeMapping::pushDrawCommands(CubeMappingPushArgs& data, ID3D12GraphicsCommandList* commandList, nbInt32 frameIndex)
 {
 	auto& cubeMap = data.scene.getCubeMap();
-	KRONOS_ASSERT(cubeMap);
+	NEBULA_ASSERT(cubeMap);
 
 	commandList->SetPipelineState(m_PSO);
 	commandList->SetGraphicsRootSignature(m_rootSignature);

@@ -161,12 +161,12 @@ void RenderLights::initVertexShaderSharedCB()
 			nullptr,
 			IID_PPV_ARGS(&m_vShaderSharedCBUploadHeaps[i]));
 
-		KRONOS_ASSERT(SUCCEEDED(hr));
+		NEBULA_ASSERT(SUCCEEDED(hr));
 
 		m_vShaderSharedCBUploadHeaps[i]->SetName(L"RenderLightsEffect : Vertex shader static constant Buffer Upload heap");
 
 		hr = m_vShaderSharedCBUploadHeaps[i]->Map(0, &readRangeGPUOnly, reinterpret_cast<void**>(&m_vShaderSharedCBGPUAddress[i]));
-		KRONOS_ASSERT(SUCCEEDED(hr));
+		NEBULA_ASSERT(SUCCEEDED(hr));
 	}
 }
 
@@ -191,21 +191,21 @@ void RenderLights::initVertexShaderCenterCB(const Scene::BaseScene& scene)
 			nullptr,
 			IID_PPV_ARGS(&m_vShaderCenterCBUploadHeaps[i]));
 
-		KRONOS_ASSERT(SUCCEEDED(hr));
+		NEBULA_ASSERT(SUCCEEDED(hr));
 		m_vShaderCenterCBUploadHeaps[i]->SetName(L"RenderLightsEffect : Center Constant Buffer Upload heap");
 
 		hr = m_vShaderCenterCBUploadHeaps[i]->Map(0, &readRangeGPUOnly, reinterpret_cast<void**>(&m_vShaderCenterCBGPUAddress[i]));
-		KRONOS_ASSERT(SUCCEEDED(hr));
+		NEBULA_ASSERT(SUCCEEDED(hr));
 	}
 }
 
 void RenderLights::initVertexAndIndexBuffer()
 {
-	KRONOS_ASSERT(GraphicResourceAllocatorPtr<DX12_GRAPHIC_ALLOC_PARAMETERS>->createVertexBuffer(
+	NEBULA_ASSERT(GraphicResourceAllocatorPtr<DX12_GRAPHIC_ALLOC_PARAMETERS>->createVertexBuffer(
 		Billboard::s_billboardVertices, m_vtxBuffer)
 	);
 
-	KRONOS_ASSERT(GraphicResourceAllocatorPtr<DX12_GRAPHIC_ALLOC_PARAMETERS>->createIndexBuffer(
+	NEBULA_ASSERT(GraphicResourceAllocatorPtr<DX12_GRAPHIC_ALLOC_PARAMETERS>->createIndexBuffer(
 		Billboard::s_billboardIndices, m_idxBuffer)
 	);
 }
@@ -229,12 +229,12 @@ void RenderLights::initTextures()
 		}
 		catch(CreateTextureException)
 		{
-			KRONOS_ASSERT(false);
+			NEBULA_ASSERT(false);
 		}
 	};
 
-	initTexture(Directionnal, KRONOS_CORE_FOLDER + "Resource/dirLight.jpg");
-	initTexture(Point, KRONOS_CORE_FOLDER + "Resource/omniLight.jpg");
+	initTexture(Directionnal, NEBULA_CORE_FOLDER + "Resource/dirLight.jpg");
+	initTexture(Point, NEBULA_CORE_FOLDER + "Resource/omniLight.jpg");
 }
 
 void RenderLights::updateVertexShaderCenterCB(struct RenderLightsPushArgs& data, nbInt32 frameIndex)
@@ -286,7 +286,7 @@ void RenderLights::pushDrawCommands(RenderLightsPushArgs& data, ID3D12GraphicsCo
 		commandList->SetGraphicsRootConstantBufferView(1, i * VtxShaderCenterCBAlignedSize + m_vShaderCenterCBUploadHeaps[frameIndex]->GetGPUVirtualAddress());
 
 		auto tex = m_textures.find(lightIter.second->getType());
-		KRONOS_ASSERT(tex != m_textures.end());
+		NEBULA_ASSERT(tex != m_textures.end());
 
 		if (!tex->second.descriptorHandle.isEmpty())
 		{

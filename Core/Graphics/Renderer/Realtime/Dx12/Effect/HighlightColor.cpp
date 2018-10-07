@@ -120,11 +120,11 @@ void HighlightColor::initVertexShaderCB()
 			nullptr, 
 			IID_PPV_ARGS(&m_vertexShaderCBUploadHeaps[i][j]));
 
-		KRONOS_ASSERT(SUCCEEDED(hr));
+		NEBULA_ASSERT(SUCCEEDED(hr));
 		m_vertexShaderCBUploadHeaps[i][j]->SetName(L"SimpleColorEffect : Vertex shader Constant Buffer Upload heap");
 
 		hr = m_vertexShaderCBUploadHeaps[i][j]->Map(0, &readRangeGPUOnly, reinterpret_cast<void**>(&m_vertexShaderCBGPUAddress[i][j]));
-		KRONOS_ASSERT(SUCCEEDED(hr));
+		NEBULA_ASSERT(SUCCEEDED(hr));
 	}
 }
 
@@ -167,7 +167,7 @@ void HighlightColor::pushDrawCommands(HighlightColorPushArgs& data, ID3D12Graphi
 		const auto& groups = dx12Model->getMeshHandlesByGroup();
 
 		auto group = groups.find(data.selection->m_group);
-		KRONOS_ASSERT(group != groups.end());
+		NEBULA_ASSERT(group != groups.end());
 
 		for (auto* mesh : group->second)
 		{

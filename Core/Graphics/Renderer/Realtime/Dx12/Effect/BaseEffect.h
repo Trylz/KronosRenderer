@@ -11,17 +11,17 @@
 #include "../../SwapChain.h"
 #include "Graphics/Renderer/Realtime/TGraphicResourceAllocator.h"
 
-// KRONOS_DEPLOYMENT_BUILD
+// NEBULA_DEPLOYMENT_BUILD
 #include "Platform.h"
 
 #include <atlbase.h>
 #include <D3Dcompiler.h>
 
-#define KRONOS_DX12_SHADER_BASE_PATH std::wstring(L"Graphics/Renderer/Realtime/Dx12/Effect/Shaders/")
+#define NEBULA_DX12_SHADER_BASE_PATH std::wstring(L"Graphics/Renderer/Realtime/Dx12/Effect/Shaders/")
 
-#define KRONOS_DX12_SHADER_PATH(x) (KRONOS_CORE_FOLDERW + KRONOS_DX12_SHADER_BASE_PATH + x).c_str()
+#define NEBULA_DX12_SHADER_PATH(x) (NEBULA_CORE_FOLDERW + NEBULA_DX12_SHADER_BASE_PATH + x).c_str()
 
-#define KRONOS_DX12_ATTRIBUTE_ALIGN __declspec(align(16))
+#define NEBULA_DX12_ATTRIBUTE_ALIGN __declspec(align(16))
 
 namespace Graphics { namespace Renderer { namespace Realtime { namespace Dx12{ namespace Effect
 {
@@ -103,13 +103,13 @@ void BaseEffect<DataToProcessType>::createRootSignature(const D3D12_ROOT_PARAMET
 	HRESULT hr = D3D12SerializeRootSignature(&rootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1, &signature, &errorBuff);
 	if (FAILED(hr))
 	{
-		KRONOS_TRACE((char*)errorBuff->GetBufferPointer());
-		KRONOS_ASSERT(false);
+		NEBULA_TRACE((char*)errorBuff->GetBufferPointer());
+		NEBULA_ASSERT(false);
 		return;
 	}
 
 	hr = D3d12Device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&m_rootSignature));
-	KRONOS_ASSERT(SUCCEEDED(hr));
+	NEBULA_ASSERT(SUCCEEDED(hr));
 }
 
 template <typename DataToProcessType>
@@ -131,7 +131,7 @@ ID3DBlob* BaseEffect<DataToProcessType>::compileShader(const std::wstring& shade
 	// compile vertex shader
 	ID3DBlob* errorBuff;
 	ID3DBlob* shader; // d3d blob for holding vertex shader bytecode
-	HRESULT hr = D3DCompileFromFile(KRONOS_DX12_SHADER_PATH(shaderPath),
+	HRESULT hr = D3DCompileFromFile(NEBULA_DX12_SHADER_PATH(shaderPath),
 		macros,
 		nullptr,
 		"main",
@@ -142,8 +142,8 @@ ID3DBlob* BaseEffect<DataToProcessType>::compileShader(const std::wstring& shade
 		&errorBuff);
 	if (FAILED(hr))
 	{
-		KRONOS_TRACE((char*)errorBuff->GetBufferPointer());
-		KRONOS_ASSERT(false);
+		NEBULA_TRACE((char*)errorBuff->GetBufferPointer());
+		NEBULA_ASSERT(false);
 
 		return nullptr;
 	}
@@ -204,10 +204,10 @@ void BaseEffect<DataToProcessType>::compilePipeline(PipelineStatePtr& pipelineSt
 	psoDesc.DepthStencilState = depthStencilDesc;
 	psoDesc.DSVFormat = defaultDSFormat;
 
-	// KRONOS_TRACE("BaseEffect::compile - Disabled culling because seems wrong");
+	// NEBULA_TRACE("BaseEffect::compile - Disabled culling because seems wrong");
 
 	// create the pso
 	HRESULT hr = D3d12Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&pipelineState));
-	KRONOS_ASSERT(SUCCEEDED(hr));
+	NEBULA_ASSERT(SUCCEEDED(hr));
 }
 }}}}}

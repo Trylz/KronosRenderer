@@ -28,7 +28,7 @@ public:
 private:
 	static constexpr nbInt32 s_nbPasses = 2;
 
-	KRONOS_DX12_ATTRIBUTE_ALIGN struct VertexShaderCB
+	NEBULA_DX12_ATTRIBUTE_ALIGN struct VertexShaderCB
 	{
 		DirectX::XMFLOAT4X4 wvpMat;
 		DirectX::XMFLOAT3 eyePosition;

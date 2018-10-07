@@ -31,7 +31,7 @@ public:
 	void onUpdateMaterial(const Scene::BaseScene& scene, const MaterialIdentifier& matId, ID3D12GraphicsCommandList* commandList);
 
 private:
-	KRONOS_DX12_ATTRIBUTE_ALIGN struct DX12Light
+	NEBULA_DX12_ATTRIBUTE_ALIGN struct DX12Light
 	{
 		DirectX::XMFLOAT4 position;
 		DirectX::XMFLOAT4 direction;
@@ -41,7 +41,7 @@ private:
 		INT type;
 	};
 
-	KRONOS_DX12_ATTRIBUTE_ALIGN struct DX12Material
+	NEBULA_DX12_ATTRIBUTE_ALIGN struct DX12Material
 	{
 		DirectX::XMFLOAT4 ambient;
 		DirectX::XMFLOAT4 diffuse;

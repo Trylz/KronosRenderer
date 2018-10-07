@@ -24,19 +24,19 @@ nbBool DX12Renderer::init(const InitArgs& args)
 	m_hwindow = args.hwnd;
 
 	RECT rect;
-	KRONOS_ASSERT(GetWindowRect(m_hwindow, &rect) > 0);
+	NEBULA_ASSERT(GetWindowRect(m_hwindow, &rect) > 0);
 	const glm::uvec2 bufferSize(rect.right - rect.left, rect.bottom - rect.top);
 
 	HRESULT hr = CreateDXGIFactory1(IID_PPV_ARGS(&m_dxgiFactory));
 	if (FAILED(hr))
 	{
-		KRONOS_TRACE("DX12Renderer::init - Unable to create device factory");
+		NEBULA_TRACE("DX12Renderer::init - Unable to create device factory");
 		return false;
 	}
 
 	if (!createDevice(m_dxgiFactory))
 	{
-		KRONOS_TRACE("DX12Renderer::init - Unable to create device");
+		NEBULA_TRACE("DX12Renderer::init - Unable to create device");
 		return false;
 	}
 
@@ -47,7 +47,7 @@ nbBool DX12Renderer::init(const InitArgs& args)
 
 	if (!createDirectCommandQueue())
 	{
-		KRONOS_TRACE("DX12Renderer::init - Unable to create direct command queue");
+		NEBULA_TRACE("DX12Renderer::init - Unable to create direct command queue");
 		return false;
 	}
 
@@ -55,19 +55,19 @@ nbBool DX12Renderer::init(const InitArgs& args)
 
 	if (!createSwapChain(m_dxgiFactory, bufferSize))
 	{
-		KRONOS_TRACE("DX12Renderer::init - Unable to create swap chain");
+		NEBULA_TRACE("DX12Renderer::init - Unable to create swap chain");
 		return false;
 	}
 
 	if (!createMSAARenderTarget(bufferSize))
 	{
-		KRONOS_TRACE("DX12Renderer::init - Unable to create msaa render target");
+		NEBULA_TRACE("DX12Renderer::init - Unable to create msaa render target");
 		return false;
 	}
 
 	if (!createDepthStencilBuffer(bufferSize))
 	{
-		KRONOS_TRACE("DX12Renderer::init - Unable to create depth stencil buffer");
+		NEBULA_TRACE("DX12Renderer::init - Unable to create depth stencil buffer");
 		return false;
 	}
 
@@ -75,25 +75,25 @@ nbBool DX12Renderer::init(const InitArgs& args)
 
 	if (!bindSwapChainRenderTargets())
 	{
-		KRONOS_TRACE("DX12Renderer::init - Unable to bind swap shain render targets");
+		NEBULA_TRACE("DX12Renderer::init - Unable to bind swap shain render targets");
 		return false;
 	}
 
 	if (!createDirectCommandAllocators())
 	{
-		KRONOS_TRACE("DX12Renderer::init - Unable to create command allocators");
+		NEBULA_TRACE("DX12Renderer::init - Unable to create command allocators");
 		return false;
 	}
 
 	if (!createDirectCommandList())
 	{
-		KRONOS_TRACE("DX12Renderer::init - Unable to create command list");
+		NEBULA_TRACE("DX12Renderer::init - Unable to create command list");
 		return false;
 	}
 
 	if (!createFencesAndFenceEvent())
 	{
-		KRONOS_TRACE("DX12Renderer::init - Unable to create fence and fence event");
+		NEBULA_TRACE("DX12Renderer::init - Unable to create fence and fence event");
 		return false;
 	}
 
@@ -419,10 +419,10 @@ void DX12Renderer::setUpViewportAndScissor(const glm::uvec2& bufferSize)
 
 void DX12Renderer::releaseSwapChainDynamicResources()
 {
-	KRONOS_ASSERT(m_depthStencilBuffer);
+	NEBULA_ASSERT(m_depthStencilBuffer);
 	m_depthStencilBuffer->Release();
 
-	KRONOS_ASSERT(m_msaaRenderTarget);
+	NEBULA_ASSERT(m_msaaRenderTarget);
 	m_msaaRenderTarget->Release();
 
 	for (nbInt32 i = 0; i < swapChainBufferCount; i++)
@@ -439,13 +439,13 @@ void DX12Renderer::resizeBuffers(const glm::uvec2& newSize)
 	releaseSwapChainDynamicResources();
 
 	HRESULT hr = m_swapChain->ResizeBuffers(0, newSize.x, newSize.y, DXGI_FORMAT_UNKNOWN, m_swapChainDesc.Flags);
-	KRONOS_ASSERT(SUCCEEDED(hr));
+	NEBULA_ASSERT(SUCCEEDED(hr));
 
-	KRONOS_ASSERT(createMSAARenderTarget(newSize));
+	NEBULA_ASSERT(createMSAARenderTarget(newSize));
 
-	KRONOS_ASSERT(createDepthStencilBuffer(newSize));
+	NEBULA_ASSERT(createDepthStencilBuffer(newSize));
 
-	KRONOS_ASSERT(bindSwapChainRenderTargets());
+	NEBULA_ASSERT(bindSwapChainRenderTargets());
 
 	setUpViewportAndScissor(newSize);
 }
@@ -463,7 +463,7 @@ void DX12Renderer::createRGBATexture2DArray(const std::vector<const Texture::RGB
 	if (height > D3D12_REQ_TEXTURECUBE_DIMENSION)
 		throw CreateTextureException("Images height is too high");
 
-	const Texture::ImageFormat kronosFormat = images[0]->getFormat();
+	const Texture::ImageFormat nebulaFormat = images[0]->getFormat();
 
 	for (int i = 1; i < images.size(); ++i)
 	{
@@ -473,7 +473,7 @@ void DX12Renderer::createRGBATexture2DArray(const std::vector<const Texture::RGB
 		if (images[i]->getHeight() != height)
 			throw CreateTextureException("All images must have the same height. It is not the case for: " + images[i]->getPath());
 
-		if (images[i]->getFormat() != kronosFormat)
+		if (images[i]->getFormat() != nebulaFormat)
 			throw CreateTextureException("Images must have the same format");
 	}
 
@@ -483,7 +483,7 @@ void DX12Renderer::createRGBATexture2DArray(const std::vector<const Texture::RGB
 void DX12Renderer::createRGBATexture2DArray(const std::vector<const Texture::RGBAImage*>& images, nbUint32 width, nbUint32 height, D3D12_SRV_DIMENSION viewDimension, Dx12TextureHandle& dst)
 {
 	const nbUint32 arraySize = (nbUint32)images.size();
-	KRONOS_ASSERT(arraySize < D3D12_REQ_TEXTURE2D_ARRAY_AXIS_DIMENSION);
+	NEBULA_ASSERT(arraySize < D3D12_REQ_TEXTURE2D_ARRAY_AXIS_DIMENSION);
 
 	D3D12_RESOURCE_DESC textureDesc = {};
 	textureDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
@@ -493,14 +493,14 @@ void DX12Renderer::createRGBATexture2DArray(const std::vector<const Texture::RGB
 	textureDesc.DepthOrArraySize = static_cast<std::uint16_t>(arraySize); // if 3d image, depth of 3d image. Otherwise an array of 1D or 2D textures (we only have one image, so we set 1)
 	textureDesc.MipLevels = 1; // Number of mipmaps. We are not generating mipmaps for this texture, so we have only one level
 
-	const Texture::ImageFormat kronosFormat = images[0]->getFormat();
-	if (kronosFormat == Texture::ImageFormat::RGBA8)
+	const Texture::ImageFormat nebulaFormat = images[0]->getFormat();
+	if (nebulaFormat == Texture::ImageFormat::RGBA8)
 	{
 		textureDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
 	}
 	else
 	{
-		KRONOS_ASSERT(kronosFormat == Texture::ImageFormat::RGBA32F);
+		NEBULA_ASSERT(nebulaFormat == Texture::ImageFormat::RGBA32F);
 		textureDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
 	}
 
@@ -518,7 +518,7 @@ void DX12Renderer::createRGBATexture2DArray(const std::vector<const Texture::RGB
 		nullptr, // used for render targets and depth/stencil buffers
 		IID_PPV_ARGS(&dst.buffer));
 
-	KRONOS_ASSERT(SUCCEEDED(hr));
+	NEBULA_ASSERT(SUCCEEDED(hr));
 
 	dst.format = textureDesc.Format;
 
@@ -540,7 +540,7 @@ void DX12Renderer::createRGBATexture2DArray(const std::vector<const Texture::RGB
 		nullptr,
 		IID_PPV_ARGS(&textureBufferUploadHeap));
 
-	KRONOS_ASSERT(SUCCEEDED(hr));
+	NEBULA_ASSERT(SUCCEEDED(hr));
 
 	std::string uploadDebugString = "Texture Upload Resource Heap images first = " + images[0]->getPath() + ", size = " + std::to_string(arraySize);
 	std::wstring uploadDebugStringW(uploadDebugString.begin(), uploadDebugString.end());
@@ -605,7 +605,7 @@ DX12Renderer::ArrayBufferResource DX12Renderer::createArrayBufferRecource(const 
 		nullptr,
 		IID_PPV_ARGS(&retData.buffer));
 
-	KRONOS_ASSERT(SUCCEEDED(hr));
+	NEBULA_ASSERT(SUCCEEDED(hr));
 
 	// create upload heap
 	ID3D12Resource* vBufferUploadHeap;
@@ -617,7 +617,7 @@ DX12Renderer::ArrayBufferResource DX12Renderer::createArrayBufferRecource(const 
 		nullptr,
 		IID_PPV_ARGS(&vBufferUploadHeap));
 
-	KRONOS_ASSERT(SUCCEEDED(hr));
+	NEBULA_ASSERT(SUCCEEDED(hr));
 
 	// store buffer data in upload heap
 	D3D12_SUBRESOURCE_DATA bufferData = {};
@@ -645,7 +645,7 @@ void DX12Renderer::startCommandRecording()
 	HRESULT hr = m_commandAllocator[m_frameIndex]->Reset();
 	if (FAILED(hr))
 	{
-		KRONOS_TRACE("DX12Renderer::startCommandRecording - Failed to reset command allocator index = " << m_frameIndex);
+		NEBULA_TRACE("DX12Renderer::startCommandRecording - Failed to reset command allocator index = " << m_frameIndex);
 		return;
 	}
 
@@ -657,13 +657,13 @@ void DX12Renderer::startCommandRecording()
 	// the closed state (not recording).
 	// Here you will pass an initial pipeline state object as the second parameter.
 	hr = m_commandList->Reset(m_commandAllocator[m_frameIndex], nullptr);
-	KRONOS_ASSERT(SUCCEEDED(hr));
+	NEBULA_ASSERT(SUCCEEDED(hr));
 }
 
 void DX12Renderer::endCommandRecording()
 {
 	HRESULT hr = m_commandList->Close();
-	KRONOS_ASSERT(SUCCEEDED(hr));
+	NEBULA_ASSERT(SUCCEEDED(hr));
 
 	// create an array of command lists (only one command list here)
 	ID3D12CommandList* ppCommandLists[] = { m_commandList };
@@ -764,7 +764,7 @@ void DX12Renderer::present()
 	HRESULT	hr = m_swapChain->Present(0, 0);
 	if (FAILED(hr))
 	{
-		KRONOS_TRACE("DX12Renderer::render - Failed to present");
+		NEBULA_TRACE("DX12Renderer::render - Failed to present");
 	}
 }
 
@@ -781,12 +781,12 @@ void DX12Renderer::waitCurrentBackBufferCommandsFinish()
 	if (m_fence[m_frameIndex]->GetCompletedValue() < fence)
 	{
 		hr = m_fence[m_frameIndex]->SetEventOnCompletion(fence, m_fenceEvent);
-		KRONOS_ASSERT(SUCCEEDED(hr));
+		NEBULA_ASSERT(SUCCEEDED(hr));
 
 		WaitForSingleObject(m_fenceEvent, INFINITE);
 	}
 
-	KRONOS_ASSERT(SUCCEEDED(hr));
+	NEBULA_ASSERT(SUCCEEDED(hr));
 	m_fenceValue[m_frameIndex]++;
 }
 }}}}

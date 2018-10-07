@@ -19,7 +19,7 @@ namespace Graphics { namespace Renderer { namespace Offline { namespace Integrat
 		const nbInt32 trianglePacketIdx = info.meshIntersectData.trianglePacketIdx;
 		const nbInt32 packedInternalIdx = info.meshIntersectData.packetIntersectionResult.triIdx;
 
-		const nbUint32 triStartIdx = (KRONOS_INTRINSICS_NB_FLOAT * trianglePacketIdx + packedInternalIdx) * KRONOS_PRIMITIVE_NB_VTX;
+		const nbUint32 triStartIdx = (NEBULA_INTRINSICS_NB_FLOAT * trianglePacketIdx + packedInternalIdx) * NEBULA_PRIMITIVE_NB_VTX;
 
 		const auto& v1 = mesh->m_vertices[mesh->m_indices[triStartIdx]];
 		const auto& v2 = mesh->m_vertices[mesh->m_indices[triStartIdx + 1]];
