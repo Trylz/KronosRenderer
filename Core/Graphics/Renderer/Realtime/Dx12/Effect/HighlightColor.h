@@ -28,9 +28,8 @@ public:
 private:
 	static constexpr nbInt32 s_nbPasses = 2;
 
-	NEBULA_DX12_ATTRIBUTE_ALIGN struct VertexShaderCB
+	NEBULA_DX12_ATTRIBUTE_ALIGN struct VertexShaderSharedCB
 	{
-		DirectX::XMFLOAT4X4 wvpMat;
 		DirectX::XMFLOAT3 eyePosition;
 		FLOAT scale;
 	};
@@ -38,10 +37,10 @@ private:
 	void initRootSignature() override;
 	void initPipelineStateObjects() override;
 	void initVertexShaderCB();
-	void updateVertexShaderCB(HighlightColorPushArgs& data, nbInt32 frameIndex, nbInt32 passIndex);
+	void updateVertexShaderSharedCB(HighlightColorPushArgs& data, nbInt32 frameIndex, nbInt32 passIndex);
 
 	PipelineStatePtr m_PSOs[s_nbPasses];
-	CComPtr<ID3D12Resource> m_vertexShaderCBUploadHeaps[s_nbPasses][swapChainBufferCount];
-	UINT8* m_vertexShaderCBGPUAddress[s_nbPasses][swapChainBufferCount];
+	CComPtr<ID3D12Resource> m_vertexShaderSharedCBUploadHeaps[s_nbPasses][swapChainBufferCount];
+	UINT8* m_vertexShaderSharedCBGPUAddress[s_nbPasses][swapChainBufferCount];
 };
 }}}}}

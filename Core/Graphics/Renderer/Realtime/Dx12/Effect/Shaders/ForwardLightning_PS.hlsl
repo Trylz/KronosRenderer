@@ -88,7 +88,7 @@ float4 diffuseLighning(float4 matDiffuse, float roughness, float fresnel, float 
 		return float4(0.32f, 0.32f, 0.32f, 0.0f);
 	}
 
-	// Dielectrics
+	// Hair or other dielectrics
 	float4 diffuse = matDiffuse * InvPI;
 	if (Material.type == PLASTIC_IDX)
 	{
@@ -103,16 +103,22 @@ float4 diffuseLighning(float4 matDiffuse, float roughness, float fresnel, float 
 		diffuse *= (C1 + C2) * (1.0f + roughness * 0.5f);
 	}
 
+	if (Material.type == HAIR_IDX)
+	{
+		// Realtime hair shading is not supported. Returns flat diffuse.
+		return diffuse;
+	}
+
 	return (1.0f - fresnel) * diffuse;
 }
 
 float4 specularLightning(float4 matDiffuse, float2 texCoord, float HoN, float fresnel)
 {
-	if (Material.type == PERFECT_MIRROR_IDX)
+	if (Material.type == PERFECT_MIRROR_IDX || Material.type == HAIR_IDX)
 		return float4(0.0f, 0.0f, 0.0f, 0.0f);
 
 	float4 matSpecular;
-	if (Material.type == DEFAULT_DIELECTRIC_IDX || Material.type == PLASTIC_IDX)
+	if (Material.type == DEFAULT_DIELECTRIC_IDX || Material.type == PLASTIC_IDX || Material.type == SSS_IDX)
 	{
 		matSpecular = Material.specular;
 		if (Material.hasSpecularTex)

@@ -13,10 +13,17 @@
 #include "Graphics/Renderer/Realtime/Dx12/Effect/CubeMapping.h"
 #include "Graphics/Renderer/Realtime/Dx12/Effect/ForwardLighning.h"
 #include "Graphics/Renderer/Realtime/Dx12/Effect/HighlightColor.h"
+#include "Graphics/Renderer/Realtime/Dx12/Effect/LightVisualLines.h"
 #include "Graphics/Renderer/Realtime/Dx12/Effect/RenderLights.h"
+#include "Graphics/Renderer/Realtime/Dx12/Effect/RenderWorldPosition.h"
+#include "Graphics/Renderer/Realtime/Dx12/Effect/RenderMoveGizmo.h"
+#include "Graphics/Renderer/Realtime/Dx12/Effect/RenderRotationGizmo.h"
+#include "Graphics/Renderer/Realtime/Dx12/Effect/RenderScaleGizmo.h"
 #include "Graphics/Renderer/Realtime/TRealtimeRenderer.h"
 
 #include <dxgi1_4.h>
+#include "Effect/MeshGroupConstantBuffer.h"
+#include <atomic>
 
 namespace Graphics { namespace Renderer { namespace Realtime { namespace Dx12
 {
@@ -34,11 +41,13 @@ public:
 	void finishTasks() override;
 	void release() override;
 
-	Graphics::Model::ModelPtr createModelFromRaw(const std::string& path) const override;
-	Graphics::Model::ModelPtr createModelFromNode(const Utilities::Xml::XmlNode& node) const override;
+	Model::ModelPtr createModelFromRaw(const std::string& path) const override;
+	Model::ModelPtr createModelFromNode(const Utilities::Xml::XmlNode& node) const override;
 
-	Graphics::Texture::CubeMapPtr createCubeMapFromRaw(Graphics::Texture::CubeMapConstructRawArgs& args) const override;
-	Graphics::Texture::CubeMapPtr createCubeMapFromNode(const Graphics::Texture::CubeMapConstructNodeArgs& args) const override;
+	Texture::CubeMapPtr createCubeMapFromRaw(Graphics::Texture::CubeMapConstructRawArgs& args) const override;
+	Texture::CubeMapPtr createCubeMapFromNode(const Graphics::Texture::CubeMapConstructNodeArgs& args) const override;
+
+	Scene::GizmoMap createGizmos() const override;
 
 	void drawScene(const Scene::BaseScene& scene) override;
 	void present() override;
@@ -49,35 +58,50 @@ public:
 	nbBool releaseTexture(const Dx12TextureHandle& textureHandle) const override;
 
 	nbBool createVertexBuffer(const void* data, Dx12VertexBufferHandle& dst, nbUint32 sizeofElem, nbUint32 count) override;
-	nbBool releaseVertexBuffer(const Dx12VertexBufferHandle& arrayBufferHandle) const override;
+	void releaseVertexBuffer(const Dx12VertexBufferHandle& arrayBufferHandle) const override;
 
 	nbBool createIndexBuffer(const std::vector<nbUint32>& data, Dx12IndexBufferHandle& dst) override;
-	nbBool releaseIndexBuffer(const Dx12IndexBufferHandle& arrayBufferHandle) const override;
+	void releaseIndexBuffer(const Dx12IndexBufferHandle& arrayBufferHandle) const override;
 
 	void resizeBuffers(const glm::uvec2& newSize) override;
 	void onMaterialChanged(const Scene::BaseScene& scene, const MaterialIdentifier& matId) override;
+	void onGroupTransformChanged(const Scene::BaseScene& scene, const Model::MeshGroupId& groupId) override;
 
 	void updateLightBuffers(const Scene::BaseScene& scene) override;
 	void updateMaterialBuffers(const Scene::BaseScene& scene) override;
+
+	IntersectionInfo queryIntersection(const Scene::BaseScene& scene, const glm::uvec2& pos) override;
 
 	void startCommandRecording() override;
 	void endSceneLoadCommandRecording(const Scene::BaseScene* scene) override;
 	void endCommandRecording() override;
 
+	void tryWaitEffectCompilationDone();
+
 private:
-	void waitCurrentBackBufferCommandsFinish();
+	enum class CommandType
+	{
+		Direct,
+		Copy
+	};
+
+	void startCommandRecording(CommandType commandType);
+	void endCommandRecording(CommandType commandType);
+	void waitBackBufferCommandsFinish(CommandType commandType, nbInt32 frameIdx);
+	void waitCurrentBackBufferCommandsFinish(CommandType commandType);
 
 	// Dx12 initilization helpers
 	// @See: // https://www.braynzarsoft.net/viewtutorial/q16390-03-initializing-directx-12
 	nbBool createDevice(IDXGIFactory4* m_dxgiFactory);
-	nbBool createDirectCommandQueue();
+	nbBool createCommandQueues();
 	nbBool createSwapChain(IDXGIFactory4* m_dxgiFactory, const glm::uvec2& bufferSize);
-	nbBool createMSAARenderTarget(const glm::uvec2& bufferSize);
-	nbBool createDepthStencilBuffer(const glm::uvec2& bufferSize);
+	nbBool createRenderTargets(const glm::uvec2& bufferSize);
+	nbBool createDepthStencilBuffers(const glm::uvec2& bufferSize);
 	void setUpViewportAndScissor(const glm::uvec2& bufferSize);
+	nbBool createPixelReadBuffer();
 	nbBool bindSwapChainRenderTargets();
-	nbBool createDirectCommandAllocators();
-	nbBool createDirectCommandList();
+	nbBool createCommandAllocators();
+	nbBool createCommandLists();
 	nbBool createFencesAndFenceEvent();
 	void releaseSwapChainDynamicResources();
 
@@ -110,32 +134,25 @@ private:
 	// The swap chain description structure
 	DXGI_SWAP_CHAIN_DESC m_swapChainDesc = {};
 
-	// container for command lists
-	CComPtr<ID3D12CommandQueue> m_commandQueue;
-
-	DescriptorHandle m_msaaRTDescriptorHandle;
 	DescriptorHandle m_dsvDescriptorsHandle;
 
 	// number of render targets equal to buffer count
 	ID3D12Resource* m_renderTargets[swapChainBufferCount];
 
-	// we want enough allocators for each buffer * number of threads (we only have one thread)
-	CComPtr<ID3D12CommandAllocator> m_commandAllocator[swapChainBufferCount];
+	CComPtr<ID3D12Resource> m_pixelReadBuffer;
 
-	// a command list we can record commands into, then execute them to render the frame
-	CComPtr<ID3D12GraphicsCommandList> m_commandList;
+	struct CommandBuffer
+	{
+		CComPtr<ID3D12CommandAllocator> commandAllocator[swapChainBufferCount];
+		CComPtr<ID3D12GraphicsCommandList> commandList;
+		CComPtr<ID3D12CommandQueue> commandQueue;
+		CComPtr<ID3D12Fence> fences[swapChainBufferCount];
+		HANDLE fenceEvent;
+		UINT64 fenceValue[swapChainBufferCount];
+		nbInt32 frameIndex;
+	};
 
-	// an object that is locked while our command list is being executed by the gpu.
-	CComPtr<ID3D12Fence> m_fence[swapChainBufferCount];
-
-	// a handle to an event when our fence is unlocked by the gpu
-	HANDLE m_fenceEvent; 
-
-	// this value is incremented each frame. each fence will have its own value
-	UINT64 m_fenceValue[swapChainBufferCount];
-
-	// current rtv we are on
-	nbInt32 m_frameIndex;
+	std::unordered_map<CommandType, CommandBuffer> m_commandBuffers;
 
 	// area that output from rasterizer will be stretched to.
 	D3D12_VIEWPORT m_viewport; 
@@ -144,13 +161,21 @@ private:
 	D3D12_RECT m_scissorRect; 
 
 	// The multi-sampling description
-	DXGI_SAMPLE_DESC m_sampleDesc = {};
+	DXGI_SAMPLE_DESC m_msaaSampleDesc = {};
+	DXGI_SAMPLE_DESC m_simpleSampleDesc = {};
 
 	// This is the memory for our depth buffer.
 	ID3D12Resource* m_depthStencilBuffer =  nullptr;
 
-	// The offscreen render targer
+	// The offscreen render targets
 	ID3D12Resource* m_msaaRenderTarget = nullptr;
+	DescriptorHandle m_msaaRTDescriptorHandle;
+
+	ID3D12Resource* m_positionRenderTarget = nullptr;
+	DescriptorHandle m_positionRTDescriptorHandle;
+	ID3D12Resource* m_positionDepthStencilBuffer = nullptr;
+	DescriptorHandle m_positionDsvDescriptorsHandle;
+	D3D12_RESOURCE_DESC m_positionRenderTargetDesc;
 
 	std::vector<ID3D12Resource*> m_loadingResources;
 
@@ -158,6 +183,14 @@ private:
 	std::unique_ptr<Effect::CubeMapping> m_cubeMappingEffect;
 	std::unique_ptr<Effect::HighlightColor> m_highlightColorEffect;
 	std::unique_ptr<Effect::RenderLights> m_renderLightsEffect;
+	std::unique_ptr<Effect::RenderMoveGizmo> m_moveGizmoEffect;
+	std::unique_ptr<Effect::RenderScaleGizmo> m_scaleGizmoEffect;
+	std::unique_ptr<Effect::RenderRotationGizmo> m_rotationGizmoEffect;
+	std::unique_ptr<Effect::LightVisualLines> m_lightVisualLinesEffect;
+	std::unique_ptr<Effect::RenderWorldPosition> m_renderPositionEffect;
+
+	std::thread m_compileEffectThread;
+	std::atomic_bool m_effectsReady;
 };
 
 inline Graphics::Model::ModelPtr DX12Renderer::createModelFromRaw(const std::string& path) const
@@ -174,7 +207,6 @@ inline Graphics::Texture::CubeMapPtr DX12Renderer::createCubeMapFromRaw(Graphics
 {
 	return std::make_unique<DX12CubeMap>(args);
 }
-
 inline Graphics::Texture::CubeMapPtr DX12Renderer::createCubeMapFromNode(const Graphics::Texture::CubeMapConstructNodeArgs& args) const
 {
 	return std::make_unique<DX12CubeMap>(args);
@@ -189,6 +221,7 @@ inline nbBool DX12Renderer::createVertexBuffer(const void* data, Dx12VertexBuffe
 	}
 
 	dst.buffer = resourceData.buffer;
+	dst.count = count;
 	dst.bufferView.BufferLocation = dst.buffer->GetGPUVirtualAddress();
 	dst.bufferView.StrideInBytes = sizeofElem;
 	dst.bufferView.SizeInBytes = resourceData.bufferSize;
@@ -198,12 +231,17 @@ inline nbBool DX12Renderer::createVertexBuffer(const void* data, Dx12VertexBuffe
 
 inline void DX12Renderer::onMaterialChanged(const Scene::BaseScene& scene, const MaterialIdentifier& matId)
 {
-	m_forwardLightningEffect->onUpdateMaterial(scene, matId, m_commandList);
+	m_forwardLightningEffect->onUpdateMaterial(scene, matId, m_commandBuffers[CommandType::Direct].commandList);
+}
+
+inline void DX12Renderer::onGroupTransformChanged(const Scene::BaseScene& scene, const Model::MeshGroupId& groupId)
+{
+	Effect::MeshGroupConstantBufferSingleton::instance()->onUpdateMeshGroup(scene, groupId, m_commandBuffers[CommandType::Direct].commandList);
 }
 
 inline void DX12Renderer::updateMaterialBuffers(const Scene::BaseScene& scene)
 {
-	m_forwardLightningEffect->updateMaterialBuffers(scene, m_commandList);
+	m_forwardLightningEffect->updateMaterialBuffers(scene, m_commandBuffers[CommandType::Direct].commandList);
 }
 
 inline void DX12Renderer::updateLightBuffers(const Scene::BaseScene& scene)
@@ -222,14 +260,14 @@ inline nbBool DX12Renderer::releaseTexture(const Dx12TextureHandle& textureHandl
 	return textureHandle.buffer->Release();
 }
 
-inline nbBool DX12Renderer::releaseVertexBuffer(const Dx12VertexBufferHandle& arrayBufferHandle) const
+inline void DX12Renderer::releaseVertexBuffer(const Dx12VertexBufferHandle& arrayBufferHandle) const
 {
-	return arrayBufferHandle.buffer->Release();
+	arrayBufferHandle.buffer->Release();
 }
 
-inline nbBool DX12Renderer::releaseIndexBuffer(const Dx12IndexBufferHandle& arrayBufferHandle) const
+inline void DX12Renderer::releaseIndexBuffer(const Dx12IndexBufferHandle& arrayBufferHandle) const
 {
-	return arrayBufferHandle.buffer->Release();
+	arrayBufferHandle.buffer->Release();
 }
 
 }}}}

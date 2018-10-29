@@ -60,11 +60,6 @@ private:
 		BOOL hasNormalTex;
 	};
 
-	struct VertexShaderCB
-	{
-		DirectX::XMFLOAT4X4 wvpMat;
-	};
-
 	struct PixelShaderEnvironmentCb
 	{
 		DirectX::XMFLOAT4 mediaInfo;
@@ -82,24 +77,20 @@ private:
 		DX12Material material;
 	};
 
-	nbUint32 PixelShaderLightCBAlignedSize = (sizeof(PixelShaderEnvironmentCb) + (D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT - 1)) & ~(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT - 1);
-	nbUint32 PixelShaderMaterialCBAlignedSize = (sizeof(PixelShaderMaterialCB) + (D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT - 1)) & ~(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT - 1);
+	nbUint32 PixelShaderLightCBAlignedSize = NEBULA_DX12_ALIGN_SIZE(PixelShaderEnvironmentCb);
+	nbUint32 PixelShaderMaterialCBAlignedSize = NEBULA_DX12_ALIGN_SIZE(PixelShaderMaterialCB);
 
 	void initRootSignature() override;
 	void initPipelineStateObjects() override;
 	void initStaticConstantBuffers();
 	void initDynamicMaterialConstantBuffer(const Scene::BaseScene& scene, ID3D12GraphicsCommandList* commandList);
-	void fromMaterialUploadHeapToDefaulHeap(ID3D12GraphicsCommandList* commandList);
+	void fromMaterialUploadToDefaultHeaps(ID3D12GraphicsCommandList* commandList);
 	void updateMaterial(const Scene::BaseScene& scene, const MaterialIdentifier& matId, ID3D12GraphicsCommandList* commandList);
 
-	void updateVertexShaderCB(ForwardLightningPushArgs& data, nbInt32 frameIndex);
 	void updatePixelShaderLightsCB(ForwardLightningPushArgs& data, nbInt32 frameIndex);
 
 	PipelineStatePtr m_solidPSO;
 	PipelineStatePtr m_wireframePSO;
-
-	CComPtr<ID3D12Resource> m_vertexShaderCBUploadHeaps[swapChainBufferCount];
-	UINT8* m_vertexShaderCBGPUAddress[swapChainBufferCount];
 
 	// pixel shader lights constant buffer
 	PixelShaderEnvironmentCb m_pixelShaderLightsCB;
@@ -107,9 +98,9 @@ private:
 	UINT8* m_pixelShaderLightsCBGPUAddress[swapChainBufferCount];
 
 	// pixel shader material constant buffer
-	UINT8* m_pixelShaderMaterialCBGPUAddress[swapChainBufferCount];
-	ID3D12Resource* m_pixelShaderMaterialCBUploadHeaps[swapChainBufferCount];
-	ID3D12Resource* m_pixelShaderMaterialCBDefaultHeaps[swapChainBufferCount];
+	UINT8* m_pixelShaderMaterialCBGPUAddress;
+	ID3D12Resource* m_pixelShaderMaterialCBUploadHeap;
+	ID3D12Resource* m_pixelShaderMaterialCBDefaultHeap;
 
 	nbUint32 m_materialBufferSize = 0u;
 };

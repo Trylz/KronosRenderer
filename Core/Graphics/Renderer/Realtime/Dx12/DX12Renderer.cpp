@@ -9,6 +9,8 @@
 
 #include "../CreateTextureException.h"
 #include "DX12Renderer.h"
+#include "Graphics/Renderer/Realtime/Dx12/Effect/CameraConstantBuffer.h"
+#include "Graphics/Renderer/Realtime/Dx12/Effect/MeshGroupConstantBuffer.h"
 #include <d3d12.h>
 
 namespace Graphics { namespace Renderer { namespace Realtime { namespace Dx12
@@ -17,7 +19,6 @@ using namespace DirectX;
 using namespace Descriptor;
 
 #define MSAA_SAMPLES 4
-#define SWAP_CHAIN_FORMAT DXGI_FORMAT_R8G8B8A8_UNORM
 
 nbBool DX12Renderer::init(const InitArgs& args)
 {
@@ -45,13 +46,14 @@ nbBool DX12Renderer::init(const InitArgs& args)
 	m_rtvAllocator = std::make_unique<RTV_DescriptorAllocator>(m_device);
 	m_dsvAllocator = std::make_unique<DSV_DescriptorAllocator>(m_device);
 
-	if (!createDirectCommandQueue())
+	if (!createCommandQueues())
 	{
 		NEBULA_TRACE("DX12Renderer::init - Unable to create direct command queue");
 		return false;
 	}
 
-	m_sampleDesc.Count = MSAA_SAMPLES;
+	m_msaaSampleDesc.Count = MSAA_SAMPLES;
+	m_simpleSampleDesc.Count = 1;
 
 	if (!createSwapChain(m_dxgiFactory, bufferSize))
 	{
@@ -59,13 +61,13 @@ nbBool DX12Renderer::init(const InitArgs& args)
 		return false;
 	}
 
-	if (!createMSAARenderTarget(bufferSize))
+	if (!createRenderTargets(bufferSize))
 	{
 		NEBULA_TRACE("DX12Renderer::init - Unable to create msaa render target");
 		return false;
 	}
 
-	if (!createDepthStencilBuffer(bufferSize))
+	if (!createDepthStencilBuffers(bufferSize))
 	{
 		NEBULA_TRACE("DX12Renderer::init - Unable to create depth stencil buffer");
 		return false;
@@ -73,19 +75,25 @@ nbBool DX12Renderer::init(const InitArgs& args)
 
 	setUpViewportAndScissor(bufferSize);
 
+	if (!createPixelReadBuffer())
+	{
+		NEBULA_TRACE("DX12Renderer::init - Unable to create the pixel read buffer");
+		return false;
+	}
+
 	if (!bindSwapChainRenderTargets())
 	{
 		NEBULA_TRACE("DX12Renderer::init - Unable to bind swap shain render targets");
 		return false;
 	}
 
-	if (!createDirectCommandAllocators())
+	if (!createCommandAllocators())
 	{
 		NEBULA_TRACE("DX12Renderer::init - Unable to create command allocators");
 		return false;
 	}
 
-	if (!createDirectCommandList())
+	if (!createCommandLists())
 	{
 		NEBULA_TRACE("DX12Renderer::init - Unable to create command list");
 		return false;
@@ -102,14 +110,28 @@ nbBool DX12Renderer::init(const InitArgs& args)
 	// Create effects
 	Effect::D3d12Device = m_device;
 
+	Effect::CameraConstantBufferSingleton::create();
+	Effect::MeshGroupConstantBufferSingleton::create();
+
+	m_effectsReady = false;
 	startCommandRecording();
 
-	m_forwardLightningEffect = std::make_unique<Effect::ForwardLighning>(m_sampleDesc);
-	m_cubeMappingEffect = std::make_unique<Effect::CubeMapping>(m_sampleDesc);
-	m_highlightColorEffect = std::make_unique<Effect::HighlightColor>(m_sampleDesc);
-	m_renderLightsEffect = std::make_unique<Effect::RenderLights>(m_sampleDesc);
+	m_compileEffectThread = std::thread([this]{
+		m_cubeMappingEffect = std::make_unique<Effect::CubeMapping>(m_msaaSampleDesc);
+		m_highlightColorEffect = std::make_unique<Effect::HighlightColor>(m_msaaSampleDesc);
+		m_renderLightsEffect = std::make_unique<Effect::RenderLights>(m_msaaSampleDesc);
+		m_moveGizmoEffect = std::make_unique<Effect::RenderMoveGizmo>(m_msaaSampleDesc);
+		m_scaleGizmoEffect = std::make_unique<Effect::RenderScaleGizmo>(m_msaaSampleDesc);
+		m_rotationGizmoEffect = std::make_unique<Effect::RenderRotationGizmo>(m_msaaSampleDesc);
+		m_lightVisualLinesEffect = std::make_unique<Effect::LightVisualLines>(m_msaaSampleDesc);
+		m_renderPositionEffect = std::make_unique<Effect::RenderWorldPosition>(m_simpleSampleDesc);
+		m_forwardLightningEffect = std::make_unique<Effect::ForwardLighning>(m_msaaSampleDesc);
 
-	endCommandRecording();
+		m_effectsReady = true;
+
+		endCommandRecording();
+	});
+
 
 	return true;
 }
@@ -117,17 +139,25 @@ nbBool DX12Renderer::init(const InitArgs& args)
 void DX12Renderer::finishTasks()
 {
 	// wait for the gpu to finish all frames
-	for (nbInt32 i = 0; i < swapChainBufferCount; ++i)
+	for (auto& buffer : m_commandBuffers)
 	{
-		m_frameIndex = i;
-		waitCurrentBackBufferCommandsFinish();
+		for (nbInt32 i = 0; i < swapChainBufferCount; ++i)
+		{
+			buffer.second.frameIndex = i;
+			waitCurrentBackBufferCommandsFinish(buffer.first);
+		}
 	}
 }
 
 void DX12Renderer::release()
 {
+	// Wait for the compile thread to finish
+	if (m_compileEffectThread.joinable())
+		m_compileEffectThread.join();
+
 	// close the fence event
-	CloseHandle(m_fenceEvent);
+	for (auto& buffer : m_commandBuffers)
+		CloseHandle(buffer.second.fenceEvent);
 
 	// get swapchain out of full screen before exiting
 	BOOL fs = false;
@@ -137,6 +167,9 @@ void DX12Renderer::release()
 	}
 
 	releaseSwapChainDynamicResources();
+
+	Effect::CameraConstantBufferSingleton::destroy();
+	Effect::MeshGroupConstantBufferSingleton::destroy();
 }
 
 nbBool DX12Renderer::createDevice(IDXGIFactory4* m_dxgiFactory)
@@ -204,18 +237,16 @@ nbBool DX12Renderer::createDevice(IDXGIFactory4* m_dxgiFactory)
 	return true;
 }
 
-nbBool DX12Renderer::createDirectCommandQueue()
+nbBool DX12Renderer::createCommandQueues()
 {
+	// create the direct command queue
 	D3D12_COMMAND_QUEUE_DESC cqDesc = {};
 	cqDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
 	cqDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;// direct means the gpu can directly execute this command queue
 
-	// create the command queue
-	auto hr = m_device->CreateCommandQueue(&cqDesc, IID_PPV_ARGS(&m_commandQueue));
+	HRESULT hr = m_device->CreateCommandQueue(&cqDesc, IID_PPV_ARGS(&m_commandBuffers[CommandType::Direct].commandQueue));
 	if (FAILED(hr))
-	{
 		return false;
-	}
 
 	return true;
 }
@@ -225,7 +256,7 @@ nbBool DX12Renderer::createSwapChain(IDXGIFactory4* m_dxgiFactory, const glm::uv
 	DXGI_MODE_DESC backBufferDesc = {}; // this is to describe our display mode
 	backBufferDesc.Width = bufferSize.x; // buffer width
 	backBufferDesc.Height = bufferSize.y; // buffer height
-	backBufferDesc.Format = SWAP_CHAIN_FORMAT;
+	backBufferDesc.Format = NEBULA_SWAP_CHAIN_FORMAT;
 
 	// Describe and create the swap chain.
 	m_swapChainDesc.BufferCount = swapChainBufferCount; // number of buffers we have
@@ -233,14 +264,13 @@ nbBool DX12Renderer::createSwapChain(IDXGIFactory4* m_dxgiFactory, const glm::uv
 	m_swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT; // this says the pipeline will render to this swap chain
 	m_swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD; // dxgi will discard the buffer (data) after we call present
 	m_swapChainDesc.OutputWindow = m_hwindow; // handle to our window
-	m_swapChainDesc.SampleDesc = m_sampleDesc;
-	m_swapChainDesc.SampleDesc.Count = 1;
+	m_swapChainDesc.SampleDesc = m_simpleSampleDesc;
 	m_swapChainDesc.Windowed = true; // set to true, then if in fullscreen must call SetFullScreenState with true for full screen to get uncapped fps
 
 	IDXGISwapChain* tempSwapChain;
 
 	HRESULT hr = m_dxgiFactory->CreateSwapChain(
-		m_commandQueue, // the queue will be flushed once the swap chain is created
+		m_commandBuffers[CommandType::Direct].commandQueue, // the queue will be flushed once the swap chain is created
 		&m_swapChainDesc, // give it the swap chain description we created above
 		&tempSwapChain
 	);
@@ -252,7 +282,8 @@ nbBool DX12Renderer::createSwapChain(IDXGIFactory4* m_dxgiFactory, const glm::uv
 
 	m_swapChain.Attach(static_cast<IDXGISwapChain3*>(tempSwapChain));
 
-	m_frameIndex = m_swapChain->GetCurrentBackBufferIndex();
+	for (auto& buffer : m_commandBuffers)
+		buffer.second.frameIndex = m_swapChain->GetCurrentBackBufferIndex();
 
 	return true;
 }
@@ -274,31 +305,34 @@ nbBool DX12Renderer::bindSwapChainRenderTargets()
 	return true;
 }
 
-nbBool DX12Renderer::createDirectCommandAllocators()
+nbBool DX12Renderer::createCommandAllocators()
 {
 	for (nbInt32 i = 0; i < swapChainBufferCount; i++)
 	{
-		HRESULT hr = m_device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_commandAllocator[i]));
+		HRESULT hr = m_device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_commandBuffers[CommandType::Direct].commandAllocator[i]));
 		if (FAILED(hr))
-		{
 			return false;
-		}
 	}
 
 	return true;
 }
 
-nbBool DX12Renderer::createDirectCommandList()
+nbBool DX12Renderer::createCommandLists()
 {
-	// create the command list with the first allocator
-	HRESULT hr = m_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_commandAllocator[m_frameIndex], NULL, IID_PPV_ARGS(&m_commandList));
-	if (FAILED(hr))
-	{
-		return false;
-	}
+	auto& directCommandBuffers = m_commandBuffers[CommandType::Direct];
 
-	m_commandList->SetName(L"Command list");
-	m_commandList->Close();
+	HRESULT hr = m_device->CreateCommandList(0,
+		D3D12_COMMAND_LIST_TYPE_DIRECT,
+		directCommandBuffers.commandAllocator[directCommandBuffers.frameIndex],
+		NULL,
+		IID_PPV_ARGS(&directCommandBuffers.commandList)
+	);
+
+	if (FAILED(hr))
+		return false;
+
+	directCommandBuffers.commandList->SetName(L"Direct command list");
+	directCommandBuffers.commandList->Close();
 
 	return true;
 }
@@ -307,67 +341,115 @@ nbBool DX12Renderer::createFencesAndFenceEvent()
 {
 	HRESULT hr;
 
-	// create the fences
-	for (nbInt32 i = 0; i < swapChainBufferCount; i++)
+	for (auto& buffer : m_commandBuffers)
 	{
-		hr = m_device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&m_fence[i]));
-		if (FAILED(hr))
+		for (nbInt32 i = 0; i < swapChainBufferCount; i++)
+		{
+			hr = m_device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&buffer.second.fences[i]));
+			if (FAILED(hr))
+			{
+				return false;
+			}
+			
+			// set the initial fence value to 0
+			buffer.second.fenceValue[i] = 0;
+		}
+
+		// create a handle to a fence event
+		buffer.second.fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+		if (buffer.second.fenceEvent == nullptr)
 		{
 			return false;
 		}
-
-		// set the initial fence value to 0
-		m_fenceValue[i] = 0;
-	}
-
-	// create a handle to a fence event
-	m_fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
-	if (m_fenceEvent == nullptr)
-	{
-		return false;
 	}
 
 	return true;
 }
 
-nbBool DX12Renderer::createMSAARenderTarget(const glm::uvec2& bufferSize)
+nbBool DX12Renderer::createPixelReadBuffer()
 {
-	D3D12_RESOURCE_DESC resDesc = CD3DX12_RESOURCE_DESC::Tex2D(
-		SWAP_CHAIN_FORMAT,
-		bufferSize.x,
-		bufferSize.y,
-		1, // This render target view has only one texture.
-		1, // Use a single mipmap level
-		MSAA_SAMPLES
-	);
-	resDesc.Flags |= D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
-
-	D3D12_CLEAR_VALUE msaaOptimizedClearValue = {};
-	msaaOptimizedClearValue.Format = SWAP_CHAIN_FORMAT;
-
-	const nbFloat32 clearColor[] = { 0.0f, 0.0f, 0.0f, 1.0f };
-	memcpy(msaaOptimizedClearValue.Color, clearColor, sizeof(nbFloat32) * 4);
+	D3D12_HEAP_PROPERTIES const heapProperties =
+	{
+		/*Type*/                    D3D12_HEAP_TYPE_CUSTOM
+		/*CPUPageProperty*/         ,D3D12_CPU_PAGE_PROPERTY_WRITE_BACK
+		/*MemoryPoolPreference*/    ,D3D12_MEMORY_POOL_L0
+		/*CreationNodeMask*/        ,0
+		/*VisibleNodeMask*/         ,0
+	};
 
 	HRESULT hr = m_device->CreateCommittedResource(
-		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+		&heapProperties,
 		D3D12_HEAP_FLAG_NONE,
-		&resDesc,
-		D3D12_RESOURCE_STATE_RESOLVE_SOURCE,
-		&msaaOptimizedClearValue,
-		IID_PPV_ARGS(&m_msaaRenderTarget)
+		&CD3DX12_RESOURCE_DESC::Tex2D(NEBULA_WORLD_POSITION_RT_FORMAT, 1, 1, 1, 1, 1),
+		D3D12_RESOURCE_STATE_COPY_DEST,
+		nullptr,
+		IID_PPV_ARGS(&m_pixelReadBuffer)
 	);
 
-	if (FAILED(hr))
+	return SUCCEEDED(hr);
+}
+
+nbBool DX12Renderer::createRenderTargets(const glm::uvec2& bufferSize)
+{
+	D3D12_CLEAR_VALUE optimizedClearValue = {};
+	optimizedClearValue.Format = NEBULA_SWAP_CHAIN_FORMAT;
+
 	{
-		return false;
+		const nbFloat32 clearColor[] = { 0.0f, 0.0f, 0.0f, 1.0f };
+		memcpy(optimizedClearValue.Color, clearColor, sizeof(nbFloat32) * 4);
 	}
 
-	m_msaaRTDescriptorHandle = m_rtvAllocator->allocate({ m_msaaRenderTarget });
+	{
+		// The msaa render target
+		D3D12_RESOURCE_DESC resDesc = CD3DX12_RESOURCE_DESC::Tex2D(NEBULA_SWAP_CHAIN_FORMAT, bufferSize.x, bufferSize.y, 1, 1, MSAA_SAMPLES);
+		resDesc.Flags |= D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+
+		HRESULT hr = m_device->CreateCommittedResource(
+			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+			D3D12_HEAP_FLAG_NONE,
+			&resDesc,
+			D3D12_RESOURCE_STATE_RESOLVE_SOURCE,
+			&optimizedClearValue,
+			IID_PPV_ARGS(&m_msaaRenderTarget)
+		);
+
+		if (FAILED(hr))
+			return false;
+
+		m_msaaRTDescriptorHandle = m_rtvAllocator->allocate({ m_msaaRenderTarget });
+	}
+
+	{
+		// The world position render target
+		m_positionRenderTargetDesc = CD3DX12_RESOURCE_DESC::Tex2D(NEBULA_WORLD_POSITION_RT_FORMAT, bufferSize.x, bufferSize.y, 1, 1, 1);
+		m_positionRenderTargetDesc.Flags |= D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+
+		{
+			const nbFloat32 clearColor[] = { 0.0f, 0.0f, 0.0f, 0.0f };
+			memcpy(optimizedClearValue.Color, clearColor, sizeof(nbFloat32) * 4);
+		}
+
+		optimizedClearValue.Format = NEBULA_WORLD_POSITION_RT_FORMAT;
+
+		HRESULT hr = m_device->CreateCommittedResource(
+			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+			D3D12_HEAP_FLAG_NONE,
+			&m_positionRenderTargetDesc,
+			D3D12_RESOURCE_STATE_COPY_SOURCE,
+			&optimizedClearValue,
+			IID_PPV_ARGS(&m_positionRenderTarget)
+		);
+
+		if (FAILED(hr))
+			return false;
+
+		m_positionRTDescriptorHandle = m_rtvAllocator->allocate({ m_positionRenderTarget });
+	}
 
 	return true;
 }
 
-nbBool DX12Renderer::createDepthStencilBuffer(const glm::uvec2& bufferSize)
+nbBool DX12Renderer::createDepthStencilBuffers(const glm::uvec2& bufferSize)
 {
 	const DXGI_FORMAT format = Effect::defaultDSFormat;
 
@@ -386,16 +468,31 @@ nbBool DX12Renderer::createDepthStencilBuffer(const glm::uvec2& bufferSize)
 	);
 
 	if (FAILED(hr))
-	{
 		return false;
-	}
-
+	
 	D3D12_DEPTH_STENCIL_VIEW_DESC depthStencilDesc = {};
 	depthStencilDesc.Format = format;
 	depthStencilDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2DMS;
 	depthStencilDesc.Flags = D3D12_DSV_FLAG_NONE;
 
 	m_dsvDescriptorsHandle = m_dsvAllocator->allocate({ m_depthStencilBuffer }, depthStencilDesc);
+
+	// The world position render depth
+	hr = m_device->CreateCommittedResource(
+		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+		D3D12_HEAP_FLAG_NONE,
+		&CD3DX12_RESOURCE_DESC::Tex2D(format, bufferSize.x, bufferSize.y, 1, 1, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL),
+		D3D12_RESOURCE_STATE_DEPTH_WRITE,
+		&depthOptimizedClearValue,
+		IID_PPV_ARGS(&m_positionDepthStencilBuffer)
+	);
+
+	if (FAILED(hr))
+		return false;
+
+	depthStencilDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
+
+	m_positionDsvDescriptorsHandle = m_dsvAllocator->allocate({ m_positionDepthStencilBuffer }, depthStencilDesc);
 
 	return true;
 }
@@ -422,8 +519,14 @@ void DX12Renderer::releaseSwapChainDynamicResources()
 	NEBULA_ASSERT(m_depthStencilBuffer);
 	m_depthStencilBuffer->Release();
 
+	NEBULA_ASSERT(m_positionDepthStencilBuffer);
+	m_positionDepthStencilBuffer->Release();
+
 	NEBULA_ASSERT(m_msaaRenderTarget);
 	m_msaaRenderTarget->Release();
+
+	NEBULA_ASSERT(m_positionRenderTarget);
+	m_positionRenderTarget->Release();
 
 	for (nbInt32 i = 0; i < swapChainBufferCount; i++)
 	{
@@ -431,7 +534,9 @@ void DX12Renderer::releaseSwapChainDynamicResources()
 	}
 
 	m_rtvAllocator->release(m_msaaRTDescriptorHandle);
+	m_rtvAllocator->release(m_positionRTDescriptorHandle);
 	m_dsvAllocator->release(m_dsvDescriptorsHandle);
+	m_dsvAllocator->release(m_positionDsvDescriptorsHandle);
 }
 
 void DX12Renderer::resizeBuffers(const glm::uvec2& newSize)
@@ -441,9 +546,9 @@ void DX12Renderer::resizeBuffers(const glm::uvec2& newSize)
 	HRESULT hr = m_swapChain->ResizeBuffers(0, newSize.x, newSize.y, DXGI_FORMAT_UNKNOWN, m_swapChainDesc.Flags);
 	NEBULA_ASSERT(SUCCEEDED(hr));
 
-	NEBULA_ASSERT(createMSAARenderTarget(newSize));
+	NEBULA_ASSERT(createRenderTargets(newSize));
 
-	NEBULA_ASSERT(createDepthStencilBuffer(newSize));
+	NEBULA_ASSERT(createDepthStencilBuffers(newSize));
 
 	NEBULA_ASSERT(bindSwapChainRenderTargets());
 
@@ -557,9 +662,9 @@ void DX12Renderer::createRGBATexture2DArray(const std::vector<const Texture::RGB
 	}
 
 	// Now we copy the upload buffer contents to the default heap
-	UpdateSubresources(m_commandList, dst.buffer, textureBufferUploadHeap, 0, 0, arraySize, &subResourceData[0]);
+	UpdateSubresources(m_commandBuffers[CommandType::Direct].commandList, dst.buffer, textureBufferUploadHeap, 0, 0, arraySize, &subResourceData[0]);
 
-	m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(dst.buffer, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_COMMON));
+	m_commandBuffers[CommandType::Direct].commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(dst.buffer, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_COMMON));
 
 	m_loadingResources.push_back(textureBufferUploadHeap);
 
@@ -581,6 +686,7 @@ nbBool DX12Renderer::createIndexBuffer(const std::vector<nbUint32>& data, Dx12In
 	}
 
 	dst.buffer = resourceData.buffer;
+	dst.count = (nbUint32)data.size();
 	dst.bufferView.BufferLocation = dst.buffer->GetGPUVirtualAddress();
 	dst.bufferView.Format = DXGI_FORMAT_R32_UINT;
 	dst.bufferView.SizeInBytes = resourceData.bufferSize;
@@ -626,55 +732,52 @@ DX12Renderer::ArrayBufferResource DX12Renderer::createArrayBufferRecource(const 
 	bufferData.SlicePitch = retData.bufferSize;
 
 	// we are now creating a command with the command list to copy the data from the upload heap to the default heap
-	UpdateSubresources(m_commandList, retData.buffer, vBufferUploadHeap, 0, 0, 1, &bufferData);
+	UpdateSubresources(m_commandBuffers[CommandType::Direct].commandList, retData.buffer, vBufferUploadHeap, 0, 0, 1, &bufferData);
 
 	// transition the vertex buffer data from copy destination state to vertex buffer state
-	m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(retData.buffer, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER));
+	m_commandBuffers[CommandType::Direct].commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(retData.buffer, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER));
 
 	m_loadingResources.push_back(vBufferUploadHeap);
 
 	return retData;
 }
 
+void DX12Renderer::tryWaitEffectCompilationDone()
+{
+	if (!m_effectsReady)
+	{
+		if (m_compileEffectThread.joinable())
+			m_compileEffectThread.join();
+	}
+}
+
+Scene::GizmoMap DX12Renderer::createGizmos() const
+{
+	Scene::GizmoMap gizmos;
+
+	gizmos[Gizmo::GizmoType::Move] = std::make_unique<Effect::DX12MoveGizmo>();
+	gizmos[Gizmo::GizmoType::Rotation] = std::make_unique<Effect::DX12RotationGizmo>();
+	gizmos[Gizmo::GizmoType::Scale] = std::make_unique<Effect::DX12ScaleGizmo>();
+
+	return gizmos;
+}
+
 void DX12Renderer::startCommandRecording()
 {
-	waitCurrentBackBufferCommandsFinish();
-
-	// we can only reset an allocator once the gpu is done with it
-	// resetting an allocator frees the memory that the command list was stored in
-	HRESULT hr = m_commandAllocator[m_frameIndex]->Reset();
-	if (FAILED(hr))
-	{
-		NEBULA_TRACE("DX12Renderer::startCommandRecording - Failed to reset command allocator index = " << m_frameIndex);
-		return;
-	}
-
-	// reset the command list. by resetting the command list we are putting it into
-	// a recording state so we can start recording commands into the command allocator.
-	// the command allocator that we reference here may have multiple command lists
-	// associated with it, but only one can be recording at any time. Make sure
-	// that any other command lists associated to this command allocator are in
-	// the closed state (not recording).
-	// Here you will pass an initial pipeline state object as the second parameter.
-	hr = m_commandList->Reset(m_commandAllocator[m_frameIndex], nullptr);
-	NEBULA_ASSERT(SUCCEEDED(hr));
+	tryWaitEffectCompilationDone();
+	startCommandRecording(CommandType::Direct);
 }
 
 void DX12Renderer::endCommandRecording()
 {
-	HRESULT hr = m_commandList->Close();
-	NEBULA_ASSERT(SUCCEEDED(hr));
-
-	// create an array of command lists (only one command list here)
-	ID3D12CommandList* ppCommandLists[] = { m_commandList };
-
-	// execute the array of command lists
-	m_commandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
+	endCommandRecording(CommandType::Direct);
 
 	if (m_loadingResources.size())
 	{
-		m_fenceValue[m_frameIndex]++;
-		waitCurrentBackBufferCommandsFinish();
+		auto& commandBuffers = m_commandBuffers[CommandType::Direct];
+		commandBuffers.fenceValue[commandBuffers.frameIndex]++;
+
+		waitCurrentBackBufferCommandsFinish(CommandType::Direct);
 
 		for (auto resource : m_loadingResources)
 			resource->Release();
@@ -687,45 +790,191 @@ void DX12Renderer::endSceneLoadCommandRecording(const Scene::BaseScene* scene)
 {
 	if (scene)
 	{
-		m_forwardLightningEffect->onNewScene(*scene, m_commandList);
+		Effect::MeshGroupConstantBufferSingleton::instance()->onNewScene(*scene, m_commandBuffers[CommandType::Direct].commandList);
+		m_forwardLightningEffect->onNewScene(*scene, m_commandBuffers[CommandType::Direct].commandList);
 		m_renderLightsEffect->onNewScene(*scene);
 	}
 
 	endCommandRecording();
 }
 
+void DX12Renderer::startCommandRecording(CommandType commandType)
+{
+	waitCurrentBackBufferCommandsFinish(commandType);
+
+	auto& commandBuffers = m_commandBuffers[commandType];
+
+	// we can only reset an allocator once the gpu is done with it
+	// resetting an allocator frees the memory that the command list was stored in
+	const nbInt32 frameIdx = commandBuffers.frameIndex;
+
+	HRESULT hr = commandBuffers.commandAllocator[frameIdx]->Reset();
+	if (FAILED(hr))
+	{
+		NEBULA_TRACE("DX12Renderer::startCommandRecording - Failed to reset command allocator index = " << frameIdx);
+		return;
+	}
+
+	// reset the command list. by resetting the command list we are putting it into
+	// a recording state so we can start recording commands into the command allocator.
+	// the command allocator that we reference here may have multiple command lists
+	// associated with it, but only one can be recording at any time. Make sure
+	// that any other command lists associated to this command allocator are in
+	// the closed state (not recording).
+	// Here you will pass an initial pipeline state object as the second parameter.
+	hr = commandBuffers.commandList->Reset(commandBuffers.commandAllocator[frameIdx], nullptr);
+	NEBULA_ASSERT(SUCCEEDED(hr));
+}
+
+void DX12Renderer::endCommandRecording(CommandType commandType)
+{
+	auto& commandBuffers = m_commandBuffers[commandType];
+
+	HRESULT hr = commandBuffers.commandList->Close();
+	NEBULA_ASSERT(SUCCEEDED(hr));
+
+	// create an array of command lists (only one command list here)
+	ID3D12CommandList* ppCommandLists[] = { commandBuffers.commandList };
+
+	// execute the array of command lists
+	commandBuffers.commandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
+}
+
+void DX12Renderer::waitCurrentBackBufferCommandsFinish(CommandType commandType)
+{
+	auto& commandBuffers = m_commandBuffers[commandType];
+
+	const nbInt32 frameIdx = (commandType == CommandType::Direct) ? m_swapChain->GetCurrentBackBufferIndex()
+		: ++commandBuffers.frameIndex % (swapChainBufferCount - 1u);
+
+	commandBuffers.frameIndex = frameIdx;
+
+	waitBackBufferCommandsFinish(commandType, frameIdx);
+}
+
+void DX12Renderer::waitBackBufferCommandsFinish(CommandType commandType, nbInt32 frameIdx)
+{
+	auto& commandBuffers = m_commandBuffers[commandType];
+
+	const UINT64 fence = commandBuffers.fenceValue[frameIdx];
+	HRESULT hr = commandBuffers.commandQueue->Signal(commandBuffers.fences[frameIdx], fence);
+
+	// Wait until GPU finish with command queue.
+	if (commandBuffers.fences[frameIdx]->GetCompletedValue() < fence)
+	{
+		hr = commandBuffers.fences[frameIdx]->SetEventOnCompletion(fence, commandBuffers.fenceEvent);
+		NEBULA_ASSERT(SUCCEEDED(hr));
+
+		WaitForSingleObject(commandBuffers.fenceEvent, INFINITE);
+	}
+
+	NEBULA_ASSERT(SUCCEEDED(hr));
+	commandBuffers.fenceValue[frameIdx]++;
+}
+
+IntersectionInfo DX12Renderer::queryIntersection(const Scene::BaseScene& scene, const glm::uvec2& pos)
+{
+	{
+		// Start direct command recording.
+		// Will wait for effect compilation to be done if required.
+		startCommandRecording();
+
+		auto& commandList = m_commandBuffers[CommandType::Direct].commandList;
+		const nbInt32 frameIdx = m_commandBuffers[CommandType::Direct].frameIndex;
+
+		// Update the camera constant buffer
+		Effect::CameraConstantBufferSingleton::instance()->update(scene, commandList, frameIdx);
+
+		// First render the positions
+		commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_positionRenderTarget, D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET));
+
+		const nbFloat32 clearColor[] = { 0.0f, 0.0f, 0.0f, 0.0f };
+		commandList->ClearRenderTargetView(m_positionRTDescriptorHandle.getCpuHandle(), clearColor, 0, nullptr);
+		commandList->ClearDepthStencilView(m_positionDsvDescriptorsHandle.getCpuHandle(), D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+		commandList->OMSetRenderTargets(1, &m_positionRTDescriptorHandle.getCpuHandle(), FALSE, &m_positionDsvDescriptorsHandle.getCpuHandle());
+		commandList->RSSetViewports(1, &m_viewport);
+		commandList->RSSetScissorRects(1, &m_scissorRect);
+
+		ID3D12DescriptorHeap* descriptorHeaps[] = { m_cbs_srv_uavAllocator->getHeap() };
+		commandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
+
+		{
+			Effect::RenderWorldPositionPushArgs args = { scene };
+			m_renderPositionEffect->pushDrawCommands(args, commandList, frameIdx);
+		}
+
+		commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_positionRenderTarget, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_COPY_SOURCE));
+
+		// Copy texture pixel
+		CD3DX12_TEXTURE_COPY_LOCATION dest(m_pixelReadBuffer, D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX);
+		CD3DX12_TEXTURE_COPY_LOCATION src(m_positionRenderTarget, D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX);
+
+		CD3DX12_BOX box(pos.x, pos.y, pos.x + 1, pos.y + 1);
+		commandList->CopyTextureRegion(&dest, 0, 0, 0, &src, &box);
+
+		endCommandRecording();
+
+		waitBackBufferCommandsFinish(CommandType::Direct, frameIdx);
+	}
+
+	// Now read
+	float rawData[4];
+	m_pixelReadBuffer->ReadFromSubresource(reinterpret_cast<void*>(&rawData), 0, 0, 0, nullptr);
+
+	nbUint32 flatMeshIdx = (nbUint32)rawData[3];
+
+	if (flatMeshIdx == 0)
+		return IntersectionInfo{};
+
+	--flatMeshIdx;
+
+	auto& flatMeshes = scene.getModel()->getFlatMeshes();
+	if (flatMeshIdx >= flatMeshes.size())
+		return IntersectionInfo{};
+
+	IntersectionInfo isectInfo;
+	isectInfo.object = flatMeshes[flatMeshIdx];
+	isectInfo.worldPos = glm::vec3(rawData[0], rawData[1], rawData[2]);
+
+	return isectInfo;
+}
+
 void DX12Renderer::drawScene(const Scene::BaseScene& scene)
 {
-	// transition the MSAA RT from the resolve source to the render target state
-	m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_msaaRenderTarget, D3D12_RESOURCE_STATE_RESOLVE_SOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET));
+	auto& commandList = m_commandBuffers[CommandType::Direct].commandList;
+	const nbInt32 frameIdx = m_commandBuffers[CommandType::Direct].frameIndex;
 
-	const CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle = m_msaaRTDescriptorHandle.getCpuHandle();
-	
-	// set the render target for the output merger stage (the output of the pipeline)
-	m_commandList->OMSetRenderTargets(1, &rtvHandle, FALSE, &m_dsvDescriptorsHandle.getCpuHandle());
+	// Update the camera constant buffer
+	Effect::CameraConstantBufferSingleton::instance()->update(scene, commandList, frameIdx);
+
+	// transition the MSAA RT from the resolve source to the render target state
+	commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_msaaRenderTarget, D3D12_RESOURCE_STATE_RESOLVE_SOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET));
 
 	// Clear the render target
 	const nbFloat32 clearColor[] = { 0.0f, 0.0f, 0.0f, 1.0f };
-	m_commandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
+	commandList->ClearRenderTargetView(m_msaaRTDescriptorHandle.getCpuHandle(), clearColor, 0, nullptr);
 
 	// clear the depth/stencil buffer
-	m_commandList->ClearDepthStencilView(m_dsvDescriptorsHandle.getCpuHandle(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
+	commandList->ClearDepthStencilView(m_dsvDescriptorsHandle.getCpuHandle(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
+
+	// Set OM stage render target
+	commandList->OMSetRenderTargets(1, &m_msaaRTDescriptorHandle.getCpuHandle(), FALSE, &m_dsvDescriptorsHandle.getCpuHandle());
 
 	// set the viewport
-	m_commandList->RSSetViewports(1, &m_viewport);
+	commandList->RSSetViewports(1, &m_viewport);
 
 	// set the scissor rect
-	m_commandList->RSSetScissorRects(1, &m_scissorRect);
+	commandList->RSSetScissorRects(1, &m_scissorRect);
 
 	// push draw commands
 	ID3D12DescriptorHeap* descriptorHeaps[] = { m_cbs_srv_uavAllocator->getHeap() };
-	m_commandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
+	commandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
 
 	// Draw cubemap first so it can't override selection highlights
 	if (scene.hasCubeMap())
 	{
 		Effect::CubeMappingPushArgs args = { scene };
-		m_cubeMappingEffect->pushDrawCommands(args, m_commandList, m_frameIndex);
+		m_cubeMappingEffect->pushDrawCommands(args, commandList, frameIdx);
 	}
 
 	// Selection hightlight
@@ -733,29 +982,60 @@ void DX12Renderer::drawScene(const Scene::BaseScene& scene)
 	if (meshSelection)
 	{
 		Effect::HighlightColorPushArgs args = { scene, meshSelection };
-		m_highlightColorEffect->pushDrawCommands(args, m_commandList, m_frameIndex);
+		m_highlightColorEffect->pushDrawCommands(args, commandList, frameIdx);
 	}
 
 	// Now lights
 	if (scene.hasLights())
 	{
 		Effect::RenderLightsPushArgs lightPassArgs = { scene };
-		m_renderLightsEffect->pushDrawCommands(lightPassArgs, m_commandList, m_frameIndex);
+		m_renderLightsEffect->pushDrawCommands(lightPassArgs, commandList, frameIdx);
 	}
 
 	// Draw scene.
-	m_commandList->OMSetStencilRef(1);
-	Effect::ForwardLightningPushArgs args = { scene };
-	m_forwardLightningEffect->pushDrawCommands(args, m_commandList, m_frameIndex);
+	m_commandBuffers[CommandType::Direct].commandList->OMSetStencilRef(1);
+	{
+		Effect::ForwardLightningPushArgs args = { scene };
+		m_forwardLightningEffect->pushDrawCommands(args, commandList, frameIdx);
+	}
 
+	// Light visual lines
+	const Light::BaseLight* lightSelection = Light::BaseLight::fromIselectable(scene.getCurrentSelection());
+	if (lightSelection)
+	{
+		Effect::LightVisualLinesPushArgs linesArgs = { scene.getCamera(), lightSelection, scene.getModel()->getBoundsSizeLength()};
+		m_lightVisualLinesEffect->pushDrawCommands(linesArgs, commandList, frameIdx);
+	}
+	
+	// Finish with gizmo.
+	if (lightSelection || meshSelection)
+	{
+		const Gizmo::BaseGizmo* gizmo = scene.getCurrentGizmo();
+		NEBULA_ASSERT(gizmo);
+		const Gizmo::GizmoType gizmoType = gizmo->getType();
+		Effect::RenderGizmoPushArgs gizmoArgs = { scene };
+
+		if (gizmoType == Gizmo::GizmoType::Move)
+		{
+			m_moveGizmoEffect->pushDrawCommands(gizmoArgs, commandList, frameIdx);
+		}
+		else if (gizmoType == Gizmo::GizmoType::Scale)
+		{
+			m_scaleGizmoEffect->pushDrawCommands(gizmoArgs, commandList, frameIdx);
+		}
+		else if (gizmoType == Gizmo::GizmoType::Rotation)
+		{
+			m_rotationGizmoEffect->pushDrawCommands(gizmoArgs, commandList, frameIdx);
+		}
+	}
 
 	// Resolve msaa to swap chain render target
-	m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_renderTargets[m_frameIndex], D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RESOLVE_DEST));
-	m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_msaaRenderTarget, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_RESOLVE_SOURCE));
-	m_commandList->ResolveSubresource(m_renderTargets[m_frameIndex], 0, m_msaaRenderTarget, 0, SWAP_CHAIN_FORMAT);
+	commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_renderTargets[frameIdx], D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RESOLVE_DEST));
+	commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_msaaRenderTarget, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_RESOLVE_SOURCE));
+	commandList->ResolveSubresource(m_renderTargets[frameIdx], 0, m_msaaRenderTarget, 0, NEBULA_SWAP_CHAIN_FORMAT);
 
 	// Transition render target to the present state
-	m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_renderTargets[m_frameIndex], D3D12_RESOURCE_STATE_RESOLVE_DEST, D3D12_RESOURCE_STATE_PRESENT));
+	commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_renderTargets[frameIdx], D3D12_RESOURCE_STATE_RESOLVE_DEST, D3D12_RESOURCE_STATE_PRESENT));
 }
 
 void DX12Renderer::present()
@@ -768,25 +1048,4 @@ void DX12Renderer::present()
 	}
 }
 
-void DX12Renderer::waitCurrentBackBufferCommandsFinish()
-{
-	HRESULT hr;
-	// swap the current rtv buffer index so we draw on the correct buffer
-	m_frameIndex = m_swapChain->GetCurrentBackBufferIndex();
-
-	const UINT64 fence = m_fenceValue[m_frameIndex];
-	hr = m_commandQueue->Signal(m_fence[m_frameIndex], fence);
-
-	// Wait until GPU finish with command queue.
-	if (m_fence[m_frameIndex]->GetCompletedValue() < fence)
-	{
-		hr = m_fence[m_frameIndex]->SetEventOnCompletion(fence, m_fenceEvent);
-		NEBULA_ASSERT(SUCCEEDED(hr));
-
-		WaitForSingleObject(m_fenceEvent, INFINITE);
-	}
-
-	NEBULA_ASSERT(SUCCEEDED(hr));
-	m_fenceValue[m_frameIndex]++;
-}
 }}}}

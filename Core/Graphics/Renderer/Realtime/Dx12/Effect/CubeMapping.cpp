@@ -7,8 +7,8 @@
 
 #include "stdafx.h"
 
+#include "CameraConstantBuffer.h"
 #include "CubeMapping.h"
-#include "Graphics/Renderer/Realtime/Dx12/Dx12Renderer.h"
 #include <dxgi1_4.h>
 
 namespace Graphics { namespace Renderer { namespace Realtime { namespace Dx12 { namespace Effect
@@ -25,18 +25,22 @@ CubeMapping::CubeMapping(const DXGI_SAMPLE_DESC& sampleDesc)
 
 void CubeMapping::initRootSignature()
 {
-	D3D12_ROOT_PARAMETER rootParameters[2];
+	D3D12_ROOT_PARAMETER rootParameters[3];
 
 	D3D12_ROOT_DESCRIPTOR rootCBVDescriptor;
 	rootCBVDescriptor.RegisterSpace = 0;
-	rootCBVDescriptor.ShaderRegister = 0;
 
-	// 0 : Root parameter for the vertex shader constant buffer
-	rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
-	rootParameters[0].Descriptor = rootCBVDescriptor;
-	rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
+	nbUint32 paramIdx = 0;
+	// 0 & 1: vertex shader constant buffers
+	for (; paramIdx < 2; ++paramIdx)
+	{
+		rootCBVDescriptor.ShaderRegister = paramIdx;
+		rootParameters[paramIdx].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+		rootParameters[paramIdx].Descriptor = rootCBVDescriptor;
+		rootParameters[paramIdx].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
+	}
 
-	// 1 : Root parameter for the cube map texture.
+	// 2 : Root parameter for the cube map texture.
 	D3D12_DESCRIPTOR_RANGE descriptorTableRanges[1];
 	descriptorTableRanges[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
 	descriptorTableRanges[0].NumDescriptors = 1;
@@ -49,9 +53,9 @@ void CubeMapping::initRootSignature()
 	descriptorTable.NumDescriptorRanges = _countof(descriptorTableRanges);
 	descriptorTable.pDescriptorRanges = &descriptorTableRanges[0];
 
-	rootParameters[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-	rootParameters[1].DescriptorTable = descriptorTable;
-	rootParameters[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+	rootParameters[paramIdx].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+	rootParameters[paramIdx].DescriptorTable = descriptorTable;
+	rootParameters[paramIdx].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
 
 	createRootSignature(rootParameters, _countof(rootParameters));
 }
@@ -100,9 +104,6 @@ void CubeMapping::updateVertexShaderCB(CubeMappingPushArgs& data, nbInt32 frameI
 {
 	VertexShaderCB vertexShaderCB;
 
-	XMStoreFloat4x4(&vertexShaderCB.wvpMat,
-		data.scene.getCamera()->getDirectXTransposedMVP());
-
 	auto center = data.scene.getCubeMap()->getBox().getCenter();
 	vertexShaderCB.cubeMapCenter = { center.x, center.y, center.z};
 
@@ -119,13 +120,14 @@ void CubeMapping::pushDrawCommands(CubeMappingPushArgs& data, ID3D12GraphicsComm
 	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 	updateVertexShaderCB(data, frameIndex);
-	commandList->SetGraphicsRootConstantBufferView(0, m_vertexShaderCBUploadHeaps[frameIndex]->GetGPUVirtualAddress());
+	commandList->SetGraphicsRootConstantBufferView(0, CameraConstantBufferSingleton::instance()->getUploadtHeaps()[frameIndex]->GetGPUVirtualAddress());
+	commandList->SetGraphicsRootConstantBufferView(1, m_vertexShaderCBUploadHeaps[frameIndex]->GetGPUVirtualAddress());
 
 	auto dx12CubeMap = static_cast<const DX12CubeMap*>(cubeMap.get());
 
 	commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(dx12CubeMap->m_textureHandle.buffer, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE));
 	
-	commandList->SetGraphicsRootDescriptorTable(1, dx12CubeMap->m_textureHandle.descriptorHandle.getGpuHandle());
+	commandList->SetGraphicsRootDescriptorTable(2, dx12CubeMap->m_textureHandle.descriptorHandle.getGpuHandle());
 
 	commandList->IASetVertexBuffers(0, 1, &dx12CubeMap->m_vtxHandle.bufferView);
 	commandList->IASetIndexBuffer(&dx12CubeMap->m_idxHandle.bufferView);

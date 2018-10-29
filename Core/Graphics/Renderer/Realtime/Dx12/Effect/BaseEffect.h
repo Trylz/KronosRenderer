@@ -23,6 +23,12 @@
 
 #define NEBULA_DX12_ATTRIBUTE_ALIGN __declspec(align(16))
 
+#define NEBULA_DX12_ALIGN_SIZE(x) (sizeof(x) + (D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT - 1)) & ~(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT - 1)
+
+#define NEBULA_DX12_SAFE_RELEASE(x) if (x) x->Release()
+
+#define NEBULA_SWAP_CHAIN_FORMAT DXGI_FORMAT_R8G8B8A8_UNORM
+
 namespace Graphics { namespace Renderer { namespace Realtime { namespace Dx12{ namespace Effect
 {
 extern SharedDevicePtr D3d12Device;
@@ -54,7 +60,8 @@ protected:
 		const UINT inputLayoutNumElements,
 		const D3D12_BLEND_DESC& blendDesc = CD3DX12_BLEND_DESC(D3D12_DEFAULT),
 		const D3D12_DEPTH_STENCIL_DESC& depthStencilDesc = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT),
-		const D3D12_RASTERIZER_DESC& rasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT));
+		const D3D12_RASTERIZER_DESC& rasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT),
+		const std::vector<DXGI_FORMAT>& renderTargetFormats = std::vector<DXGI_FORMAT>{ NEBULA_SWAP_CHAIN_FORMAT });
 
 	DXGI_SAMPLE_DESC m_sampleDesc;
 	CComPtr<ID3D12RootSignature> m_rootSignature;
@@ -159,7 +166,8 @@ void BaseEffect<DataToProcessType>::compilePipeline(PipelineStatePtr& pipelineSt
 	const UINT inputLayoutNumElements,
 	const D3D12_BLEND_DESC& blendDesc,
 	const D3D12_DEPTH_STENCIL_DESC& depthStencilDesc,
-	const D3D12_RASTERIZER_DESC& rasterizerDesc)
+	const D3D12_RASTERIZER_DESC& rasterizerDesc,
+	const std::vector<DXGI_FORMAT>& renderTargetFormats)
 {
 	// fill out a shader bytecode structure, which is basically just a pointer
 	// to the shader bytecode and the size of the shader bytecode
@@ -194,13 +202,19 @@ void BaseEffect<DataToProcessType>::compilePipeline(PipelineStatePtr& pipelineSt
 	psoDesc.VS = vertexShaderBytecode; // structure describing where to find the vertex shader bytecode and how large it is
 	psoDesc.PS = pixelShaderBytecode; // same as VS but for pixel shader
 	psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE; // type of topology we are drawing
-	psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM; // format of the render target
+
+	NEBULA_ASSERT(renderTargetFormats.size() <= 8);
+	const UINT numRenderTargets = std::min((UINT)renderTargetFormats.size(), 8u);
+
+	for (nbUint32 i = 0; i < numRenderTargets; ++i)
+		psoDesc.RTVFormats[i] = renderTargetFormats[i];
+
 	psoDesc.SampleDesc = m_sampleDesc; // must be the same sample description as the swapchain and depth/stencil buffer
 	psoDesc.SampleMask = 0xffffffff; // sample mask has to do with multi-sampling. 0xffffffff means point sampling is done
 	psoDesc.RasterizerState = rasterizerDesc;
 	psoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
 	psoDesc.BlendState = blendDesc;
-	psoDesc.NumRenderTargets = 1; // we are only binding one render target
+	psoDesc.NumRenderTargets = numRenderTargets;
 	psoDesc.DepthStencilState = depthStencilDesc;
 	psoDesc.DSVFormat = defaultDSFormat;
 

@@ -7,12 +7,15 @@
 
 #include "stdafx.h"
 
+#include "CameraConstantBuffer.h"
 #include "Graphics/Light/DirectionnalLight.h"
 #include "Graphics/Light/OmniLight.h"
 #include "Graphics/Material/DefaultDielectric.h"
 #include "Graphics/Material/DefaultMetal.h"
+#include "Graphics/Material/Hair.h"
 #include "Graphics/Renderer/Realtime/Dx12/Dx12Renderer.h"
 #include "ForwardLighning.h"
+#include "MeshGroupConstantBuffer.h"
 #include <dxgi1_4.h>
 #include <minwinbase.h>
 
@@ -22,59 +25,48 @@ using namespace DirectX;
 
 ForwardLighning::ForwardLighning(const DXGI_SAMPLE_DESC& sampleDesc)
 : BaseEffect(sampleDesc)
+, m_pixelShaderMaterialCBUploadHeap(nullptr)
+, m_pixelShaderMaterialCBDefaultHeap(nullptr)
 {
 	initRootSignature();
 	initPipelineStateObjects();
 	initStaticConstantBuffers();
-
-	for (nbInt32 i = 0; i < swapChainBufferCount; ++i)
-	{
-		m_pixelShaderMaterialCBUploadHeaps[i] = nullptr;
-		m_pixelShaderMaterialCBDefaultHeaps[i] =  nullptr;
-	}
 }
 
 ForwardLighning::~ForwardLighning()
 {
-	for (nbInt32 i = 0; i < swapChainBufferCount; ++i)
-	{
-		if (m_pixelShaderMaterialCBUploadHeaps[i])
-			m_pixelShaderMaterialCBUploadHeaps[i]->Release();
-
-		if (m_pixelShaderMaterialCBDefaultHeaps[i])
-			m_pixelShaderMaterialCBDefaultHeaps[i]->Release();
-	}
+	NEBULA_DX12_SAFE_RELEASE(m_pixelShaderMaterialCBUploadHeap);
+	NEBULA_DX12_SAFE_RELEASE(m_pixelShaderMaterialCBDefaultHeap);
 }
 
 void ForwardLighning::onUpdateMaterial(const Scene::BaseScene& scene, const MaterialIdentifier& matId, ID3D12GraphicsCommandList* commandList)
 {
-	for (nbInt32 i = 0; i < swapChainBufferCount; ++i)
-	{
-		commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_pixelShaderMaterialCBDefaultHeaps[i], D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_DEST));
-	}
+	commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_pixelShaderMaterialCBDefaultHeap, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_DEST));
 
 	updateMaterial(scene, matId, commandList);
 
-	fromMaterialUploadHeapToDefaulHeap(commandList);
+	fromMaterialUploadToDefaultHeaps(commandList);
 }
 
 void ForwardLighning::initRootSignature()
 {
-	D3D12_ROOT_PARAMETER rootParameters[6];
+	D3D12_ROOT_PARAMETER rootParameters[7];
 
 	// A root descriptor, which explains where to find the data for the parameter
 	D3D12_ROOT_DESCRIPTOR rootCBVDescriptor;
 	rootCBVDescriptor.RegisterSpace = 0;
-	rootCBVDescriptor.ShaderRegister = 0;
 
-	// 0 : Root parameter for the vertex shader constant buffer
+	// 0 & 1 : Root parameter for the vertex shader shared constant buffers
 	nbInt32 paramIdx = 0;
-	rootParameters[paramIdx].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // this is a constant buffer view root descriptor
-	rootParameters[paramIdx].Descriptor = rootCBVDescriptor; // this is the root descriptor for this root parameter
-	rootParameters[paramIdx].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX; // our vertex shader will be the only shader accessing this parameter for now
-	++paramIdx;
+	for (; paramIdx < 2; ++paramIdx)
+	{
+		rootCBVDescriptor.ShaderRegister = paramIdx;
+		rootParameters[paramIdx].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // this is a constant buffer view root descriptor
+		rootParameters[paramIdx].Descriptor = rootCBVDescriptor; // this is the root descriptor for this root parameter
+		rootParameters[paramIdx].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX; // our vertex shader will be the only shader accessing this parameter for now
+	}
 
-	// 1 & 2 : Root parameter for the light and material pixel shader constant buffer
+	// 2 & 3 : Root parameter for the light and material pixel shader constant buffer
 	for (nbInt32 i = 0; i < 2; ++i, ++paramIdx)
 	{
 		rootCBVDescriptor.ShaderRegister = i;
@@ -83,7 +75,7 @@ void ForwardLighning::initRootSignature()
 		rootParameters[paramIdx].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
 	}
 
-	// 3 & 4 & 5 Root parameter for the pixel shader textures.
+	// 4 & 5 & 6 Root parameter for the pixel shader textures.
 	// create a descriptor range and fill it out
 	// this is a range of descriptors inside a descriptor heap
 	static const nbInt32 nbTextures = 3;
@@ -163,16 +155,20 @@ void ForwardLighning::initPipelineStateObjects()
 
 	// Pixel shader macros
 	auto maxLightDef = std::to_string(Graphics::Light::MaxLightsPerScene);
-	auto defaultDielectricIdxDef = std::to_string(Material::BaseMaterial::Type::DefaultDieletric);
+	auto defaultDielectricIdxDef = std::to_string(Material::BaseMaterial::Type::DefaultDielectric);
 	auto defaultMetalIdxDef = std::to_string(Material::BaseMaterial::Type::DefaultMetal);
 	auto perfectMirrorIdxDef = std::to_string(Material::BaseMaterial::Type::PerfectMirror);
 	auto plasticIdxDef = std::to_string(Material::BaseMaterial::Type::Plastic);
+	auto hairIdxDef = std::to_string(Material::BaseMaterial::Type::Hair);
+	auto sssIdxDef = std::to_string(Material::BaseMaterial::Type::SSS);
 
 	D3D_SHADER_MACRO macros[] = {	"MAX_LIGHTS", maxLightDef.c_str(),
 									"DEFAULT_DIELECTRIC_IDX", defaultDielectricIdxDef.c_str(),
 									"DEFAULT_METAL_IDX", defaultMetalIdxDef.c_str(),
 									"PERFECT_MIRROR_IDX", perfectMirrorIdxDef.c_str(),
-									"PLASTIC_IDX", plasticIdxDef.c_str(), NULL, NULL
+									"PLASTIC_IDX", plasticIdxDef.c_str(),
+									"HAIR_IDX", hairIdxDef.c_str(),
+									"SSS_IDX", sssIdxDef.c_str(), NULL, NULL
 	};
 
 	// Compile vertex shader
@@ -185,7 +181,8 @@ void ForwardLighning::initPipelineStateObjects()
 		inputLayoutElement,
 		sizeof(inputLayoutElement) / sizeof(D3D12_INPUT_ELEMENT_DESC),
 		blendDesc,
-		dsDesc
+		dsDesc,
+		CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT)
 	);
 	
 	m_solidPSO->SetName(L"Forward lightning solid PSO");
@@ -219,26 +216,7 @@ void ForwardLighning::initStaticConstantBuffers()
 {
 	for (nbInt32 i = 0; i < swapChainBufferCount; ++i)
 	{
-		// 0 : Vertex shader constant Buffer Upload Resource Heap
-		HRESULT hr = D3d12Device->CreateCommittedResource(
-			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD), // this heap will be used to upload the constant buffer data
-			D3D12_HEAP_FLAG_NONE, // no flags
-			&CD3DX12_RESOURCE_DESC::Buffer(D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT), // size of the resource heap. Must be a multiple of 64KB for single-textures and constant buffers
-			D3D12_RESOURCE_STATE_GENERIC_READ, // will be data that is read from so we keep it in the generic read state
-			nullptr, // we do not have use an optimized clear value for constant buffers
-			IID_PPV_ARGS(&m_vertexShaderCBUploadHeaps[i]));
-
-		NEBULA_ASSERT(SUCCEEDED(hr));
-
-		m_vertexShaderCBUploadHeaps[i]->SetName(L"Vertex shader Constant Buffer Upload heap");
-		NEBULA_ASSERT(SUCCEEDED(hr));
-
-		// map the resource heap to get a gpu virtual address to the beginning of the heap
-		hr = m_vertexShaderCBUploadHeaps[i]->Map(0, &readRangeGPUOnly, reinterpret_cast<void**>(&m_vertexShaderCBGPUAddress[i]));
-		NEBULA_ASSERT(SUCCEEDED(hr));
-		
-		// 1 : Pixel shader lights constant Buffer Upload Resource Heap
-		hr = D3d12Device->CreateCommittedResource(&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+		HRESULT hr = D3d12Device->CreateCommittedResource(&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
 			D3D12_HEAP_FLAG_NONE,
 			&CD3DX12_RESOURCE_DESC::Buffer(PixelShaderLightCBAlignedSize),
 			D3D12_RESOURCE_STATE_GENERIC_READ,
@@ -268,40 +246,34 @@ void ForwardLighning::initDynamicMaterialConstantBuffer(const Scene::BaseScene& 
 		m_materialBufferSize = bufferSize;
 
 		// 0 : Init heaps
-		for (nbInt32 i = 0; i < swapChainBufferCount; ++i)
-		{
-			if (m_pixelShaderMaterialCBUploadHeaps[i])
-				m_pixelShaderMaterialCBUploadHeaps[i]->Release();
+		NEBULA_DX12_SAFE_RELEASE(m_pixelShaderMaterialCBUploadHeap);
+		NEBULA_DX12_SAFE_RELEASE(m_pixelShaderMaterialCBDefaultHeap);
 
-			if (m_pixelShaderMaterialCBDefaultHeaps[i])
-				m_pixelShaderMaterialCBDefaultHeaps[i]->Release();
+		// Create upload heap
+		HRESULT hr = D3d12Device->CreateCommittedResource(&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+			D3D12_HEAP_FLAG_NONE,
+			&CD3DX12_RESOURCE_DESC::Buffer(PixelShaderMaterialCBAlignedSize * bufferSize),
+			D3D12_RESOURCE_STATE_GENERIC_READ,
+			nullptr,
+			IID_PPV_ARGS(&m_pixelShaderMaterialCBUploadHeap));
 
-			// Create upload heap
-			HRESULT hr = D3d12Device->CreateCommittedResource(&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
-				D3D12_HEAP_FLAG_NONE,
-				&CD3DX12_RESOURCE_DESC::Buffer(PixelShaderMaterialCBAlignedSize * bufferSize),
-				D3D12_RESOURCE_STATE_GENERIC_READ,
-				nullptr,
-				IID_PPV_ARGS(&m_pixelShaderMaterialCBUploadHeaps[i]));
+		NEBULA_ASSERT(SUCCEEDED(hr));
+		m_pixelShaderMaterialCBUploadHeap->SetName(L"Pixel shader material Constant Buffer Upload heap");
 
-			NEBULA_ASSERT(SUCCEEDED(hr));
-			m_pixelShaderMaterialCBUploadHeaps[i]->SetName(L"Pixel shader material Constant Buffer Upload heap");
+		hr = m_pixelShaderMaterialCBUploadHeap->Map(0, &readRangeGPUOnly, reinterpret_cast<void**>(&m_pixelShaderMaterialCBGPUAddress));
+		NEBULA_ASSERT(SUCCEEDED(hr));
 
-			hr = m_pixelShaderMaterialCBUploadHeaps[i]->Map(0, &readRangeGPUOnly, reinterpret_cast<void**>(&m_pixelShaderMaterialCBGPUAddress[i]));
-			NEBULA_ASSERT(SUCCEEDED(hr));
+		// Create default heap
+		hr = D3d12Device->CreateCommittedResource(
+			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+			D3D12_HEAP_FLAG_NONE,
+			&CD3DX12_RESOURCE_DESC::Buffer(PixelShaderMaterialCBAlignedSize * bufferSize),
+			D3D12_RESOURCE_STATE_COPY_DEST,
+			nullptr,
+			IID_PPV_ARGS(&m_pixelShaderMaterialCBDefaultHeap));
 
-			// Create default heap
-			hr = D3d12Device->CreateCommittedResource(
-				&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
-				D3D12_HEAP_FLAG_NONE,
-				&CD3DX12_RESOURCE_DESC::Buffer(PixelShaderMaterialCBAlignedSize * bufferSize),
-				D3D12_RESOURCE_STATE_COPY_DEST,
-				nullptr,
-				IID_PPV_ARGS(&m_pixelShaderMaterialCBDefaultHeaps[i]));
-
-			NEBULA_ASSERT(SUCCEEDED(hr));
-			m_pixelShaderMaterialCBDefaultHeaps[i]->SetName(L"Pixel shader material Constant Buffer Default Resource heap");
-		}
+		NEBULA_ASSERT(SUCCEEDED(hr));
+		m_pixelShaderMaterialCBDefaultHeap->SetName(L"Pixel shader material Constant Buffer Default Resource heap");
 	}
 
 	// 1 : Update maerials in upload heap
@@ -311,19 +283,16 @@ void ForwardLighning::initDynamicMaterialConstantBuffer(const Scene::BaseScene& 
 	}
 
 	// 2: Copy to default heap
-	fromMaterialUploadHeapToDefaulHeap(commandList);
+	fromMaterialUploadToDefaultHeaps(commandList);
 }
 
-void ForwardLighning::fromMaterialUploadHeapToDefaulHeap(ID3D12GraphicsCommandList* commandList)
+void ForwardLighning::fromMaterialUploadToDefaultHeaps(ID3D12GraphicsCommandList* commandList)
 {
-	for (nbInt32 i = 0; i < swapChainBufferCount; ++i)
-	{
-		// Copy upload heap to default
-		commandList->CopyResource(m_pixelShaderMaterialCBDefaultHeaps[i], m_pixelShaderMaterialCBUploadHeaps[i]);
+	// Copy upload heap to default
+	commandList->CopyResource(m_pixelShaderMaterialCBDefaultHeap, m_pixelShaderMaterialCBUploadHeap);
 
-		// Transition to pixel shader resource.
-		commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_pixelShaderMaterialCBDefaultHeaps[i], D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE));
-	}
+	// Transition to pixel shader resource.
+	commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_pixelShaderMaterialCBDefaultHeap, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE));
 }
 
 void ForwardLighning::updateMaterial(const Scene::BaseScene& scene, const MaterialIdentifier& matId, ID3D12GraphicsCommandList* commandList)
@@ -367,6 +336,11 @@ void ForwardLighning::updateMaterial(const Scene::BaseScene& scene, const Materi
 			const DefaultMetal* metalMat = static_cast<const DefaultMetal*>(material);
 			materialCB.diffuse = { metalMat->getReflectance().r, metalMat->getReflectance().g, metalMat->getReflectance().b, 1.0f };
 		}
+		else if (material->getType() == BaseMaterial::Type::Hair)
+		{
+			const Hair* hairMat = static_cast<const Hair*>(material);
+			materialCB.diffuse = { hairMat->getReflectance().r, hairMat->getReflectance().g, hairMat->getReflectance().b, 1.0f };
+		}
 
 		materialCB.opacity = material->getOpacity();
 		materialCB.type = static_cast<INT>(material->getType());
@@ -376,19 +350,8 @@ void ForwardLighning::updateMaterial(const Scene::BaseScene& scene, const Materi
 		materialCB.hasNormalTex = materialHandle->normalTexture.isValid();
 
 		nbUint64 posInCB = matId * PixelShaderMaterialCBAlignedSize;
-		memcpy(m_pixelShaderMaterialCBGPUAddress[i] + posInCB, &pixelShaderMaterialCB, sizeof(PixelShaderMaterialCB));
+		memcpy(m_pixelShaderMaterialCBGPUAddress + posInCB, &pixelShaderMaterialCB, sizeof(PixelShaderMaterialCB));
 	}
-}
-
-void ForwardLighning::updateVertexShaderCB(ForwardLightningPushArgs& data, nbInt32 frameIndex)
-{
-	VertexShaderCB vertexShaderCB;
-
-
-	XMStoreFloat4x4(&vertexShaderCB.wvpMat,
-		data.scene.getCamera()->getDirectXTransposedMVP());
-
-	memcpy(m_vertexShaderCBGPUAddress[frameIndex], &vertexShaderCB, sizeof(VertexShaderCB));
 }
 
 void ForwardLighning::updatePixelShaderLightsCB(ForwardLightningPushArgs& data, nbInt32 frameIndex)
@@ -397,10 +360,12 @@ void ForwardLighning::updatePixelShaderLightsCB(ForwardLightningPushArgs& data, 
 
 	if (const auto& media = data.scene.getMedia())
 	{
-		m_pixelShaderLightsCB.mediaInfo = { static_cast<FLOAT>(!!media),
-			1.0f - media->getExtinctionCoeff(),
-			media->getExtinctionCoeffTweaked(),
-			1.0f };
+		m_pixelShaderLightsCB.mediaInfo = {
+			1.0f,
+			0.5f,
+			media->getExtinctionCoeff(),
+			1.0f
+		};
 	}
 
 	const auto& lights = data.scene.getLights();
@@ -414,11 +379,11 @@ void ForwardLighning::updatePixelShaderLightsCB(ForwardLightningPushArgs& data, 
 	const auto& ambientColor = data.scene.getAmbientColor();
 	m_pixelShaderLightsCB.sceneAmbient = { ambientColor.x, ambientColor.y, ambientColor.z, 0.0f};
 
-	nbInt32 pos = 0;
+	nbInt32 lightIdx = 0;
 
 	for (auto& lightIter : lights)
 	{
-		auto& dx12Light = m_pixelShaderLightsCB.lights[pos];
+		auto& dx12Light = m_pixelShaderLightsCB.lights[lightIdx];
 		auto lightType = lightIter.second->getType();
 
 		dx12Light.type = static_cast<nbInt32>(lightType);
@@ -427,14 +392,14 @@ void ForwardLighning::updatePixelShaderLightsCB(ForwardLightningPushArgs& data, 
 		{
 			auto* omniLight = static_cast<Graphics::Light::OmniLight*>(lightIter.second.get());
 
-			const auto& pos = omniLight->getPosition();
+			const auto pos = omniLight->getPosition();
 			dx12Light.position = { pos.x, pos.y, pos.z, 0.0f };
 			dx12Light.range = omniLight->getRange();
 		}
 		else if (lightIter.second->getType() == Graphics::Light::LightType::Directionnal)
 		{
 			auto* directionnalLight = static_cast<Graphics::Light::DirectionnalLight*>(lightIter.second.get());
-			const auto& direction = directionnalLight->getNormalizedDirection();
+			const auto& direction = directionnalLight->getDirection();
 
 			dx12Light.direction = { direction.x, direction.y, direction.z, 0.0f };
 		}
@@ -442,7 +407,7 @@ void ForwardLighning::updatePixelShaderLightsCB(ForwardLightningPushArgs& data, 
 		const auto& color = lightIter.second->getFinalColor();
 		dx12Light.color = { color.r, color.g, color.r, 0.0f };
 
-		++pos;
+		++lightIdx;
 	}
 
 	memcpy(m_pixelShaderLightsCBGPUAddress[frameIndex], &m_pixelShaderLightsCB, sizeof(PixelShaderEnvironmentCb));
@@ -459,13 +424,12 @@ void ForwardLighning::pushDrawCommands(ForwardLightningPushArgs& data, ID3D12Gra
 	// set the primitive topology
 	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-	// update shared constant buffers
-	updateVertexShaderCB(data, frameIndex);
+	// update light constant buffers
 	updatePixelShaderLightsCB(data, frameIndex);
 
 	// set shared constant buffer views
-	commandList->SetGraphicsRootConstantBufferView(0, m_vertexShaderCBUploadHeaps[frameIndex]->GetGPUVirtualAddress());
-	commandList->SetGraphicsRootConstantBufferView(1, m_pixelShaderLightsCBUploadHeaps[frameIndex]->GetGPUVirtualAddress());
+	commandList->SetGraphicsRootConstantBufferView(0, CameraConstantBufferSingleton::instance()->getUploadtHeaps()[frameIndex]->GetGPUVirtualAddress());
+	commandList->SetGraphicsRootConstantBufferView(2, m_pixelShaderLightsCBUploadHeaps[frameIndex]->GetGPUVirtualAddress());
 
 	const auto* dx12Model = static_cast<const DX12Model*>(data.scene.getModel().get());
 	const auto& meshByGroup = dx12Model->getMeshesByGroup();
@@ -484,17 +448,19 @@ void ForwardLighning::pushDrawCommands(ForwardLightningPushArgs& data, ID3D12Gra
 
 	for (auto& group : dx12Model->getMeshHandlesByGroup())
 	{
-		const auto materialHandle = dx12Model->getMaterialHandle(
-			meshByGroup.find(group.first)->second[0]->m_materialId
-		);
+		const auto meshByGroupIter = meshByGroup.find(group.first);
+		const auto& materialHandle = dx12Model->getMaterialHandle(meshByGroupIter->second[0]->getMaterialId());
+
+		const nbUint64 groupPosInCB = std::distance(meshByGroup.begin(), meshByGroupIter) * MeshGroupConstantBuffer::VertexShaderCBAlignedSize;
+		commandList->SetGraphicsRootConstantBufferView(1, MeshGroupConstantBufferSingleton::instance()->getDefaultHeap()->GetGPUVirtualAddress() + groupPosInCB);
 
 		const nbUint32 matPosInCB = materialHandle->matId * PixelShaderMaterialCBAlignedSize;
-		commandList->SetGraphicsRootConstantBufferView(2, m_pixelShaderMaterialCBDefaultHeaps[frameIndex]->GetGPUVirtualAddress() + matPosInCB);
+		commandList->SetGraphicsRootConstantBufferView(3, m_pixelShaderMaterialCBDefaultHeap->GetGPUVirtualAddress() + matPosInCB);
 		
 		// Set textures states.
-		const auto diffuseTex = getPSReadyTextureHandle(materialHandle->diffuseTexture, materialHandle, 3);
-		const auto specularTex = getPSReadyTextureHandle(materialHandle->specularTexture, materialHandle, 4);
-		const auto normalTex = getPSReadyTextureHandle(materialHandle->normalTexture, materialHandle, 5);
+		const auto diffuseTex = getPSReadyTextureHandle(materialHandle->diffuseTexture, materialHandle, 4);
+		const auto specularTex = getPSReadyTextureHandle(materialHandle->specularTexture, materialHandle, 5);
+		const auto normalTex = getPSReadyTextureHandle(materialHandle->normalTexture, materialHandle, 6);
 
 		// Draw meshes.
 		for (auto* mesh : group.second)

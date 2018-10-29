@@ -18,13 +18,10 @@ struct VS_OUTPUT
 {
 	float4 position: SV_POSITION;
 	float4 worldPosition : POSITION;
-	float3 tangent : Tangent;
-	float3 bitangent : Bitangent;
-	float3 normal : NORMAL;
-	float2 texCoord: TEXCOORD;
+	uint groupId: BLENDINDICES;
 };
 
-cbuffer VertexShaderSharedCB : register(b0)
+cbuffer CameraVertexShaderCB : register(b0)
 {
 	float4x4 vpMat;
 };
@@ -40,10 +37,7 @@ VS_OUTPUT main(VS_INPUT input)
 	VS_OUTPUT output;
 	output.worldPosition = mul(input.position, modelMat);
 	output.position = mul(output.worldPosition, vpMat);
-	output.texCoord = input.texCoord;
-	output.normal = normalize(mul(float4(input.normal, 0.0f), modelMat));
-	output.tangent = normalize(mul(float4(input.tangent, 0.0f), modelMat));
-	output.bitangent = normalize(mul(float4(input.bitangent, 0.0f), modelMat));
+	output.groupId = groupId;
 
 	return output;
 }

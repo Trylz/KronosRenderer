@@ -73,6 +73,7 @@ namespace Graphics { namespace Renderer { namespace Realtime { namespace Dx12
 	struct ArrayBuffer : ResourceBuffer
 	{
 		BufferViewType bufferView;
+		UINT count;
 	};
 
 	using Dx12VertexBufferHandle = ArrayBuffer<D3D12_VERTEX_BUFFER_VIEW>;

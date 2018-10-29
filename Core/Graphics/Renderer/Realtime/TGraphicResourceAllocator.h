@@ -30,10 +30,10 @@ public:
 	virtual nbBool releaseTexture(const TextureHandle& textureHandle) const = 0;
 
 	virtual nbBool createVertexBuffer(const void* data, VertexBufferHandle& dst, nbUint32 sizeofElem, nbUint32 count) = 0;;
-	virtual nbBool releaseVertexBuffer(const VertexBufferHandle& arrayBufferHandle) const = 0;
+	virtual void releaseVertexBuffer(const VertexBufferHandle& arrayBufferHandle) const = 0;
 
 	virtual nbBool createIndexBuffer(const std::vector<nbUint32>& data, IndexBufferHandle& dst) = 0;
-	virtual nbBool releaseIndexBuffer(const IndexBufferHandle& arrayBufferHandle) const = 0;
+	virtual void releaseIndexBuffer(const IndexBufferHandle& arrayBufferHandle) const = 0;
 
 	template<typename T>
 	nbBool createVertexBuffer(const std::vector<T>& data, VertexBufferHandle& dst)

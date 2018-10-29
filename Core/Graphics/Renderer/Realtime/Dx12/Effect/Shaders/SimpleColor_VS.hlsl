@@ -13,27 +13,17 @@ struct VS_INPUT
 struct VS_OUTPUT
 {
 	float4 position: SV_POSITION;
-	float3 texCoord: TEXCOORD;
 };
 
-cbuffer CameraVertexShaderCB : register(b0)
+cbuffer VertexShaderCB : register(b0)
 {
-	float4x4 vpMat;
-};
-
-cbuffer VertexShaderCB : register(b1)
-{
-	float3 cubeMapCenter;
+	float4x4 wvpMat;
 };
 
 VS_OUTPUT main(VS_INPUT input)
 {
 	VS_OUTPUT output;
-	output.position = mul(input.position, vpMat);
-	output.texCoord = normalize(input.position - cubeMapCenter);
-
-	// Because of inverted texture coordinate system.
-	output.texCoord.y *= -1;
+	output.position = mul(input.position, wvpMat);
 
 	return output;
 }

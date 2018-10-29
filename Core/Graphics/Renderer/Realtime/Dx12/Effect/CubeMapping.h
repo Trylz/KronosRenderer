@@ -33,7 +33,6 @@ public:
 private:
 	NEBULA_DX12_ATTRIBUTE_ALIGN struct VertexShaderCB
 	{
-		DirectX::XMFLOAT4X4 wvpMat;
 		DirectX::XMFLOAT3 cubeMapCenter;
 	};
 

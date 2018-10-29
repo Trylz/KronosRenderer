@@ -7,6 +7,7 @@
 
 #include "stdafx.h"
 
+#include "CameraConstantBuffer.h"
 #include "HighlightColor.h"
 #include "Graphics/Renderer/Realtime/Dx12/Dx12Renderer.h"
 #include <dxgi1_4.h>
@@ -25,17 +26,20 @@ HighlightColor::HighlightColor(const DXGI_SAMPLE_DESC& sampleDesc)
 
 void HighlightColor::initRootSignature()
 {
-	D3D12_ROOT_PARAMETER rootParameter;
+	D3D12_ROOT_PARAMETER rootParameters[3];
 
 	D3D12_ROOT_DESCRIPTOR rootCBVDescriptor;
 	rootCBVDescriptor.RegisterSpace = 0;
-	rootCBVDescriptor.ShaderRegister = 0;
 
-	rootParameter.ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
-	rootParameter.Descriptor = rootCBVDescriptor;
-	rootParameter.ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
+	for (nbUint32 i = 0u; i < 3; ++i)
+	{
+		rootCBVDescriptor.ShaderRegister = i;
+		rootParameters[i].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+		rootParameters[i].Descriptor = rootCBVDescriptor;
+		rootParameters[i].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
+	}
 
-	createRootSignature(&rootParameter, 1);
+	createRootSignature(rootParameters, _countof(rootParameters));
 }
 
 void HighlightColor::initPipelineStateObjects()
@@ -118,24 +122,20 @@ void HighlightColor::initVertexShaderCB()
 			&CD3DX12_RESOURCE_DESC::Buffer(D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT),
 			D3D12_RESOURCE_STATE_GENERIC_READ,
 			nullptr, 
-			IID_PPV_ARGS(&m_vertexShaderCBUploadHeaps[i][j]));
+			IID_PPV_ARGS(&m_vertexShaderSharedCBUploadHeaps[i][j]));
 
 		NEBULA_ASSERT(SUCCEEDED(hr));
-		m_vertexShaderCBUploadHeaps[i][j]->SetName(L"SimpleColorEffect : Vertex shader Constant Buffer Upload heap");
+		m_vertexShaderSharedCBUploadHeaps[i][j]->SetName(L"SimpleColorEffect : Vertex shader Constant Buffer Upload heap");
 
-		hr = m_vertexShaderCBUploadHeaps[i][j]->Map(0, &readRangeGPUOnly, reinterpret_cast<void**>(&m_vertexShaderCBGPUAddress[i][j]));
+		hr = m_vertexShaderSharedCBUploadHeaps[i][j]->Map(0, &readRangeGPUOnly, reinterpret_cast<void**>(&m_vertexShaderSharedCBGPUAddress[i][j]));
 		NEBULA_ASSERT(SUCCEEDED(hr));
 	}
 }
 
-void HighlightColor::updateVertexShaderCB(HighlightColorPushArgs& data, nbInt32 frameIndex, nbInt32 passIndex)
+void HighlightColor::updateVertexShaderSharedCB(HighlightColorPushArgs& data, nbInt32 frameIndex, nbInt32 passIndex)
 {
 	auto& camera = data.scene.getCamera();
-	VertexShaderCB vertexShaderCB;
-
-	// MVP
-	XMStoreFloat4x4(&vertexShaderCB.wvpMat,
-		camera->getDirectXTransposedMVP());
+	VertexShaderSharedCB vertexShaderCB;
 
 	// Eye vector
 	glm::vec3 eyePosition = camera->getPosition();
@@ -145,7 +145,7 @@ void HighlightColor::updateVertexShaderCB(HighlightColorPushArgs& data, nbInt32 
 	if (passIndex > 0)
 		vertexShaderCB.scale *= -1.0f;
 
-	memcpy(m_vertexShaderCBGPUAddress[passIndex][frameIndex], &vertexShaderCB, sizeof(VertexShaderCB));
+	memcpy(m_vertexShaderSharedCBGPUAddress[passIndex][frameIndex], &vertexShaderCB, sizeof(VertexShaderSharedCB));
 }
 
 void HighlightColor::pushDrawCommands(HighlightColorPushArgs& data, ID3D12GraphicsCommandList* commandList, nbInt32 frameIndex)
@@ -154,22 +154,30 @@ void HighlightColor::pushDrawCommands(HighlightColorPushArgs& data, ID3D12Graphi
 
 	commandList->SetGraphicsRootSignature(m_rootSignature);
 	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	commandList->SetGraphicsRootConstantBufferView(0, CameraConstantBufferSingleton::instance()->getUploadtHeaps()[frameIndex]->GetGPUVirtualAddress());
+
+	const auto& meshByGroup = data.scene.getModel()->getMeshesByGroup();
 
 	for (nbInt32 i = 0; i < s_nbPasses; ++i)
 	{
-		updateVertexShaderCB(data, frameIndex, i);
+		updateVertexShaderSharedCB(data, frameIndex, i);
 
 		commandList->SetPipelineState(m_PSOs[i]);
-		commandList->SetGraphicsRootConstantBufferView(0, m_vertexShaderCBUploadHeaps[i][frameIndex]->GetGPUVirtualAddress());
+		commandList->SetGraphicsRootConstantBufferView(1, m_vertexShaderSharedCBUploadHeaps[i][frameIndex]->GetGPUVirtualAddress());
 
-		auto dx12Model = static_cast<const DX12Model*>(data.scene.getModel().get());
+		{
+			const auto meshByGroupIter = meshByGroup.find(data.selection->getGroupId());
+			const nbUint64 groupPosInCB = std::distance(meshByGroup.begin(), meshByGroupIter) * MeshGroupConstantBuffer::VertexShaderCBAlignedSize;
+			commandList->SetGraphicsRootConstantBufferView(2, MeshGroupConstantBufferSingleton::instance()->getDefaultHeap()->GetGPUVirtualAddress() + groupPosInCB);
+		}
 
-		const auto& groups = dx12Model->getMeshHandlesByGroup();
+		const auto dx12Model = static_cast<const DX12Model*>(data.scene.getModel().get());
+		const auto& groupHandles = dx12Model->getMeshHandlesByGroup();
 
-		auto group = groups.find(data.selection->m_group);
-		NEBULA_ASSERT(group != groups.end());
+		auto groupHandleIter = groupHandles.find(data.selection->getGroupId());
+		NEBULA_ASSERT(groupHandleIter != groupHandles.end());
 
-		for (auto* mesh : group->second)
+		for (auto* mesh : groupHandleIter->second)
 		{
 			commandList->IASetVertexBuffers(0, 1, &mesh->vertexBuffer.bufferView);
 			commandList->IASetIndexBuffer(&mesh->indexBuffer.bufferView);
