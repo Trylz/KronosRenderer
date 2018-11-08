@@ -87,8 +87,8 @@ private:
 
 	void startCommandRecording(CommandType commandType);
 	void endCommandRecording(CommandType commandType);
-	void waitBackBufferCommandsFinish(CommandType commandType, nbInt32 frameIdx);
-	void waitCurrentBackBufferCommandsFinish(CommandType commandType);
+	void waitCommandsFinish(CommandType commandType, nbInt32 frameIdx);
+	void waitCurrentFrameCommandsFinish(CommandType commandType);
 
 	// Dx12 initilization helpers
 	// @See: // https://www.braynzarsoft.net/viewtutorial/q16390-03-initializing-directx-12
@@ -137,18 +137,18 @@ private:
 	DescriptorHandle m_dsvDescriptorsHandle;
 
 	// number of render targets equal to buffer count
-	ID3D12Resource* m_renderTargets[swapChainBufferCount];
+	ID3D12Resource* m_renderTargets[SwapChainBufferCount];
 
 	CComPtr<ID3D12Resource> m_pixelReadBuffer;
 
 	struct CommandBuffer
 	{
-		CComPtr<ID3D12CommandAllocator> commandAllocator[swapChainBufferCount];
+		CComPtr<ID3D12CommandAllocator> commandAllocator[SwapChainBufferCount];
 		CComPtr<ID3D12GraphicsCommandList> commandList;
 		CComPtr<ID3D12CommandQueue> commandQueue;
-		CComPtr<ID3D12Fence> fences[swapChainBufferCount];
+		CComPtr<ID3D12Fence> fences[SwapChainBufferCount];
 		HANDLE fenceEvent;
-		UINT64 fenceValue[swapChainBufferCount];
+		UINT64 fenceValue[SwapChainBufferCount];
 		nbInt32 frameIndex;
 	};
 

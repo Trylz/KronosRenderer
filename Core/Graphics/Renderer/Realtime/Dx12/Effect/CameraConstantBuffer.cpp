@@ -12,7 +12,7 @@ namespace Graphics { namespace Renderer { namespace Realtime { namespace Dx12 { 
 {
 CameraConstantBuffer::CameraConstantBuffer()
 {
-	for (nbInt32 i = 0; i < swapChainBufferCount; ++i)
+	for (nbInt32 i = 0; i < SwapChainBufferCount; ++i)
 	{
 		HRESULT hr = D3d12Device->CreateCommittedResource(
 			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD), 
@@ -34,7 +34,7 @@ CameraConstantBuffer::CameraConstantBuffer()
 
 CameraConstantBuffer::~CameraConstantBuffer()
 {
-	for (nbInt32 i = 0; i < swapChainBufferCount; ++i)
+	for (nbInt32 i = 0; i < SwapChainBufferCount; ++i)
 		NEBULA_DX12_SAFE_RELEASE(m_vertexShaderCBUploadHeaps[i]);
 }
 

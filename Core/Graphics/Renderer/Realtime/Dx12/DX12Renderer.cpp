@@ -141,10 +141,10 @@ void DX12Renderer::finishTasks()
 	// wait for the gpu to finish all frames
 	for (auto& buffer : m_commandBuffers)
 	{
-		for (nbInt32 i = 0; i < swapChainBufferCount; ++i)
+		for (nbInt32 i = 0; i < SwapChainBufferCount; ++i)
 		{
 			buffer.second.frameIndex = i;
-			waitCurrentBackBufferCommandsFinish(buffer.first);
+			waitCurrentFrameCommandsFinish(buffer.first);
 		}
 	}
 }
@@ -174,16 +174,18 @@ void DX12Renderer::release()
 
 nbBool DX12Renderer::createDevice(IDXGIFactory4* m_dxgiFactory)
 {
+	HRESULT hr;
+	nbBool debugLayerEnabled = false;
+	
 #if defined(_DEBUG)
 	//Enable the debug layer
-	CComPtr<ID3D12Debug> debugController;
-	if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController))))
+	CComPtr<ID3D12Debug> d3dDebug;
+	if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&d3dDebug))))
 	{
-		debugController->EnableDebugLayer();
+		d3dDebug->EnableDebugLayer();
+		debugLayerEnabled = true;
 	}
 #endif
-
-	HRESULT hr;
 
 	// adapters are the graphics card (this includes the embedded graphics on the motherboard)
 	IDXGIAdapter1* adapter;
@@ -193,6 +195,7 @@ nbBool DX12Renderer::createDevice(IDXGIFactory4* m_dxgiFactory)
 
 	// set this to true when a good one was found
 	nbBool adapterFound = false;
+
 
 	// find first hardware gpu that supports d3d 12
 	while (m_dxgiFactory->EnumAdapters1(adapterIndex, &adapter) != DXGI_ERROR_NOT_FOUND)
@@ -234,6 +237,28 @@ nbBool DX12Renderer::createDevice(IDXGIFactory4* m_dxgiFactory)
 		return false;
 	}
 
+	if (debugLayerEnabled)
+	{
+		// Disable specific warning messages.
+		CComPtr<ID3D12InfoQueue> infoQueue;
+		if (SUCCEEDED(m_device->QueryInterface(IID_PPV_ARGS(&infoQueue))))
+		{
+			D3D12_INFO_QUEUE_FILTER filter = {};
+
+			// Direct use of D3D12_MESSAGE_ID_CLEARRENDERTARGETVIEW_MISMATCHINGCLEARVALUE makes visual studio hangs.
+			// @See: D3D12_MESSAGE_ID enum in d3d12sdklayers.h
+			D3D12_MESSAGE_ID disabledMessage = (D3D12_MESSAGE_ID)((nbInt32)D3D12_MESSAGE_ID_UNKNOWN + 820);
+
+			filter.DenyList.NumIDs = 1;
+			filter.DenyList.pIDList = &disabledMessage;
+
+			D3D12_MESSAGE_SEVERITY infoSev = D3D12_MESSAGE_SEVERITY_INFO;
+			filter.DenyList.NumSeverities = 1;
+			filter.DenyList.pSeverityList = &infoSev;
+			infoQueue->PushStorageFilter(&filter);
+		}
+	}
+
 	return true;
 }
 
@@ -259,7 +284,7 @@ nbBool DX12Renderer::createSwapChain(IDXGIFactory4* m_dxgiFactory, const glm::uv
 	backBufferDesc.Format = NEBULA_SWAP_CHAIN_FORMAT;
 
 	// Describe and create the swap chain.
-	m_swapChainDesc.BufferCount = swapChainBufferCount; // number of buffers we have
+	m_swapChainDesc.BufferCount = SwapChainBufferCount; // number of buffers we have
 	m_swapChainDesc.BufferDesc = backBufferDesc; // our back buffer description
 	m_swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT; // this says the pipeline will render to this swap chain
 	m_swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD; // dxgi will discard the buffer (data) after we call present
@@ -291,7 +316,7 @@ nbBool DX12Renderer::createSwapChain(IDXGIFactory4* m_dxgiFactory, const glm::uv
 nbBool DX12Renderer::bindSwapChainRenderTargets()
 {
 	// Create a RTV for each buffer (double buffering is two buffers, tripple buffering is 3).
-	for (nbInt32 i = 0; i < swapChainBufferCount; i++)
+	for (nbInt32 i = 0; i < SwapChainBufferCount; i++)
 	{
 		// first we get the n'th buffer in the swap chain and store it in the n'th
 		// position of our ID3D12Resource array
@@ -307,7 +332,7 @@ nbBool DX12Renderer::bindSwapChainRenderTargets()
 
 nbBool DX12Renderer::createCommandAllocators()
 {
-	for (nbInt32 i = 0; i < swapChainBufferCount; i++)
+	for (nbInt32 i = 0; i < SwapChainBufferCount; i++)
 	{
 		HRESULT hr = m_device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_commandBuffers[CommandType::Direct].commandAllocator[i]));
 		if (FAILED(hr))
@@ -343,7 +368,7 @@ nbBool DX12Renderer::createFencesAndFenceEvent()
 
 	for (auto& buffer : m_commandBuffers)
 	{
-		for (nbInt32 i = 0; i < swapChainBufferCount; i++)
+		for (nbInt32 i = 0; i < SwapChainBufferCount; i++)
 		{
 			hr = m_device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&buffer.second.fences[i]));
 			if (FAILED(hr))
@@ -391,14 +416,6 @@ nbBool DX12Renderer::createPixelReadBuffer()
 
 nbBool DX12Renderer::createRenderTargets(const glm::uvec2& bufferSize)
 {
-	D3D12_CLEAR_VALUE optimizedClearValue = {};
-	optimizedClearValue.Format = NEBULA_SWAP_CHAIN_FORMAT;
-
-	{
-		const nbFloat32 clearColor[] = { 0.0f, 0.0f, 0.0f, 1.0f };
-		memcpy(optimizedClearValue.Color, clearColor, sizeof(nbFloat32) * 4);
-	}
-
 	{
 		// The msaa render target
 		D3D12_RESOURCE_DESC resDesc = CD3DX12_RESOURCE_DESC::Tex2D(NEBULA_SWAP_CHAIN_FORMAT, bufferSize.x, bufferSize.y, 1, 1, MSAA_SAMPLES);
@@ -409,7 +426,7 @@ nbBool DX12Renderer::createRenderTargets(const glm::uvec2& bufferSize)
 			D3D12_HEAP_FLAG_NONE,
 			&resDesc,
 			D3D12_RESOURCE_STATE_RESOLVE_SOURCE,
-			&optimizedClearValue,
+			nullptr,
 			IID_PPV_ARGS(&m_msaaRenderTarget)
 		);
 
@@ -424,12 +441,11 @@ nbBool DX12Renderer::createRenderTargets(const glm::uvec2& bufferSize)
 		m_positionRenderTargetDesc = CD3DX12_RESOURCE_DESC::Tex2D(NEBULA_WORLD_POSITION_RT_FORMAT, bufferSize.x, bufferSize.y, 1, 1, 1);
 		m_positionRenderTargetDesc.Flags |= D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
 
-		{
-			const nbFloat32 clearColor[] = { 0.0f, 0.0f, 0.0f, 0.0f };
-			memcpy(optimizedClearValue.Color, clearColor, sizeof(nbFloat32) * 4);
-		}
-
+		D3D12_CLEAR_VALUE optimizedClearValue = {};
 		optimizedClearValue.Format = NEBULA_WORLD_POSITION_RT_FORMAT;
+
+		const nbFloat32 clearColor[] = { 0.0f, 0.0f, 0.0f, 0.0f };
+		memcpy(optimizedClearValue.Color, clearColor, sizeof(nbFloat32) * 4);
 
 		HRESULT hr = m_device->CreateCommittedResource(
 			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
@@ -528,7 +544,7 @@ void DX12Renderer::releaseSwapChainDynamicResources()
 	NEBULA_ASSERT(m_positionRenderTarget);
 	m_positionRenderTarget->Release();
 
-	for (nbInt32 i = 0; i < swapChainBufferCount; i++)
+	for (nbInt32 i = 0; i < SwapChainBufferCount; i++)
 	{
 		m_renderTargets[i]->Release();
 	}
@@ -777,7 +793,7 @@ void DX12Renderer::endCommandRecording()
 		auto& commandBuffers = m_commandBuffers[CommandType::Direct];
 		commandBuffers.fenceValue[commandBuffers.frameIndex]++;
 
-		waitCurrentBackBufferCommandsFinish(CommandType::Direct);
+		waitCurrentFrameCommandsFinish(CommandType::Direct);
 
 		for (auto resource : m_loadingResources)
 			resource->Release();
@@ -800,7 +816,7 @@ void DX12Renderer::endSceneLoadCommandRecording(const Scene::BaseScene* scene)
 
 void DX12Renderer::startCommandRecording(CommandType commandType)
 {
-	waitCurrentBackBufferCommandsFinish(commandType);
+	waitCurrentFrameCommandsFinish(commandType);
 
 	auto& commandBuffers = m_commandBuffers[commandType];
 
@@ -840,19 +856,19 @@ void DX12Renderer::endCommandRecording(CommandType commandType)
 	commandBuffers.commandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
 }
 
-void DX12Renderer::waitCurrentBackBufferCommandsFinish(CommandType commandType)
+void DX12Renderer::waitCurrentFrameCommandsFinish(CommandType commandType)
 {
 	auto& commandBuffers = m_commandBuffers[commandType];
 
 	const nbInt32 frameIdx = (commandType == CommandType::Direct) ? m_swapChain->GetCurrentBackBufferIndex()
-		: ++commandBuffers.frameIndex % (swapChainBufferCount - 1u);
+		: ++commandBuffers.frameIndex % SwapChainBufferCount;
 
 	commandBuffers.frameIndex = frameIdx;
 
-	waitBackBufferCommandsFinish(commandType, frameIdx);
+	waitCommandsFinish(commandType, frameIdx);
 }
 
-void DX12Renderer::waitBackBufferCommandsFinish(CommandType commandType, nbInt32 frameIdx)
+void DX12Renderer::waitCommandsFinish(CommandType commandType, nbInt32 frameIdx)
 {
 	auto& commandBuffers = m_commandBuffers[commandType];
 
@@ -914,7 +930,7 @@ IntersectionInfo DX12Renderer::queryIntersection(const Scene::BaseScene& scene, 
 
 		endCommandRecording();
 
-		waitBackBufferCommandsFinish(CommandType::Direct, frameIdx);
+		waitCommandsFinish(CommandType::Direct, frameIdx);
 	}
 
 	// Now read
@@ -951,7 +967,8 @@ void DX12Renderer::drawScene(const Scene::BaseScene& scene)
 	commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_msaaRenderTarget, D3D12_RESOURCE_STATE_RESOLVE_SOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET));
 
 	// Clear the render target
-	const nbFloat32 clearColor[] = { 0.0f, 0.0f, 0.0f, 1.0f };
+	const RGBColor sceneAmbient = scene.getAmbientColor();
+	const nbFloat32 clearColor[] = { sceneAmbient.x, sceneAmbient.y, sceneAmbient.z, 1.0f };
 	commandList->ClearRenderTargetView(m_msaaRTDescriptorHandle.getCpuHandle(), clearColor, 0, nullptr);
 
 	// clear the depth/stencil buffer
@@ -981,6 +998,8 @@ void DX12Renderer::drawScene(const Scene::BaseScene& scene)
 	const Model::Mesh* meshSelection = Model::Mesh::fromIselectable(scene.getCurrentSelection());
 	if (meshSelection)
 	{
+		commandList->OMSetStencilRef(0);
+
 		Effect::HighlightColorPushArgs args = { scene, meshSelection };
 		m_highlightColorEffect->pushDrawCommands(args, commandList, frameIdx);
 	}
@@ -993,7 +1012,7 @@ void DX12Renderer::drawScene(const Scene::BaseScene& scene)
 	}
 
 	// Draw scene.
-	m_commandBuffers[CommandType::Direct].commandList->OMSetStencilRef(1);
+	commandList->OMSetStencilRef(1);
 	{
 		Effect::ForwardLightningPushArgs args = { scene };
 		m_forwardLightningEffect->pushDrawCommands(args, commandList, frameIdx);

@@ -94,8 +94,8 @@ private:
 
 	// pixel shader lights constant buffer
 	PixelShaderEnvironmentCb m_pixelShaderLightsCB;
-	CComPtr<ID3D12Resource> m_pixelShaderLightsCBUploadHeaps[swapChainBufferCount];
-	UINT8* m_pixelShaderLightsCBGPUAddress[swapChainBufferCount];
+	CComPtr<ID3D12Resource> m_pixelShaderLightsCBUploadHeaps[SwapChainBufferCount];
+	UINT8* m_pixelShaderLightsCBGPUAddress[SwapChainBufferCount];
 
 	// pixel shader material constant buffer
 	UINT8* m_pixelShaderMaterialCBGPUAddress;

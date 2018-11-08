@@ -63,11 +63,11 @@ private:
 	Dx12VertexBufferHandle m_vtxBuffer;
 	Dx12IndexBufferHandle m_idxBuffer;
 
-	CComPtr<ID3D12Resource> m_vShaderSharedCBUploadHeaps[swapChainBufferCount];
-	UINT8* m_vShaderSharedCBGPUAddress[swapChainBufferCount];
+	CComPtr<ID3D12Resource> m_vShaderSharedCBUploadHeaps[SwapChainBufferCount];
+	UINT8* m_vShaderSharedCBGPUAddress[SwapChainBufferCount];
 
-	ID3D12Resource* m_vShaderCenterCBUploadHeaps[swapChainBufferCount];
-	UINT8* m_vShaderCenterCBGPUAddress[swapChainBufferCount];
+	ID3D12Resource* m_vShaderCenterCBUploadHeaps[SwapChainBufferCount];
+	UINT8* m_vShaderCenterCBGPUAddress[SwapChainBufferCount];
 };
 
 inline void RenderLights::onNewScene(const Scene::BaseScene& scene)

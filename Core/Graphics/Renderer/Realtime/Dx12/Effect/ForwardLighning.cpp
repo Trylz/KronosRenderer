@@ -214,7 +214,7 @@ void ForwardLighning::initPipelineStateObjects()
 
 void ForwardLighning::initStaticConstantBuffers()
 {
-	for (nbInt32 i = 0; i < swapChainBufferCount; ++i)
+	for (nbInt32 i = 0; i < SwapChainBufferCount; ++i)
 	{
 		HRESULT hr = D3d12Device->CreateCommittedResource(&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
 			D3D12_HEAP_FLAG_NONE,
@@ -302,7 +302,7 @@ void ForwardLighning::updateMaterial(const Scene::BaseScene& scene, const Materi
 	const DX12Model* dx12Model = static_cast<const DX12Model*>(scene.getModel().get());
 	auto materialHandle = dx12Model->getMaterialHandle(matId);
 
-	for (nbInt32 i = 0; i < swapChainBufferCount; ++i)
+	for (nbInt32 i = 0; i < SwapChainBufferCount; ++i)
 	{
 		PixelShaderMaterialCB pixelShaderMaterialCB;
 		auto& materialCB = pixelShaderMaterialCB.material;

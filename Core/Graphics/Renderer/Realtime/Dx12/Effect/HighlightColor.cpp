@@ -114,7 +114,7 @@ void HighlightColor::initPipelineStateObjects()
 void HighlightColor::initVertexShaderCB()
 {
 	for (nbInt32 i = 0; i < s_nbPasses; ++i)
-	for (nbInt32 j = 0; j < swapChainBufferCount; ++j)
+	for (nbInt32 j = 0; j < SwapChainBufferCount; ++j)
 	{
 		HRESULT hr = D3d12Device->CreateCommittedResource(
 			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
@@ -150,8 +150,6 @@ void HighlightColor::updateVertexShaderSharedCB(HighlightColorPushArgs& data, nb
 
 void HighlightColor::pushDrawCommands(HighlightColorPushArgs& data, ID3D12GraphicsCommandList* commandList, nbInt32 frameIndex)
 {
-	commandList->OMSetStencilRef(0);
-
 	commandList->SetGraphicsRootSignature(m_rootSignature);
 	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	commandList->SetGraphicsRootConstantBufferView(0, CameraConstantBufferSingleton::instance()->getUploadtHeaps()[frameIndex]->GetGPUVirtualAddress());

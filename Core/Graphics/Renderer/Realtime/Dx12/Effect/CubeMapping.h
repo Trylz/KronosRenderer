@@ -43,7 +43,7 @@ private:
 
 	PipelineStatePtr m_PSO;
 
-	CComPtr<ID3D12Resource> m_vertexShaderCBUploadHeaps[swapChainBufferCount];
-	UINT8* m_vertexShaderCBGPUAddress[swapChainBufferCount];
+	CComPtr<ID3D12Resource> m_vertexShaderCBUploadHeaps[SwapChainBufferCount];
+	UINT8* m_vertexShaderCBGPUAddress[SwapChainBufferCount];
 };
 }}}}}

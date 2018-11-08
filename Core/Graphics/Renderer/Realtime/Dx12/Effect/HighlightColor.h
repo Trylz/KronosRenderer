@@ -40,7 +40,7 @@ private:
 	void updateVertexShaderSharedCB(HighlightColorPushArgs& data, nbInt32 frameIndex, nbInt32 passIndex);
 
 	PipelineStatePtr m_PSOs[s_nbPasses];
-	CComPtr<ID3D12Resource> m_vertexShaderSharedCBUploadHeaps[s_nbPasses][swapChainBufferCount];
-	UINT8* m_vertexShaderSharedCBGPUAddress[s_nbPasses][swapChainBufferCount];
+	CComPtr<ID3D12Resource> m_vertexShaderSharedCBUploadHeaps[s_nbPasses][SwapChainBufferCount];
+	UINT8* m_vertexShaderSharedCBGPUAddress[s_nbPasses][SwapChainBufferCount];
 };
 }}}}}

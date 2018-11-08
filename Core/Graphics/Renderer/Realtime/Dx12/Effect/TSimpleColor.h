@@ -39,11 +39,11 @@ protected:
 
 	PipelineStatePtr m_PSO;
 
-	CComPtr<ID3D12Resource> m_vertexShaderCBUploadHeaps[swapChainBufferCount];
-	UINT8* m_vertexShaderCBGPUAddress[swapChainBufferCount];
+	CComPtr<ID3D12Resource> m_vertexShaderCBUploadHeaps[SwapChainBufferCount];
+	UINT8* m_vertexShaderCBGPUAddress[SwapChainBufferCount];
 
-	CComPtr<ID3D12Resource> m_pixelShaderCBUploadHeaps[swapChainBufferCount];
-	UINT8* m_pixelShaderCBGPUAddress[swapChainBufferCount];
+	CComPtr<ID3D12Resource> m_pixelShaderCBUploadHeaps[SwapChainBufferCount];
+	UINT8* m_pixelShaderCBGPUAddress[SwapChainBufferCount];
 };
 
 template <typename PushDrawArgs, nbUint32 PixelCBElementCount>
@@ -120,7 +120,7 @@ void TSimpleColor<PushDrawArgs, PixelCBElementCount>::initPipelineStateObjects()
 template <typename PushDrawArgs, nbUint32 PixelCBElementCount>
 void TSimpleColor<PushDrawArgs, PixelCBElementCount>::initConstantBuffers()
 {
-	for (nbInt32 i = 0; i < swapChainBufferCount; ++i)
+	for (nbInt32 i = 0; i < SwapChainBufferCount; ++i)
 	{
 		// Vertex shader
 		HRESULT hr = D3d12Device->CreateCommittedResource(

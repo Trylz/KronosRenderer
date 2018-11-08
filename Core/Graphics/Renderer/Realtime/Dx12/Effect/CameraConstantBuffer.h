@@ -32,8 +32,8 @@ public:
 	static const nbUint32 VertexShaderSharedCBAlignedSize = NEBULA_DX12_ALIGN_SIZE(VertexShaderCB);
 
 private:
-	UINT8* m_vertexShaderCBGPUAddress[swapChainBufferCount];
-	ID3D12Resource* m_vertexShaderCBUploadHeaps[swapChainBufferCount];
+	UINT8* m_vertexShaderCBGPUAddress[SwapChainBufferCount];
+	ID3D12Resource* m_vertexShaderCBUploadHeaps[SwapChainBufferCount];
 };
 
 using CameraConstantBufferSingleton = Utilities::Singleton<CameraConstantBuffer>;

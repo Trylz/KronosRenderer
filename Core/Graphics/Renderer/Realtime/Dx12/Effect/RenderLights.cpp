@@ -30,14 +30,14 @@ RenderLights::RenderLights(const DXGI_SAMPLE_DESC& sampleDesc)
 	initVertexAndIndexBuffer();
 	initTextures();
 
-	for (nbInt32 i = 0; i < swapChainBufferCount; ++i)
+	for (nbInt32 i = 0; i < SwapChainBufferCount; ++i)
 		m_vShaderCenterCBUploadHeaps[i] = nullptr;
 }
 
 RenderLights::~RenderLights()
 {
 	// Heaps
-	for (nbInt32 i = 0; i < swapChainBufferCount; ++i)
+	for (nbInt32 i = 0; i < SwapChainBufferCount; ++i)
 	{
 		if (m_vShaderCenterCBUploadHeaps[i])
 			m_vShaderCenterCBUploadHeaps[i]->Release();
@@ -151,7 +151,7 @@ void RenderLights::initPipelineStateObjects()
 
 void RenderLights::initVertexShaderSharedCB()
 {
-	for (nbInt32 i = 0; i < swapChainBufferCount; ++i)
+	for (nbInt32 i = 0; i < SwapChainBufferCount; ++i)
 	{
 		HRESULT hr = D3d12Device->CreateCommittedResource(
 			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
@@ -178,7 +178,7 @@ void RenderLights::initVertexShaderCenterCB(const Scene::BaseScene& scene)
 	const auto& lights = scene.getLights();
 	const nbUint32 nbLights = (nbUint32)lights.size();
 
-	for (nbInt32 i = 0; i < swapChainBufferCount; ++i)
+	for (nbInt32 i = 0; i < SwapChainBufferCount; ++i)
 	{
 		if (m_vShaderCenterCBUploadHeaps[i])
 			m_vShaderCenterCBUploadHeaps[i]->Release();
