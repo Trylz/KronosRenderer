@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "../HandleTypes.h"
+#include "Graphics/Renderer/Realtime/Dx12/D3D12Device.h"
 #include <functional>
 
 namespace Graphics { namespace Renderer { namespace Realtime { namespace Dx12 { namespace Descriptor
@@ -19,7 +19,7 @@ template <D3D12_DESCRIPTOR_HEAP_TYPE descType, UINT pageSize>
 class BaseAllocator
 {
 public:
-	BaseAllocator(const SharedDevicePtr& device);
+	BaseAllocator();
 	~BaseAllocator() { m_heap->Release(); }
 
 	UINT getDescriptorSize() const;
@@ -37,8 +37,6 @@ protected:
 		CD3DX12_CPU_DESCRIPTOR_HANDLE& dstCpuHandle,
 		CD3DX12_GPU_DESCRIPTOR_HANDLE& dstGpuHandle,
 		UINT startIdx);
-
-	SharedDevicePtr m_device;
 
 private:
 	void createHeap(ID3D12DescriptorHeap** buffer, UINT capacity);
@@ -59,11 +57,10 @@ private:
 };
 
 template <D3D12_DESCRIPTOR_HEAP_TYPE descType, UINT pageSize>
-inline BaseAllocator<descType, pageSize>::BaseAllocator(const SharedDevicePtr& device)
+inline BaseAllocator<descType, pageSize>::BaseAllocator()
 {
-	m_device = device;
 	m_count = 0u;
-	m_descriptorSize = m_device->GetDescriptorHandleIncrementSize(descType);
+	m_descriptorSize = D3D12Device->GetDescriptorHandleIncrementSize(descType);
 
 	createHeap(&m_heap, pageSize);
 	m_capacity = pageSize;
@@ -195,7 +192,7 @@ inline void BaseAllocator<descType, pageSize>::createHeap(ID3D12DescriptorHeap**
 	else
 		heapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 
-	HRESULT hr = m_device->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(buffer));
+	HRESULT hr = D3D12Device->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(buffer));
 	NEBULA_ASSERT(SUCCEEDED(hr));
 }
 
@@ -215,7 +212,7 @@ inline void BaseAllocator<descType, pageSize>::increaseCapacity(UINT additionalC
 	ID3D12DescriptorHeap* tempHeap = nullptr;
 	createHeap(&tempHeap, newCapacity);
 
-	m_device->CopyDescriptorsSimple(m_capacity,
+	D3D12Device->CopyDescriptorsSimple(m_capacity,
 		tempHeap->GetCPUDescriptorHandleForHeapStart(),
 		m_heap->GetCPUDescriptorHandleForHeapStart(),
 		descType);

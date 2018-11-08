@@ -9,6 +9,7 @@
 
 #include "../HandleTypes.h"
 #include "../../SwapChain.h"
+#include "Graphics/Renderer/Realtime/Dx12/D3D12Device.h"
 #include "Graphics/Renderer/Realtime/TGraphicResourceAllocator.h"
 
 // NEBULA_DEPLOYMENT_BUILD
@@ -31,8 +32,6 @@
 
 namespace Graphics { namespace Renderer { namespace Realtime { namespace Dx12{ namespace Effect
 {
-extern SharedDevicePtr D3d12Device;
-
 template <typename DataToProcessType>
 class BaseEffect
 {
@@ -115,7 +114,7 @@ void BaseEffect<DataToProcessType>::createRootSignature(const D3D12_ROOT_PARAMET
 		return;
 	}
 
-	hr = D3d12Device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&m_rootSignature));
+	hr = D3D12Device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&m_rootSignature));
 	NEBULA_ASSERT(SUCCEEDED(hr));
 }
 
@@ -221,7 +220,7 @@ void BaseEffect<DataToProcessType>::compilePipeline(PipelineStatePtr& pipelineSt
 	// NEBULA_TRACE("BaseEffect::compile - Disabled culling because seems wrong");
 
 	// create the pso
-	HRESULT hr = D3d12Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&pipelineState));
+	HRESULT hr = D3D12Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&pipelineState));
 	NEBULA_ASSERT(SUCCEEDED(hr));
 }
 }}}}}

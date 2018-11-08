@@ -117,9 +117,6 @@ private:
 	// the window
 	HWND m_hwindow;
 
-	// direct3d device
-	SharedDevicePtr m_device;
-
 	// Descriptor allocators
 	std::unique_ptr<Descriptor::CBV_SRV_UAV_DescriptorAllocator> m_cbs_srv_uavAllocator;
 	std::unique_ptr<Descriptor::RTV_DescriptorAllocator> m_rtvAllocator;

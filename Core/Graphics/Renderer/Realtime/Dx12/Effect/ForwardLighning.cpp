@@ -216,7 +216,7 @@ void ForwardLighning::initStaticConstantBuffers()
 {
 	for (nbInt32 i = 0; i < SwapChainBufferCount; ++i)
 	{
-		HRESULT hr = D3d12Device->CreateCommittedResource(&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+		HRESULT hr = D3D12Device->CreateCommittedResource(&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
 			D3D12_HEAP_FLAG_NONE,
 			&CD3DX12_RESOURCE_DESC::Buffer(PixelShaderLightCBAlignedSize),
 			D3D12_RESOURCE_STATE_GENERIC_READ,
@@ -250,7 +250,7 @@ void ForwardLighning::initDynamicMaterialConstantBuffer(const Scene::BaseScene& 
 		NEBULA_DX12_SAFE_RELEASE(m_pixelShaderMaterialCBDefaultHeap);
 
 		// Create upload heap
-		HRESULT hr = D3d12Device->CreateCommittedResource(&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+		HRESULT hr = D3D12Device->CreateCommittedResource(&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
 			D3D12_HEAP_FLAG_NONE,
 			&CD3DX12_RESOURCE_DESC::Buffer(PixelShaderMaterialCBAlignedSize * bufferSize),
 			D3D12_RESOURCE_STATE_GENERIC_READ,
@@ -264,7 +264,7 @@ void ForwardLighning::initDynamicMaterialConstantBuffer(const Scene::BaseScene& 
 		NEBULA_ASSERT(SUCCEEDED(hr));
 
 		// Create default heap
-		hr = D3d12Device->CreateCommittedResource(
+		hr = D3D12Device->CreateCommittedResource(
 			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
 			D3D12_HEAP_FLAG_NONE,
 			&CD3DX12_RESOURCE_DESC::Buffer(PixelShaderMaterialCBAlignedSize * bufferSize),

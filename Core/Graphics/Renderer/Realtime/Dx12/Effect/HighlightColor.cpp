@@ -116,7 +116,7 @@ void HighlightColor::initVertexShaderCB()
 	for (nbInt32 i = 0; i < s_nbPasses; ++i)
 	for (nbInt32 j = 0; j < SwapChainBufferCount; ++j)
 	{
-		HRESULT hr = D3d12Device->CreateCommittedResource(
+		HRESULT hr = D3D12Device->CreateCommittedResource(
 			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
 			D3D12_HEAP_FLAG_NONE,
 			&CD3DX12_RESOURCE_DESC::Buffer(D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT),

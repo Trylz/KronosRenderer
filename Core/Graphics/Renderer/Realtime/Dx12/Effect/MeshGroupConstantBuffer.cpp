@@ -36,7 +36,7 @@ void MeshGroupConstantBuffer::initVertexShaderConstantBuffer(const Scene::BaseSc
 	NEBULA_DX12_SAFE_RELEASE(m_vertexShaderCBDefaultHeap);
 
 	// Create upload heap
-	HRESULT hr = D3d12Device->CreateCommittedResource(&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+	HRESULT hr = D3D12Device->CreateCommittedResource(&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
 		D3D12_HEAP_FLAG_NONE,
 		&CD3DX12_RESOURCE_DESC::Buffer(VertexShaderCBAlignedSize * bufferSize),
 		D3D12_RESOURCE_STATE_GENERIC_READ,
@@ -50,7 +50,7 @@ void MeshGroupConstantBuffer::initVertexShaderConstantBuffer(const Scene::BaseSc
 	NEBULA_ASSERT(SUCCEEDED(hr));
 
 	// Create default heap
-	hr = D3d12Device->CreateCommittedResource(
+	hr = D3D12Device->CreateCommittedResource(
 		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
 		D3D12_HEAP_FLAG_NONE,
 		&CD3DX12_RESOURCE_DESC::Buffer(VertexShaderCBAlignedSize * bufferSize),

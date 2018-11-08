@@ -123,7 +123,7 @@ void TSimpleColor<PushDrawArgs, PixelCBElementCount>::initConstantBuffers()
 	for (nbInt32 i = 0; i < SwapChainBufferCount; ++i)
 	{
 		// Vertex shader
-		HRESULT hr = D3d12Device->CreateCommittedResource(
+		HRESULT hr = D3D12Device->CreateCommittedResource(
 			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
 			D3D12_HEAP_FLAG_NONE,
 			&CD3DX12_RESOURCE_DESC::Buffer(D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT),
@@ -139,7 +139,7 @@ void TSimpleColor<PushDrawArgs, PixelCBElementCount>::initConstantBuffers()
 		NEBULA_ASSERT(SUCCEEDED(hr));
 
 		// Pixel shader
-		hr = D3d12Device->CreateCommittedResource(
+		hr = D3D12Device->CreateCommittedResource(
 			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
 			D3D12_HEAP_FLAG_NONE,
 			&CD3DX12_RESOURCE_DESC::Buffer(PixelShaderCBAlignedSize * PixelCBElementCount),

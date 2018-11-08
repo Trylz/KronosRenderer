@@ -42,9 +42,9 @@ nbBool DX12Renderer::init(const InitArgs& args)
 	}
 
 	// Create descriptor allocators
-	m_cbs_srv_uavAllocator = std::make_unique<CBV_SRV_UAV_DescriptorAllocator>(m_device);
-	m_rtvAllocator = std::make_unique<RTV_DescriptorAllocator>(m_device);
-	m_dsvAllocator = std::make_unique<DSV_DescriptorAllocator>(m_device);
+	m_cbs_srv_uavAllocator = std::make_unique<CBV_SRV_UAV_DescriptorAllocator>();
+	m_rtvAllocator = std::make_unique<RTV_DescriptorAllocator>();
+	m_dsvAllocator = std::make_unique<DSV_DescriptorAllocator>();
 
 	if (!createCommandQueues())
 	{
@@ -108,8 +108,6 @@ nbBool DX12Renderer::init(const InitArgs& args)
 	Realtime::GraphicResourceAllocatorPtr<DX12_GRAPHIC_ALLOC_PARAMETERS> = (TGraphicResourceAllocator<DX12_GRAPHIC_ALLOC_PARAMETERS>*) this;
 
 	// Create effects
-	Effect::D3d12Device = m_device;
-
 	Effect::CameraConstantBufferSingleton::create();
 	Effect::MeshGroupConstantBufferSingleton::create();
 
@@ -170,6 +168,8 @@ void DX12Renderer::release()
 
 	Effect::CameraConstantBufferSingleton::destroy();
 	Effect::MeshGroupConstantBufferSingleton::destroy();
+
+	D3D12Device->Release();
 }
 
 nbBool DX12Renderer::createDevice(IDXGIFactory4* m_dxgiFactory)
@@ -229,7 +229,7 @@ nbBool DX12Renderer::createDevice(IDXGIFactory4* m_dxgiFactory)
 	hr = D3D12CreateDevice(
 		adapter,
 		D3D_FEATURE_LEVEL_11_0,
-		IID_PPV_ARGS(&m_device)
+		IID_PPV_ARGS(&D3D12Device)
 	);
 
 	if (FAILED(hr))
@@ -241,7 +241,7 @@ nbBool DX12Renderer::createDevice(IDXGIFactory4* m_dxgiFactory)
 	{
 		// Disable specific warning messages.
 		CComPtr<ID3D12InfoQueue> infoQueue;
-		if (SUCCEEDED(m_device->QueryInterface(IID_PPV_ARGS(&infoQueue))))
+		if (SUCCEEDED(D3D12Device->QueryInterface(IID_PPV_ARGS(&infoQueue))))
 		{
 			D3D12_INFO_QUEUE_FILTER filter = {};
 
@@ -269,7 +269,7 @@ nbBool DX12Renderer::createCommandQueues()
 	cqDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
 	cqDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;// direct means the gpu can directly execute this command queue
 
-	HRESULT hr = m_device->CreateCommandQueue(&cqDesc, IID_PPV_ARGS(&m_commandBuffers[CommandType::Direct].commandQueue));
+	HRESULT hr = D3D12Device->CreateCommandQueue(&cqDesc, IID_PPV_ARGS(&m_commandBuffers[CommandType::Direct].commandQueue));
 	if (FAILED(hr))
 		return false;
 
@@ -334,7 +334,7 @@ nbBool DX12Renderer::createCommandAllocators()
 {
 	for (nbInt32 i = 0; i < SwapChainBufferCount; i++)
 	{
-		HRESULT hr = m_device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_commandBuffers[CommandType::Direct].commandAllocator[i]));
+		HRESULT hr = D3D12Device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_commandBuffers[CommandType::Direct].commandAllocator[i]));
 		if (FAILED(hr))
 			return false;
 	}
@@ -346,7 +346,7 @@ nbBool DX12Renderer::createCommandLists()
 {
 	auto& directCommandBuffers = m_commandBuffers[CommandType::Direct];
 
-	HRESULT hr = m_device->CreateCommandList(0,
+	HRESULT hr = D3D12Device->CreateCommandList(0,
 		D3D12_COMMAND_LIST_TYPE_DIRECT,
 		directCommandBuffers.commandAllocator[directCommandBuffers.frameIndex],
 		NULL,
@@ -370,7 +370,7 @@ nbBool DX12Renderer::createFencesAndFenceEvent()
 	{
 		for (nbInt32 i = 0; i < SwapChainBufferCount; i++)
 		{
-			hr = m_device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&buffer.second.fences[i]));
+			hr = D3D12Device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&buffer.second.fences[i]));
 			if (FAILED(hr))
 			{
 				return false;
@@ -402,7 +402,7 @@ nbBool DX12Renderer::createPixelReadBuffer()
 		/*VisibleNodeMask*/         ,0
 	};
 
-	HRESULT hr = m_device->CreateCommittedResource(
+	HRESULT hr = D3D12Device->CreateCommittedResource(
 		&heapProperties,
 		D3D12_HEAP_FLAG_NONE,
 		&CD3DX12_RESOURCE_DESC::Tex2D(NEBULA_WORLD_POSITION_RT_FORMAT, 1, 1, 1, 1, 1),
@@ -421,7 +421,7 @@ nbBool DX12Renderer::createRenderTargets(const glm::uvec2& bufferSize)
 		D3D12_RESOURCE_DESC resDesc = CD3DX12_RESOURCE_DESC::Tex2D(NEBULA_SWAP_CHAIN_FORMAT, bufferSize.x, bufferSize.y, 1, 1, MSAA_SAMPLES);
 		resDesc.Flags |= D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
 
-		HRESULT hr = m_device->CreateCommittedResource(
+		HRESULT hr = D3D12Device->CreateCommittedResource(
 			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
 			D3D12_HEAP_FLAG_NONE,
 			&resDesc,
@@ -447,7 +447,7 @@ nbBool DX12Renderer::createRenderTargets(const glm::uvec2& bufferSize)
 		const nbFloat32 clearColor[] = { 0.0f, 0.0f, 0.0f, 0.0f };
 		memcpy(optimizedClearValue.Color, clearColor, sizeof(nbFloat32) * 4);
 
-		HRESULT hr = m_device->CreateCommittedResource(
+		HRESULT hr = D3D12Device->CreateCommittedResource(
 			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
 			D3D12_HEAP_FLAG_NONE,
 			&m_positionRenderTargetDesc,
@@ -474,7 +474,7 @@ nbBool DX12Renderer::createDepthStencilBuffers(const glm::uvec2& bufferSize)
 	depthOptimizedClearValue.DepthStencil.Depth = 1.0f;
 	depthOptimizedClearValue.DepthStencil.Stencil = 0;
 
-	HRESULT hr = m_device->CreateCommittedResource(
+	HRESULT hr = D3D12Device->CreateCommittedResource(
 		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
 		D3D12_HEAP_FLAG_NONE,
 		&CD3DX12_RESOURCE_DESC::Tex2D(format, bufferSize.x, bufferSize.y, 1, 1, MSAA_SAMPLES, 0, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL),
@@ -494,7 +494,7 @@ nbBool DX12Renderer::createDepthStencilBuffers(const glm::uvec2& bufferSize)
 	m_dsvDescriptorsHandle = m_dsvAllocator->allocate({ m_depthStencilBuffer }, depthStencilDesc);
 
 	// The world position render depth
-	hr = m_device->CreateCommittedResource(
+	hr = D3D12Device->CreateCommittedResource(
 		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
 		D3D12_HEAP_FLAG_NONE,
 		&CD3DX12_RESOURCE_DESC::Tex2D(format, bufferSize.x, bufferSize.y, 1, 1, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL),
@@ -631,7 +631,7 @@ void DX12Renderer::createRGBATexture2DArray(const std::vector<const Texture::RGB
 	textureDesc.Flags = D3D12_RESOURCE_FLAG_NONE; // no flags
 
 	// create a default heap.
-	HRESULT hr = m_device->CreateCommittedResource(
+	HRESULT hr = D3D12Device->CreateCommittedResource(
 		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT), // a default heap
 		D3D12_HEAP_FLAG_NONE, // no flags
 		&textureDesc, // the description of our texture
@@ -648,12 +648,12 @@ void DX12Renderer::createRGBATexture2DArray(const std::vector<const Texture::RGB
 	dst.buffer->SetName(bufferDebugStringW.c_str());
 
 	UINT64 textureUploadBufferSize;
-	m_device->GetCopyableFootprints(&textureDesc, 0, arraySize, 0, nullptr, nullptr, nullptr, &textureUploadBufferSize);
+	D3D12Device->GetCopyableFootprints(&textureDesc, 0, arraySize, 0, nullptr, nullptr, nullptr, &textureUploadBufferSize);
 
 	// now we create an upload heap to upload our texture to the GPU
 	ID3D12Resource* textureBufferUploadHeap;
 
-	hr = m_device->CreateCommittedResource(
+	hr = D3D12Device->CreateCommittedResource(
 		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
 		D3D12_HEAP_FLAG_NONE,
 		&CD3DX12_RESOURCE_DESC::Buffer(textureUploadBufferSize), // resource description for a buffer (storing the image data in this heap just to copy to the default heap)
@@ -719,7 +719,7 @@ DX12Renderer::ArrayBufferResource DX12Renderer::createArrayBufferRecource(const 
 	HRESULT hr;
 
 	// create default heap
-	hr = m_device->CreateCommittedResource(
+	hr = D3D12Device->CreateCommittedResource(
 		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
 		D3D12_HEAP_FLAG_NONE,
 		&CD3DX12_RESOURCE_DESC::Buffer(retData.bufferSize),
@@ -731,7 +731,7 @@ DX12Renderer::ArrayBufferResource DX12Renderer::createArrayBufferRecource(const 
 
 	// create upload heap
 	ID3D12Resource* vBufferUploadHeap;
-	hr = m_device->CreateCommittedResource(
+	hr = D3D12Device->CreateCommittedResource(
 		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
 		D3D12_HEAP_FLAG_NONE,
 		&CD3DX12_RESOURCE_DESC::Buffer(retData.bufferSize),
