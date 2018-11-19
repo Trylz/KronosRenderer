@@ -17,6 +17,7 @@ struct VolumeIntegrator : BaseIntegrator
 		const Scene::BaseScene* scene,
 		const RGBSpectrum& inRadiance,
 		const glm::vec3& startPt,
-		const glm::vec3& endPt);
+		const glm::vec3& endPt,
+		const MediaPtr& media);
 };
 }}}}

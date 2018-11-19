@@ -35,9 +35,6 @@ void RenderRotationGizmo::pushDrawCommands(RenderGizmoPushArgs& data, ID3D12Grap
 	const DX12RotationGizmo* dx12Gizmo = dynamic_cast<const DX12RotationGizmo*>(data.scene.getCurrentGizmo());
 	NEBULA_ASSERT(dx12Gizmo);
 
-	if (!dx12Gizmo->getEnabled())
-		return;
-
 	updateConstantBuffers(data.scene.getCamera(), dx12Gizmo, frameIndex);
 
 	commandList->SetPipelineState(m_PSO);

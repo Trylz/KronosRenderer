@@ -31,7 +31,7 @@ protected:
 		DirectX::XMFLOAT4 color;
 	};
 
-	nbUint32 PixelShaderCBAlignedSize = (sizeof(PixelShaderCB) + (D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT - 1)) & ~(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT - 1);
+	nbUint32 PixelShaderCBAlignedSize = NEBULA_DX12_ALIGN_SIZE(PixelShaderCB);
 
 	void initRootSignature() override;
 	void initPipelineStateObjects() override;
@@ -120,7 +120,7 @@ void TSimpleColor<PushDrawArgs, PixelCBElementCount>::initPipelineStateObjects()
 template <typename PushDrawArgs, nbUint32 PixelCBElementCount>
 void TSimpleColor<PushDrawArgs, PixelCBElementCount>::initConstantBuffers()
 {
-	for (nbInt32 i = 0; i < SwapChainBufferCount; ++i)
+	for (nbUint32 i = 0u; i < SwapChainBufferCount; ++i)
 	{
 		// Vertex shader
 		HRESULT hr = D3D12Device->CreateCommittedResource(
@@ -133,9 +133,9 @@ void TSimpleColor<PushDrawArgs, PixelCBElementCount>::initConstantBuffers()
 
 		NEBULA_ASSERT(SUCCEEDED(hr));
 
-		m_vertexShaderCBUploadHeaps[i]->SetName(L"RenderMoveGizmo : Vertex shader upload heap");
+		m_vertexShaderCBUploadHeaps[i]->SetName(L"TSimpleColor : Vertex shader upload heap");
 
-		hr = m_vertexShaderCBUploadHeaps[i]->Map(0, &readRangeGPUOnly, reinterpret_cast<void**>(&m_vertexShaderCBGPUAddress[i]));
+		hr = m_vertexShaderCBUploadHeaps[i]->Map(0, &ReadRangeGPUOnly, reinterpret_cast<void**>(&m_vertexShaderCBGPUAddress[i]));
 		NEBULA_ASSERT(SUCCEEDED(hr));
 
 		// Pixel shader
@@ -149,9 +149,9 @@ void TSimpleColor<PushDrawArgs, PixelCBElementCount>::initConstantBuffers()
 
 		NEBULA_ASSERT(SUCCEEDED(hr));
 
-		m_pixelShaderCBUploadHeaps[i]->SetName(L"RenderMoveGizmo : Pixel shader upload heap");
+		m_pixelShaderCBUploadHeaps[i]->SetName(L"TSimpleColor : Pixel shader upload heap");
 
-		hr = m_pixelShaderCBUploadHeaps[i]->Map(0, &readRangeGPUOnly, reinterpret_cast<void**>(&m_pixelShaderCBGPUAddress[i]));
+		hr = m_pixelShaderCBUploadHeaps[i]->Map(0, &ReadRangeGPUOnly, reinterpret_cast<void**>(&m_pixelShaderCBGPUAddress[i]));
 		NEBULA_ASSERT(SUCCEEDED(hr));
 	}
 }

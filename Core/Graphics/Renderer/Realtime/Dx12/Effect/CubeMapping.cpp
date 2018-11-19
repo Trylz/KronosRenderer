@@ -48,7 +48,7 @@ void CubeMapping::initRootSignature()
 	descriptorTableRanges[0].RegisterSpace = 0;
 	descriptorTableRanges[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
 
-	// create a descriptor table
+	// Create a descriptor table
 	D3D12_ROOT_DESCRIPTOR_TABLE descriptorTable;
 	descriptorTable.NumDescriptorRanges = _countof(descriptorTableRanges);
 	descriptorTable.pDescriptorRanges = &descriptorTableRanges[0];
@@ -82,7 +82,7 @@ void CubeMapping::initPipelineStateObjects()
 
 void CubeMapping::initVertexShaderCB()
 {
-	for (nbInt32 i = 0; i < SwapChainBufferCount; ++i)
+	for (nbUint32 i = 0u; i < SwapChainBufferCount; ++i)
 	{
 		HRESULT hr = D3D12Device->CreateCommittedResource(
 			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
@@ -95,7 +95,7 @@ void CubeMapping::initVertexShaderCB()
 		NEBULA_ASSERT(SUCCEEDED(hr));
 		m_vertexShaderCBUploadHeaps[i]->SetName(L"CubeMappingEffect : Vertex shader Constant Buffer Upload heap");
 
-		hr = m_vertexShaderCBUploadHeaps[i]->Map(0, &readRangeGPUOnly, reinterpret_cast<void**>(&m_vertexShaderCBGPUAddress[i]));
+		hr = m_vertexShaderCBUploadHeaps[i]->Map(0, &ReadRangeGPUOnly, reinterpret_cast<void**>(&m_vertexShaderCBGPUAddress[i]));
 		NEBULA_ASSERT(SUCCEEDED(hr));
 	}
 }

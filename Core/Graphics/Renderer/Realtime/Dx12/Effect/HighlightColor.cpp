@@ -125,9 +125,9 @@ void HighlightColor::initVertexShaderCB()
 			IID_PPV_ARGS(&m_vertexShaderSharedCBUploadHeaps[i][j]));
 
 		NEBULA_ASSERT(SUCCEEDED(hr));
-		m_vertexShaderSharedCBUploadHeaps[i][j]->SetName(L"SimpleColorEffect : Vertex shader Constant Buffer Upload heap");
+		m_vertexShaderSharedCBUploadHeaps[i][j]->SetName(L"HighlightColor : Vertex shader Constant Buffer Upload heap");
 
-		hr = m_vertexShaderSharedCBUploadHeaps[i][j]->Map(0, &readRangeGPUOnly, reinterpret_cast<void**>(&m_vertexShaderSharedCBGPUAddress[i][j]));
+		hr = m_vertexShaderSharedCBUploadHeaps[i][j]->Map(0, &ReadRangeGPUOnly, reinterpret_cast<void**>(&m_vertexShaderSharedCBGPUAddress[i][j]));
 		NEBULA_ASSERT(SUCCEEDED(hr));
 	}
 }
@@ -175,11 +175,11 @@ void HighlightColor::pushDrawCommands(HighlightColorPushArgs& data, ID3D12Graphi
 		auto groupHandleIter = groupHandles.find(data.selection->getGroupId());
 		NEBULA_ASSERT(groupHandleIter != groupHandles.end());
 
-		for (auto* mesh : groupHandleIter->second)
+		for (auto* meshHandle : groupHandleIter->second)
 		{
-			commandList->IASetVertexBuffers(0, 1, &mesh->vertexBuffer.bufferView);
-			commandList->IASetIndexBuffer(&mesh->indexBuffer.bufferView);
-			commandList->DrawIndexedInstanced(mesh->nbIndices, 1, 0, 0, 0);
+			commandList->IASetVertexBuffers(0, 1, &meshHandle->vertexBuffer.bufferView);
+			commandList->IASetIndexBuffer(&meshHandle->indexBuffer.bufferView);
+			commandList->DrawIndexedInstanced(meshHandle->nbIndices, 1, 0, 0, 0);
 		}
 	}
 }

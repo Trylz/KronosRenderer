@@ -71,14 +71,14 @@ protected:
 };
 
 // Read range for resources that we do not intend to read on the CPU. (so end is less than or equal to begin)
-const CD3DX12_RANGE readRangeGPUOnly = CD3DX12_RANGE(0, 0);
+const CD3DX12_RANGE ReadRangeGPUOnly = CD3DX12_RANGE(0, 0);
 
-const DXGI_FORMAT defaultDSFormat = DXGI_FORMAT_D32_FLOAT_S8X24_UINT;
+const DXGI_FORMAT DefaultDSFormat = DXGI_FORMAT_D32_FLOAT_S8X24_UINT;
 
 template <typename DataToProcessType>
 void BaseEffect<DataToProcessType>::createRootSignature(const D3D12_ROOT_PARAMETER* rootParams, UINT nbParams)
 {
-	// create a static sampler
+	// Create a static sampler
 	D3D12_STATIC_SAMPLER_DESC sampler = {};
 	sampler.Filter = D3D12_FILTER_ANISOTROPIC;
 	sampler.AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
@@ -127,16 +127,15 @@ ID3DBlob* BaseEffect<DataToProcessType>::compileShader(const std::wstring& shade
 	UINT compileFlags = 0u;
 #endif
 
-	// when debugging, we can compile the shader files at runtime.
-	// but for release versions, we can compile the hlsl shaders
+	// When debugging, we can compile the shader files at runtime.
+	// but for deployment versions, we should compile the hlsl shaders
 	// with fxc.exe to create .cso files, which contain the shader
 	// bytecode. We can load the .cso files at runtime to get the
 	// shader bytecode, which of course is faster than compiling
 	// them at runtime
 
-	// compile vertex shader
 	ID3DBlob* errorBuff;
-	ID3DBlob* shader; // d3d blob for holding vertex shader bytecode
+	ID3DBlob* shader;
 	HRESULT hr = D3DCompileFromFile(NEBULA_DX12_SHADER_PATH(shaderPath),
 		macros,
 		nullptr,
@@ -168,39 +167,29 @@ void BaseEffect<DataToProcessType>::compilePipeline(PipelineStatePtr& pipelineSt
 	const D3D12_RASTERIZER_DESC& rasterizerDesc,
 	const std::vector<DXGI_FORMAT>& renderTargetFormats)
 {
-	// fill out a shader bytecode structure, which is basically just a pointer
-	// to the shader bytecode and the size of the shader bytecode
+	// Fill out a shader bytecode structure, which is basically just a pointer
+	// to the shader bytecode and the size of the shader bytecode.
 	D3D12_SHADER_BYTECODE vertexShaderBytecode = {};
 	vertexShaderBytecode.BytecodeLength = vertexShader->GetBufferSize();
 	vertexShaderBytecode.pShaderBytecode = vertexShader->GetBufferPointer();
 
-	// fill out shader bytecode structure for pixel shader
+	// Fill out a pixel shader bytecode structure.
 	D3D12_SHADER_BYTECODE pixelShaderBytecode = {};
 	pixelShaderBytecode.BytecodeLength = pixelShader->GetBufferSize();
 	pixelShaderBytecode.pShaderBytecode = pixelShader->GetBufferPointer();
 
-	// fill out an input layout description structure
+	// Fill out an input layout description structure
 	D3D12_INPUT_LAYOUT_DESC inputLayoutDesc = {};
-	// we can get the number of elements in an array by "sizeof(array) / sizeof(arrayElementType)"
 	inputLayoutDesc.NumElements = inputLayoutNumElements;
 	inputLayoutDesc.pInputElementDescs = inputLayoutElementDesc;
 
-	// create a pipeline state object (PSO)
-	// In a real application, you will have many pso's. for each different shader
-	// or different combinations of shaders, different blend states or different rasterizer states,
-	// different topology types (point, line, triangle, patch), or a different number
-	// of render targets you will need a pso
-
-	// VS is the only required shader for a pso. You might be wondering when a case would be where
-	// you only set the VS. It's possible that you have a pso that only outputs data with the stream
-	// output, and not on a render target, which means you would not need anything after the stream
-	// output.
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc = {}; // a structure to define a pso
-	psoDesc.InputLayout = inputLayoutDesc; // the structure describing our input layout
-	psoDesc.pRootSignature = m_rootSignature; // the root signature that describes the input data this pso needs
-	psoDesc.VS = vertexShaderBytecode; // structure describing where to find the vertex shader bytecode and how large it is
-	psoDesc.PS = pixelShaderBytecode; // same as VS but for pixel shader
-	psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE; // type of topology we are drawing
+	// Fill out a PSO description
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc = {};
+	psoDesc.InputLayout = inputLayoutDesc;
+	psoDesc.pRootSignature = m_rootSignature;
+	psoDesc.VS = vertexShaderBytecode;
+	psoDesc.PS = pixelShaderBytecode;
+	psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 
 	NEBULA_ASSERT(renderTargetFormats.size() <= 8);
 	const UINT numRenderTargets = std::min((UINT)renderTargetFormats.size(), 8u);
@@ -208,18 +197,16 @@ void BaseEffect<DataToProcessType>::compilePipeline(PipelineStatePtr& pipelineSt
 	for (nbUint32 i = 0; i < numRenderTargets; ++i)
 		psoDesc.RTVFormats[i] = renderTargetFormats[i];
 
-	psoDesc.SampleDesc = m_sampleDesc; // must be the same sample description as the swapchain and depth/stencil buffer
-	psoDesc.SampleMask = 0xffffffff; // sample mask has to do with multi-sampling. 0xffffffff means point sampling is done
+	psoDesc.SampleDesc = m_sampleDesc; // Must be the same sample description as the swapchain and depth/stencil buffer.
+	psoDesc.SampleMask = 0xffffffff; // Sample mask has to do with multi-sampling. 0xffffffff means point sampling is done.
 	psoDesc.RasterizerState = rasterizerDesc;
 	psoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
 	psoDesc.BlendState = blendDesc;
 	psoDesc.NumRenderTargets = numRenderTargets;
 	psoDesc.DepthStencilState = depthStencilDesc;
-	psoDesc.DSVFormat = defaultDSFormat;
+	psoDesc.DSVFormat = DefaultDSFormat;
 
-	// NEBULA_TRACE("BaseEffect::compile - Disabled culling because seems wrong");
-
-	// create the pso
+	// Now create the PSO
 	HRESULT hr = D3D12Device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&pipelineState));
 	NEBULA_ASSERT(SUCCEEDED(hr));
 }

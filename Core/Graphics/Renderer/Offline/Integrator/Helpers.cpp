@@ -21,13 +21,14 @@ namespace Graphics { namespace Renderer { namespace Offline { namespace Integrat
 
 		const nbUint32 triStartIdx = (NEBULA_INTRINSICS_NB_FLOAT * trianglePacketIdx + packedInternalIdx) * NEBULA_PRIMITIVE_NB_VTX;
 
-		const auto& v1 = mesh->m_vertices[mesh->m_indices[triStartIdx]];
-		const auto& v2 = mesh->m_vertices[mesh->m_indices[triStartIdx + 1]];
-		const auto& v3 = mesh->m_vertices[mesh->m_indices[triStartIdx + 2]];
+		NEBULA_ASSERT(NEBULA_PRIMITIVE_NB_VTX == 3u);
+		const auto& v1 = mesh->buildTransformedVertexFromIndices(triStartIdx);
+		const auto& v2 = mesh->buildTransformedVertexFromIndices(triStartIdx + 1);
+		const auto& v3 = mesh->buildTransformedVertexFromIndices(triStartIdx + 2);
 
 		// Compute barycentric interpolation weights
 		//see <-- https://en.wikibooks.org/wiki/GLSL_Programming/Rasterization ->
-		const auto& packedTriangles = mesh->m_trianglePackets[trianglePacketIdx];
+		const auto& packedTriangles = mesh->getTrianglePackets()[trianglePacketIdx];
 		const nbFloat32 alpha1 = 0.5f * glm::length(glm::cross(v2.position - P, v3.position - P)) * packedTriangles.invArea[packedInternalIdx];
 		const nbFloat32 alpha2 = 0.5f * glm::length(glm::cross(v1.position - P, v3.position - P)) * packedTriangles.invArea[packedInternalIdx];
 		const nbFloat32 alpha3 = 0.5f * glm::length(glm::cross(v1.position - P, v2.position - P)) * packedTriangles.invArea[packedInternalIdx];
@@ -54,7 +55,7 @@ namespace Graphics { namespace Renderer { namespace Offline { namespace Integrat
 		const Model::ModelPtr& model = scene->getModel();
 
 		// Apply normal mapping
-		const Material::BaseMaterial* material = model->getMaterial(mesh->m_materialId);
+		const Material::BaseMaterial* material = model->getMaterial(mesh->getMaterialId());
 		if (material->isFresnelMaterial())
 		{
 			const auto* fresnelMat = static_cast<const Material::FresnelMaterial*>(material);
@@ -82,13 +83,29 @@ namespace Graphics { namespace Renderer { namespace Offline { namespace Integrat
 		if (glm::dot(N, V) < 0.0f)
 			N *= -1;
 
-		return
-		{
-			P,
-			getOffsetedPositionInDirection(P, N, scene->getRenderSettings()->m_rayEpsilon),
-			V,
-			N,
-			texCoord
-		};
+		IntersectionProperties props;
+		props.P = P;
+		props.deltaP = getOffsetedPositionInDirection(P, N, scene->getRenderSettings()->m_rayEpsilon);
+		props.inDeltaP = getOffsetedPositionInDirection(P, -N, scene->getRenderSettings()->m_rayEpsilon);
+		props.V = V;
+		props.N = N;
+		props.texCoord = texCoord;
+
+		return props;
 	}
+
+	RGBSpectrum getSkyColor(const Scene::BaseScene* scene, const Math::Ray& ray, nbBool useSceneAmbient)
+	{
+		if (auto& cubeMap = scene->getCubeMap())
+		{
+			auto sky = cubeMap->sample(ray);
+			return RGBSpectrum(sky.x, sky.y, sky.z);
+		}
+		
+		if (useSceneAmbient)
+			return scene->getAmbientColor();
+
+		return BlackRGBSpectrum;
+	}
+
 }}}}

@@ -48,9 +48,6 @@ void TRenderGizmo<PixelCBElementCount>::updateVertexShaderConstantBuffer(const C
 	const nbFloat32 nearZ = std::min(std::max(0.001f, distance - delta), 1e6f);
 	const nbFloat32 farZ = distance + delta;
 
-	// Vertex shader
-	VertexShaderCB vertexShaderCB;
-
 	glm::mat4 glmModelMatrix = glm::translate(glm::mat4(), gizmoPos);
 
 	glmModelMatrix = glm::scale(
@@ -64,6 +61,7 @@ void TRenderGizmo<PixelCBElementCount>::updateVertexShaderConstantBuffer(const C
 
 	const XMMATRIX mvp = XMMatrixTranspose(modelMatrix * viewMatrix * projectionMatrix);
 
+	VertexShaderCB vertexShaderCB;
 	XMStoreFloat4x4(&vertexShaderCB.wvpMat, mvp);
 	memcpy(m_vertexShaderCBGPUAddress[frameIndex], &vertexShaderCB, sizeof(VertexShaderCB));
 }

@@ -44,9 +44,9 @@ void MeshGroupConstantBuffer::initVertexShaderConstantBuffer(const Scene::BaseSc
 		IID_PPV_ARGS(&m_vertexShaderCBUploadHeap));
 
 	NEBULA_ASSERT(SUCCEEDED(hr));
-	m_vertexShaderCBUploadHeap->SetName(L"Vertex shader group constant Buffer Upload heap");
+	m_vertexShaderCBUploadHeap->SetName(L"Vertex shader group constant buffer upload heap");
 
-	hr = m_vertexShaderCBUploadHeap->Map(0, &readRangeGPUOnly, reinterpret_cast<void**>(&m_vertexShaderCBGPUAddress));
+	hr = m_vertexShaderCBUploadHeap->Map(0, &ReadRangeGPUOnly, reinterpret_cast<void**>(&m_vertexShaderCBGPUAddress));
 	NEBULA_ASSERT(SUCCEEDED(hr));
 
 	// Create default heap
@@ -59,7 +59,7 @@ void MeshGroupConstantBuffer::initVertexShaderConstantBuffer(const Scene::BaseSc
 		IID_PPV_ARGS(&m_vertexShaderCBDefaultHeap));
 
 	NEBULA_ASSERT(SUCCEEDED(hr));
-	m_vertexShaderCBDefaultHeap->SetName(L"Vertex shader group constant Buffer Default heap");
+	m_vertexShaderCBDefaultHeap->SetName(L"Vertex shader group constant buffer default heap");
 
 	// 1 : Update upload heap
 	for (auto& group : meshesByGroup)
@@ -85,7 +85,7 @@ void MeshGroupConstantBuffer::fromVertexShaderUploadToDefaulHeap(ID3D12GraphicsC
 	// Copy upload heap to default
 	commandList->CopyResource(m_vertexShaderCBDefaultHeap, m_vertexShaderCBUploadHeap);
 
-	// Transition to pixel shader resource.
+	// Transition to vertex shader resource.
 	commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_vertexShaderCBDefaultHeap, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER));
 }
 

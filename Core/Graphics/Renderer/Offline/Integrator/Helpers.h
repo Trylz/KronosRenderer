@@ -28,10 +28,14 @@ struct IntersectionProperties
 {
 	glm::vec3 P;
 	glm::vec3 deltaP;
+	glm::vec3 inDeltaP;
 	glm::vec3 V;
 	glm::vec3 N;
 	glm::vec2 texCoord;
 };
 
 IntersectionProperties buildIntersectionProperties(const Math::Ray& ray, const Intersector::IntersectionInfo& info, const Scene::BaseScene* scene);
+
+RGBSpectrum getSkyColor(const Scene::BaseScene* scene, const Math::Ray& ray, nbBool useSceneAmbient = false);
+
 }}}}

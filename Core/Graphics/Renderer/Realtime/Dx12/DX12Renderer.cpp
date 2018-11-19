@@ -48,7 +48,7 @@ nbBool DX12Renderer::init(const InitArgs& args)
 
 	if (!createCommandQueues())
 	{
-		NEBULA_TRACE("DX12Renderer::init - Unable to create direct command queue");
+		NEBULA_TRACE("DX12Renderer::init - Unable to create command queues");
 		return false;
 	}
 
@@ -57,19 +57,19 @@ nbBool DX12Renderer::init(const InitArgs& args)
 
 	if (!createSwapChain(m_dxgiFactory, bufferSize))
 	{
-		NEBULA_TRACE("DX12Renderer::init - Unable to create swap chain");
+		NEBULA_TRACE("DX12Renderer::init - Unable to create the swap chain");
 		return false;
 	}
 
 	if (!createRenderTargets(bufferSize))
 	{
-		NEBULA_TRACE("DX12Renderer::init - Unable to create msaa render target");
+		NEBULA_TRACE("DX12Renderer::init - Unable to create the render targets");
 		return false;
 	}
 
 	if (!createDepthStencilBuffers(bufferSize))
 	{
-		NEBULA_TRACE("DX12Renderer::init - Unable to create depth stencil buffer");
+		NEBULA_TRACE("DX12Renderer::init - Unable to create the depth stencil buffers");
 		return false;
 	}
 
@@ -95,22 +95,23 @@ nbBool DX12Renderer::init(const InitArgs& args)
 
 	if (!createCommandLists())
 	{
-		NEBULA_TRACE("DX12Renderer::init - Unable to create command list");
+		NEBULA_TRACE("DX12Renderer::init - Unable to create command lists");
 		return false;
 	}
 
 	if (!createFencesAndFenceEvent())
 	{
-		NEBULA_TRACE("DX12Renderer::init - Unable to create fence and fence event");
+		NEBULA_TRACE("DX12Renderer::init - Unable to create fences and fence event");
 		return false;
 	}
 
 	Realtime::GraphicResourceAllocatorPtr<DX12_GRAPHIC_ALLOC_PARAMETERS> = (TGraphicResourceAllocator<DX12_GRAPHIC_ALLOC_PARAMETERS>*) this;
 
-	// Create effects
+	// Create shared constant buffers
 	Effect::CameraConstantBufferSingleton::create();
 	Effect::MeshGroupConstantBufferSingleton::create();
 
+	// Create effects
 	m_effectsReady = false;
 	startCommandRecording();
 
@@ -139,7 +140,7 @@ void DX12Renderer::finishTasks()
 	// wait for the gpu to finish all frames
 	for (auto& buffer : m_commandBuffers)
 	{
-		for (nbInt32 i = 0; i < SwapChainBufferCount; ++i)
+		for (nbUint32 i = 0u; i < SwapChainBufferCount; ++i)
 		{
 			buffer.second.frameIndex = i;
 			waitCurrentFrameCommandsFinish(buffer.first);
@@ -153,7 +154,7 @@ void DX12Renderer::release()
 	if (m_compileEffectThread.joinable())
 		m_compileEffectThread.join();
 
-	// close the fence event
+	// close the fence events
 	for (auto& buffer : m_commandBuffers)
 		CloseHandle(buffer.second.fenceEvent);
 
@@ -187,17 +188,11 @@ nbBool DX12Renderer::createDevice(IDXGIFactory4* m_dxgiFactory)
 	}
 #endif
 
-	// adapters are the graphics card (this includes the embedded graphics on the motherboard)
 	IDXGIAdapter1* adapter;
-
-	// we'll start looking for directx 12 compatible graphics devices starting at index 0
 	nbInt32 adapterIndex = 0;
-
-	// set this to true when a good one was found
 	nbBool adapterFound = false;
 
-
-	// find first hardware gpu that supports d3d 12
+	// Find first hardware gpu that supports d3d 12
 	while (m_dxgiFactory->EnumAdapters1(adapterIndex, &adapter) != DXGI_ERROR_NOT_FOUND)
 	{
 		DXGI_ADAPTER_DESC1 desc;
@@ -205,11 +200,11 @@ nbBool DX12Renderer::createDevice(IDXGIFactory4* m_dxgiFactory)
 
 		if (desc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE)
 		{
-			// we dont want a software device
+			// We dont want a software device
 			continue;
 		}
 
-		// we want a device that is compatible with direct3d 12 (feature level 11 or higher)
+		// We want a device that is compatible with direct3d 12 (feature level 11 or higher)
 		hr = D3D12CreateDevice(adapter, D3D_FEATURE_LEVEL_11_0, _uuidof(ID3D12Device), nullptr);
 		if (SUCCEEDED(hr))
 		{
@@ -217,7 +212,7 @@ nbBool DX12Renderer::createDevice(IDXGIFactory4* m_dxgiFactory)
 			break;
 		}
 
-		adapterIndex++;
+		++adapterIndex;
 	}
 
 	if (!adapterFound)
@@ -264,39 +259,36 @@ nbBool DX12Renderer::createDevice(IDXGIFactory4* m_dxgiFactory)
 
 nbBool DX12Renderer::createCommandQueues()
 {
-	// create the direct command queue
 	D3D12_COMMAND_QUEUE_DESC cqDesc = {};
 	cqDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
-	cqDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;// direct means the gpu can directly execute this command queue
+	cqDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
 
 	HRESULT hr = D3D12Device->CreateCommandQueue(&cqDesc, IID_PPV_ARGS(&m_commandBuffers[CommandType::Direct].commandQueue));
-	if (FAILED(hr))
-		return false;
 
-	return true;
+	return SUCCEEDED(hr);
 }
 
 nbBool DX12Renderer::createSwapChain(IDXGIFactory4* m_dxgiFactory, const glm::uvec2& bufferSize)
 {
-	DXGI_MODE_DESC backBufferDesc = {}; // this is to describe our display mode
-	backBufferDesc.Width = bufferSize.x; // buffer width
-	backBufferDesc.Height = bufferSize.y; // buffer height
+	DXGI_MODE_DESC backBufferDesc = {};
+	backBufferDesc.Width = bufferSize.x;
+	backBufferDesc.Height = bufferSize.y;
 	backBufferDesc.Format = NEBULA_SWAP_CHAIN_FORMAT;
 
 	// Describe and create the swap chain.
-	m_swapChainDesc.BufferCount = SwapChainBufferCount; // number of buffers we have
-	m_swapChainDesc.BufferDesc = backBufferDesc; // our back buffer description
-	m_swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT; // this says the pipeline will render to this swap chain
-	m_swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD; // dxgi will discard the buffer (data) after we call present
-	m_swapChainDesc.OutputWindow = m_hwindow; // handle to our window
+	m_swapChainDesc.BufferCount = SwapChainBufferCount;
+	m_swapChainDesc.BufferDesc = backBufferDesc;
+	m_swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+	m_swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD; // Dxgi will discard the buffer (data) after we call present
+	m_swapChainDesc.OutputWindow = m_hwindow;
 	m_swapChainDesc.SampleDesc = m_simpleSampleDesc;
-	m_swapChainDesc.Windowed = true; // set to true, then if in fullscreen must call SetFullScreenState with true for full screen to get uncapped fps
+	m_swapChainDesc.Windowed = true;
 
 	IDXGISwapChain* tempSwapChain;
 
 	HRESULT hr = m_dxgiFactory->CreateSwapChain(
-		m_commandBuffers[CommandType::Direct].commandQueue, // the queue will be flushed once the swap chain is created
-		&m_swapChainDesc, // give it the swap chain description we created above
+		m_commandBuffers[CommandType::Direct].commandQueue, // The queue will be flushed once the swap chain is created
+		&m_swapChainDesc,
 		&tempSwapChain
 	);
 
@@ -315,11 +307,8 @@ nbBool DX12Renderer::createSwapChain(IDXGIFactory4* m_dxgiFactory, const glm::uv
 
 nbBool DX12Renderer::bindSwapChainRenderTargets()
 {
-	// Create a RTV for each buffer (double buffering is two buffers, tripple buffering is 3).
-	for (nbInt32 i = 0; i < SwapChainBufferCount; i++)
+	for (nbUint32 i = 0u; i < SwapChainBufferCount; ++i)
 	{
-		// first we get the n'th buffer in the swap chain and store it in the n'th
-		// position of our ID3D12Resource array
 		HRESULT hr = m_swapChain->GetBuffer(i, IID_PPV_ARGS(&m_renderTargets[i]));
 		if (FAILED(hr))
 		{
@@ -332,7 +321,7 @@ nbBool DX12Renderer::bindSwapChainRenderTargets()
 
 nbBool DX12Renderer::createCommandAllocators()
 {
-	for (nbInt32 i = 0; i < SwapChainBufferCount; i++)
+	for (nbUint32 i = 0u; i < SwapChainBufferCount; ++i)
 	{
 		HRESULT hr = D3D12Device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_commandBuffers[CommandType::Direct].commandAllocator[i]));
 		if (FAILED(hr))
@@ -364,23 +353,21 @@ nbBool DX12Renderer::createCommandLists()
 
 nbBool DX12Renderer::createFencesAndFenceEvent()
 {
-	HRESULT hr;
-
 	for (auto& buffer : m_commandBuffers)
 	{
-		for (nbInt32 i = 0; i < SwapChainBufferCount; i++)
+		for (nbUint32 i = 0u; i < SwapChainBufferCount; ++i)
 		{
-			hr = D3D12Device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&buffer.second.fences[i]));
+			HRESULT hr = D3D12Device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&buffer.second.fences[i]));
 			if (FAILED(hr))
 			{
 				return false;
 			}
 			
-			// set the initial fence value to 0
+			// Set the initial fence value to 0
 			buffer.second.fenceValue[i] = 0;
 		}
 
-		// create a handle to a fence event
+		// Create a handle to a fence event
 		buffer.second.fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
 		if (buffer.second.fenceEvent == nullptr)
 		{
@@ -438,8 +425,8 @@ nbBool DX12Renderer::createRenderTargets(const glm::uvec2& bufferSize)
 
 	{
 		// The world position render target
-		m_positionRenderTargetDesc = CD3DX12_RESOURCE_DESC::Tex2D(NEBULA_WORLD_POSITION_RT_FORMAT, bufferSize.x, bufferSize.y, 1, 1, 1);
-		m_positionRenderTargetDesc.Flags |= D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+		D3D12_RESOURCE_DESC resDesc = CD3DX12_RESOURCE_DESC::Tex2D(NEBULA_WORLD_POSITION_RT_FORMAT, bufferSize.x, bufferSize.y, 1, 1, 1);
+		resDesc.Flags |= D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
 
 		D3D12_CLEAR_VALUE optimizedClearValue = {};
 		optimizedClearValue.Format = NEBULA_WORLD_POSITION_RT_FORMAT;
@@ -450,7 +437,7 @@ nbBool DX12Renderer::createRenderTargets(const glm::uvec2& bufferSize)
 		HRESULT hr = D3D12Device->CreateCommittedResource(
 			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
 			D3D12_HEAP_FLAG_NONE,
-			&m_positionRenderTargetDesc,
+			&resDesc,
 			D3D12_RESOURCE_STATE_COPY_SOURCE,
 			&optimizedClearValue,
 			IID_PPV_ARGS(&m_positionRenderTarget)
@@ -467,7 +454,7 @@ nbBool DX12Renderer::createRenderTargets(const glm::uvec2& bufferSize)
 
 nbBool DX12Renderer::createDepthStencilBuffers(const glm::uvec2& bufferSize)
 {
-	const DXGI_FORMAT format = Effect::defaultDSFormat;
+	const DXGI_FORMAT format = Effect::DefaultDSFormat;
 
 	D3D12_CLEAR_VALUE depthOptimizedClearValue = {};
 	depthOptimizedClearValue.Format = format;
@@ -491,7 +478,7 @@ nbBool DX12Renderer::createDepthStencilBuffers(const glm::uvec2& bufferSize)
 	depthStencilDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2DMS;
 	depthStencilDesc.Flags = D3D12_DSV_FLAG_NONE;
 
-	m_dsvDescriptorsHandle = m_dsvAllocator->allocate({ m_depthStencilBuffer }, depthStencilDesc);
+	m_msaaDsvDescriptorHandle = m_dsvAllocator->allocate({ m_depthStencilBuffer }, depthStencilDesc);
 
 	// The world position render depth
 	hr = D3D12Device->CreateCommittedResource(
@@ -508,7 +495,7 @@ nbBool DX12Renderer::createDepthStencilBuffers(const glm::uvec2& bufferSize)
 
 	depthStencilDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
 
-	m_positionDsvDescriptorsHandle = m_dsvAllocator->allocate({ m_positionDepthStencilBuffer }, depthStencilDesc);
+	m_positionDsvDescriptorHandle = m_dsvAllocator->allocate({ m_positionDepthStencilBuffer }, depthStencilDesc);
 
 	return true;
 }
@@ -551,8 +538,8 @@ void DX12Renderer::releaseSwapChainDynamicResources()
 
 	m_rtvAllocator->release(m_msaaRTDescriptorHandle);
 	m_rtvAllocator->release(m_positionRTDescriptorHandle);
-	m_dsvAllocator->release(m_dsvDescriptorsHandle);
-	m_dsvAllocator->release(m_positionDsvDescriptorsHandle);
+	m_dsvAllocator->release(m_msaaDsvDescriptorHandle);
+	m_dsvAllocator->release(m_positionDsvDescriptorHandle);
 }
 
 void DX12Renderer::resizeBuffers(const glm::uvec2& newSize)
@@ -571,7 +558,7 @@ void DX12Renderer::resizeBuffers(const glm::uvec2& newSize)
 	setUpViewportAndScissor(newSize);
 }
 
-void DX12Renderer::createRGBATexture2DArray(const std::vector<const Texture::RGBAImage*>& images, Dx12TextureHandle& dst)
+void DX12Renderer::createRGBATextureCube(const std::vector<const Texture::RGBAImage*>& images, Dx12TextureHandle& dst)
 {
 	const nbUint32 width = images[0]->getWidth();
 	const nbUint32 height = images[0]->getHeight();
@@ -584,9 +571,9 @@ void DX12Renderer::createRGBATexture2DArray(const std::vector<const Texture::RGB
 	if (height > D3D12_REQ_TEXTURECUBE_DIMENSION)
 		throw CreateTextureException("Images height is too high");
 
-	const Texture::ImageFormat nebulaFormat = images[0]->getFormat();
+	const Texture::ImageFormat format = images[0]->getFormat();
 
-	for (int i = 1; i < images.size(); ++i)
+	for (nbUint32 i = 1u; i < images.size(); ++i)
 	{
 		if (images[i]->getWidth() != width)
 			throw CreateTextureException("All images must have the same width. It is not the case for: " + images[i]->getPath());
@@ -594,7 +581,7 @@ void DX12Renderer::createRGBATexture2DArray(const std::vector<const Texture::RGB
 		if (images[i]->getHeight() != height)
 			throw CreateTextureException("All images must have the same height. It is not the case for: " + images[i]->getPath());
 
-		if (images[i]->getFormat() != nebulaFormat)
+		if (images[i]->getFormat() != format)
 			throw CreateTextureException("Images must have the same format");
 	}
 
@@ -611,8 +598,8 @@ void DX12Renderer::createRGBATexture2DArray(const std::vector<const Texture::RGB
 	textureDesc.Alignment = 0; // may be 0, 4KB, 64KB, or 4MB. 0 will let runtime decide between 64KB and 4MB (4MB for multi-sampled textures)
 	textureDesc.Width = width;
 	textureDesc.Height = height;
-	textureDesc.DepthOrArraySize = static_cast<std::uint16_t>(arraySize); // if 3d image, depth of 3d image. Otherwise an array of 1D or 2D textures (we only have one image, so we set 1)
-	textureDesc.MipLevels = 1; // Number of mipmaps. We are not generating mipmaps for this texture, so we have only one level
+	textureDesc.DepthOrArraySize = static_cast<std::uint16_t>(arraySize); // if 3d image, depth of 3d image. Otherwise an array of 1D or 2D textures.
+	textureDesc.MipLevels = 1; // Number of mipmaps. We are not generating mipmaps for this texture, so we have only one level.
 
 	const Texture::ImageFormat nebulaFormat = images[0]->getFormat();
 	if (nebulaFormat == Texture::ImageFormat::RGBA8)
@@ -630,40 +617,40 @@ void DX12Renderer::createRGBATexture2DArray(const std::vector<const Texture::RGB
 	textureDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN; // The arrangement of the pixels. Setting to unknown lets the driver choose the most efficient one
 	textureDesc.Flags = D3D12_RESOURCE_FLAG_NONE; // no flags
 
-	// create a default heap.
+	// Create a default heap.
 	HRESULT hr = D3D12Device->CreateCommittedResource(
-		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT), // a default heap
-		D3D12_HEAP_FLAG_NONE, // no flags
-		&textureDesc, // the description of our texture
+		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+		D3D12_HEAP_FLAG_NONE,
+		&textureDesc,
 		D3D12_RESOURCE_STATE_COPY_DEST, // We will copy the texture from the upload heap to here, so we start it out in a copy dest state
-		nullptr, // used for render targets and depth/stencil buffers
+		nullptr,
 		IID_PPV_ARGS(&dst.buffer));
 
 	NEBULA_ASSERT(SUCCEEDED(hr));
 
 	dst.format = textureDesc.Format;
 
-	std::string bufferDebugString = "Texture Resource Heap images first = " + images[0]->getPath() + ", size = " + std::to_string(arraySize);
+	std::string bufferDebugString = "Texture default heap first image = " + images[0]->getPath() + ", size = " + std::to_string(arraySize);
 	std::wstring bufferDebugStringW(bufferDebugString.begin(), bufferDebugString.end());
 	dst.buffer->SetName(bufferDebugStringW.c_str());
 
 	UINT64 textureUploadBufferSize;
 	D3D12Device->GetCopyableFootprints(&textureDesc, 0, arraySize, 0, nullptr, nullptr, nullptr, &textureUploadBufferSize);
 
-	// now we create an upload heap to upload our texture to the GPU
+	// Now we create an upload heap to upload our texture to the GPU
 	ID3D12Resource* textureBufferUploadHeap;
 
 	hr = D3D12Device->CreateCommittedResource(
 		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
 		D3D12_HEAP_FLAG_NONE,
-		&CD3DX12_RESOURCE_DESC::Buffer(textureUploadBufferSize), // resource description for a buffer (storing the image data in this heap just to copy to the default heap)
-		D3D12_RESOURCE_STATE_GENERIC_READ, // We will copy the contents from this heap to the default heap above
+		&CD3DX12_RESOURCE_DESC::Buffer(textureUploadBufferSize),
+		D3D12_RESOURCE_STATE_GENERIC_READ,
 		nullptr,
 		IID_PPV_ARGS(&textureBufferUploadHeap));
 
 	NEBULA_ASSERT(SUCCEEDED(hr));
 
-	std::string uploadDebugString = "Texture Upload Resource Heap images first = " + images[0]->getPath() + ", size = " + std::to_string(arraySize);
+	std::string uploadDebugString = "Texture upload heap first image = " + images[0]->getPath() + ", size = " + std::to_string(arraySize);
 	std::wstring uploadDebugStringW(uploadDebugString.begin(), uploadDebugString.end());
 
 	textureBufferUploadHeap->SetName(uploadDebugStringW.c_str());
@@ -682,9 +669,10 @@ void DX12Renderer::createRGBATexture2DArray(const std::vector<const Texture::RGB
 
 	m_commandBuffers[CommandType::Direct].commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(dst.buffer, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_COMMON));
 
+	// Add the upload heap to the resources to be freed later.
 	m_loadingResources.push_back(textureBufferUploadHeap);
 
-	// Init descriptor
+	// Create buffer view
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
 	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 	srvDesc.ViewDimension = viewDimension;
@@ -695,7 +683,7 @@ void DX12Renderer::createRGBATexture2DArray(const std::vector<const Texture::RGB
 
 nbBool DX12Renderer::createIndexBuffer(const std::vector<nbUint32>& data, Dx12IndexBufferHandle& dst)
 {
-	ArrayBufferResource resourceData = createArrayBufferRecource(data.data(), sizeof(nbUint32), (nbUint32)data.size());
+	const ArrayBufferResource resourceData = createArrayBufferRecource(data.data(), sizeof(nbUint32), (nbUint32)data.size());
 	if (resourceData.bufferSize == 0u || resourceData.buffer == nullptr)
 	{
 		return false;
@@ -713,13 +701,10 @@ nbBool DX12Renderer::createIndexBuffer(const std::vector<nbUint32>& data, Dx12In
 DX12Renderer::ArrayBufferResource DX12Renderer::createArrayBufferRecource(const void* data, nbUint32 sizeofElem, nbUint32 count)
 {
 	ArrayBufferResource retData;
-
 	retData.bufferSize = sizeofElem * count;
 
-	HRESULT hr;
-
-	// create default heap
-	hr = D3D12Device->CreateCommittedResource(
+	// Create default heap
+	 HRESULT hr = D3D12Device->CreateCommittedResource(
 		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
 		D3D12_HEAP_FLAG_NONE,
 		&CD3DX12_RESOURCE_DESC::Buffer(retData.bufferSize),
@@ -741,16 +726,16 @@ DX12Renderer::ArrayBufferResource DX12Renderer::createArrayBufferRecource(const 
 
 	NEBULA_ASSERT(SUCCEEDED(hr));
 
-	// store buffer data in upload heap
+	// Store buffer data in upload heap.
 	D3D12_SUBRESOURCE_DATA bufferData = {};
 	bufferData.pData = reinterpret_cast<BYTE*>(const_cast<void*>(data));
 	bufferData.RowPitch = retData.bufferSize;
 	bufferData.SlicePitch = retData.bufferSize;
 
-	// we are now creating a command with the command list to copy the data from the upload heap to the default heap
+	// We are now creating a command with the command list to copy the data from the upload heap to the default heap.
 	UpdateSubresources(m_commandBuffers[CommandType::Direct].commandList, retData.buffer, vBufferUploadHeap, 0, 0, 1, &bufferData);
 
-	// transition the vertex buffer data from copy destination state to vertex buffer state
+	// Transition the buffer data from copy destination state to vertex buffer state.
 	m_commandBuffers[CommandType::Direct].commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(retData.buffer, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER));
 
 	m_loadingResources.push_back(vBufferUploadHeap);
@@ -819,25 +804,24 @@ void DX12Renderer::startCommandRecording(CommandType commandType)
 	waitCurrentFrameCommandsFinish(commandType);
 
 	auto& commandBuffers = m_commandBuffers[commandType];
-
-	// we can only reset an allocator once the gpu is done with it
-	// resetting an allocator frees the memory that the command list was stored in
 	const nbInt32 frameIdx = commandBuffers.frameIndex;
 
+	// We can only reset an allocator once the gpu is done with it.
+	// Resetting an allocator frees the memory that the command list was stored in
 	HRESULT hr = commandBuffers.commandAllocator[frameIdx]->Reset();
 	if (FAILED(hr))
 	{
-		NEBULA_TRACE("DX12Renderer::startCommandRecording - Failed to reset command allocator index = " << frameIdx);
+		NEBULA_TRACE("DX12Renderer::startCommandRecording - Failed to reset command allocator index = " << frameIdx <<", command type ="<<(nbUint32)commandType);
 		return;
 	}
 
-	// reset the command list. by resetting the command list we are putting it into
+	// Reset the command list. by resetting the command list we are putting it into
 	// a recording state so we can start recording commands into the command allocator.
-	// the command allocator that we reference here may have multiple command lists
+	// The command allocator that we reference here may have multiple command lists
 	// associated with it, but only one can be recording at any time. Make sure
 	// that any other command lists associated to this command allocator are in
 	// the closed state (not recording).
-	// Here you will pass an initial pipeline state object as the second parameter.
+	// Here you could pass an initial pipeline state object as the second parameter.
 	hr = commandBuffers.commandList->Reset(commandBuffers.commandAllocator[frameIdx], nullptr);
 	NEBULA_ASSERT(SUCCEEDED(hr));
 }
@@ -849,10 +833,8 @@ void DX12Renderer::endCommandRecording(CommandType commandType)
 	HRESULT hr = commandBuffers.commandList->Close();
 	NEBULA_ASSERT(SUCCEEDED(hr));
 
-	// create an array of command lists (only one command list here)
+	// Execute the command lists
 	ID3D12CommandList* ppCommandLists[] = { commandBuffers.commandList };
-
-	// execute the array of command lists
 	commandBuffers.commandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
 }
 
@@ -885,14 +867,13 @@ void DX12Renderer::waitCommandsFinish(CommandType commandType, nbInt32 frameIdx)
 	}
 
 	NEBULA_ASSERT(SUCCEEDED(hr));
-	commandBuffers.fenceValue[frameIdx]++;
+	++commandBuffers.fenceValue[frameIdx];
 }
 
 IntersectionInfo DX12Renderer::queryIntersection(const Scene::BaseScene& scene, const glm::uvec2& pos)
 {
 	{
-		// Start direct command recording.
-		// Will wait for effect compilation to be done if required.
+		// First render the positions
 		startCommandRecording();
 
 		auto& commandList = m_commandBuffers[CommandType::Direct].commandList;
@@ -901,13 +882,11 @@ IntersectionInfo DX12Renderer::queryIntersection(const Scene::BaseScene& scene, 
 		// Update the camera constant buffer
 		Effect::CameraConstantBufferSingleton::instance()->update(scene, commandList, frameIdx);
 
-		// First render the positions
 		commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_positionRenderTarget, D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET));
-
 		const nbFloat32 clearColor[] = { 0.0f, 0.0f, 0.0f, 0.0f };
 		commandList->ClearRenderTargetView(m_positionRTDescriptorHandle.getCpuHandle(), clearColor, 0, nullptr);
-		commandList->ClearDepthStencilView(m_positionDsvDescriptorsHandle.getCpuHandle(), D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
-		commandList->OMSetRenderTargets(1, &m_positionRTDescriptorHandle.getCpuHandle(), FALSE, &m_positionDsvDescriptorsHandle.getCpuHandle());
+		commandList->ClearDepthStencilView(m_positionDsvDescriptorHandle.getCpuHandle(), D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+		commandList->OMSetRenderTargets(1, &m_positionRTDescriptorHandle.getCpuHandle(), FALSE, &m_positionDsvDescriptorHandle.getCpuHandle());
 		commandList->RSSetViewports(1, &m_viewport);
 		commandList->RSSetScissorRects(1, &m_scissorRect);
 
@@ -934,12 +913,12 @@ IntersectionInfo DX12Renderer::queryIntersection(const Scene::BaseScene& scene, 
 	}
 
 	// Now read
-	float rawData[4];
+	FLOAT rawData[4];
 	m_pixelReadBuffer->ReadFromSubresource(reinterpret_cast<void*>(&rawData), 0, 0, 0, nullptr);
 
-	nbUint32 flatMeshIdx = (nbUint32)rawData[3];
+	nbUint32 flatMeshIdx = static_cast<nbUint32>(rawData[3]);
 
-	if (flatMeshIdx == 0)
+	if (flatMeshIdx == 0u)
 		return IntersectionInfo{};
 
 	--flatMeshIdx;
@@ -963,7 +942,7 @@ void DX12Renderer::drawScene(const Scene::BaseScene& scene)
 	// Update the camera constant buffer
 	Effect::CameraConstantBufferSingleton::instance()->update(scene, commandList, frameIdx);
 
-	// transition the MSAA RT from the resolve source to the render target state
+	// Transition the MSAA RT from the resolve source to the render target state
 	commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_msaaRenderTarget, D3D12_RESOURCE_STATE_RESOLVE_SOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET));
 
 	// Clear the render target
@@ -971,19 +950,19 @@ void DX12Renderer::drawScene(const Scene::BaseScene& scene)
 	const nbFloat32 clearColor[] = { sceneAmbient.x, sceneAmbient.y, sceneAmbient.z, 1.0f };
 	commandList->ClearRenderTargetView(m_msaaRTDescriptorHandle.getCpuHandle(), clearColor, 0, nullptr);
 
-	// clear the depth/stencil buffer
-	commandList->ClearDepthStencilView(m_dsvDescriptorsHandle.getCpuHandle(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
+	// Clear the depth/stencil buffer
+	commandList->ClearDepthStencilView(m_msaaDsvDescriptorHandle.getCpuHandle(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
 
 	// Set OM stage render target
-	commandList->OMSetRenderTargets(1, &m_msaaRTDescriptorHandle.getCpuHandle(), FALSE, &m_dsvDescriptorsHandle.getCpuHandle());
+	commandList->OMSetRenderTargets(1, &m_msaaRTDescriptorHandle.getCpuHandle(), FALSE, &m_msaaDsvDescriptorHandle.getCpuHandle());
 
-	// set the viewport
+	// Set the viewport
 	commandList->RSSetViewports(1, &m_viewport);
 
-	// set the scissor rect
+	// Set the scissor rect
 	commandList->RSSetScissorRects(1, &m_scissorRect);
 
-	// push draw commands
+	// Now push draw commands
 	ID3D12DescriptorHeap* descriptorHeaps[] = { m_cbs_srv_uavAllocator->getHeap() };
 	commandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
 
@@ -994,7 +973,7 @@ void DX12Renderer::drawScene(const Scene::BaseScene& scene)
 		m_cubeMappingEffect->pushDrawCommands(args, commandList, frameIdx);
 	}
 
-	// Selection hightlight
+	// Selection hightlights
 	const Model::Mesh* meshSelection = Model::Mesh::fromIselectable(scene.getCurrentSelection());
 	if (meshSelection)
 	{
@@ -1034,36 +1013,39 @@ void DX12Renderer::drawScene(const Scene::BaseScene& scene)
 		const Gizmo::GizmoType gizmoType = gizmo->getType();
 		Effect::RenderGizmoPushArgs gizmoArgs = { scene };
 
-		if (gizmoType == Gizmo::GizmoType::Move)
+		if (gizmo->getEnabled())
 		{
-			m_moveGizmoEffect->pushDrawCommands(gizmoArgs, commandList, frameIdx);
-		}
-		else if (gizmoType == Gizmo::GizmoType::Scale)
-		{
-			m_scaleGizmoEffect->pushDrawCommands(gizmoArgs, commandList, frameIdx);
-		}
-		else if (gizmoType == Gizmo::GizmoType::Rotation)
-		{
-			m_rotationGizmoEffect->pushDrawCommands(gizmoArgs, commandList, frameIdx);
+			if (gizmoType == Gizmo::GizmoType::Move)
+			{
+				m_moveGizmoEffect->pushDrawCommands(gizmoArgs, commandList, frameIdx);
+			}
+			else if (gizmoType == Gizmo::GizmoType::Scale)
+			{
+				m_scaleGizmoEffect->pushDrawCommands(gizmoArgs, commandList, frameIdx);
+			}
+			else if (gizmoType == Gizmo::GizmoType::Rotation)
+			{
+				m_rotationGizmoEffect->pushDrawCommands(gizmoArgs, commandList, frameIdx);
+			}
 		}
 	}
 
-	// Resolve msaa to swap chain render target
+	// Resolve msaa to swap chain render target.
 	commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_renderTargets[frameIdx], D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RESOLVE_DEST));
 	commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_msaaRenderTarget, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_RESOLVE_SOURCE));
 	commandList->ResolveSubresource(m_renderTargets[frameIdx], 0, m_msaaRenderTarget, 0, NEBULA_SWAP_CHAIN_FORMAT);
 
-	// Transition render target to the present state
+	// Transition render target to the present state.
 	commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_renderTargets[frameIdx], D3D12_RESOURCE_STATE_RESOLVE_DEST, D3D12_RESOURCE_STATE_PRESENT));
 }
 
 void DX12Renderer::present()
 {
-	// present the current backbuffer
+	// Present the current backbuffer
 	HRESULT	hr = m_swapChain->Present(0, 0);
 	if (FAILED(hr))
 	{
-		NEBULA_TRACE("DX12Renderer::render - Failed to present");
+		NEBULA_TRACE("DX12Renderer::present - Failed to present");
 	}
 }
 

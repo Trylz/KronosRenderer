@@ -42,9 +42,6 @@ void RenderMoveGizmo::pushDrawCommands(RenderGizmoPushArgs& data, ID3D12Graphics
 	const DX12MoveGizmo* dx12Gizmo = dynamic_cast<const DX12MoveGizmo*>(data.scene.getCurrentGizmo());
 	NEBULA_ASSERT(dx12Gizmo);
 
-	if (!dx12Gizmo->getEnabled())
-		return;
-
 	updateConstantBuffers(data.scene.getCamera(), dx12Gizmo, frameIndex);
 
 	commandList->SetPipelineState(m_PSO);
@@ -54,7 +51,7 @@ void RenderMoveGizmo::pushDrawCommands(RenderGizmoPushArgs& data, ID3D12Graphics
 
 	nbInt32 pixelShaderIdx = 0;
 
-	auto pushCommands = [&](size_t instanceCount, const D3D12_VERTEX_BUFFER_VIEW& view)
+	const auto pushCommands = [&](size_t instanceCount, const D3D12_VERTEX_BUFFER_VIEW& view)
 	{
 		commandList->SetGraphicsRootConstantBufferView(1, pixelShaderIdx * PixelShaderCBAlignedSize + m_pixelShaderCBUploadHeaps[frameIndex]->GetGPUVirtualAddress());
 		++pixelShaderIdx;
@@ -65,7 +62,6 @@ void RenderMoveGizmo::pushDrawCommands(RenderGizmoPushArgs& data, ID3D12Graphics
 
 	// 0: Boxes
 	commandList->IASetIndexBuffer(&dx12Gizmo->getBoxesIndexBuffer().bufferView);
-
 	for (auto& iter : dx12Gizmo->getBoxVertexBuffers())
 	{
 		pushCommands(Math::Shape::Box::s_indices.size(), iter.second.bufferView);
@@ -73,7 +69,6 @@ void RenderMoveGizmo::pushDrawCommands(RenderGizmoPushArgs& data, ID3D12Graphics
 
 	// 1: Planes
 	commandList->IASetIndexBuffer(&dx12Gizmo->getQuadsIndexBuffer().bufferView);
-
 	for (auto& iter : dx12Gizmo->getQuadVertexBuffers())
 	{
 		pushCommands(6, iter.second.bufferView);
@@ -82,7 +77,6 @@ void RenderMoveGizmo::pushDrawCommands(RenderGizmoPushArgs& data, ID3D12Graphics
 	// 2: Pyramids
 	pixelShaderIdx = 0;
 	commandList->IASetIndexBuffer(&dx12Gizmo->getPyramidsIndexBuffer().bufferView);
-
 	for (auto& iter : dx12Gizmo->getPyramidVertexBuffers())
 	{
 		pushCommands(Gizmo::MoveGizmo::s_pyramidIndices.size(), iter.second.bufferView);

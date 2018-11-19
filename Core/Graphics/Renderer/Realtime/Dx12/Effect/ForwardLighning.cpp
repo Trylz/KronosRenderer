@@ -61,9 +61,9 @@ void ForwardLighning::initRootSignature()
 	for (; paramIdx < 2; ++paramIdx)
 	{
 		rootCBVDescriptor.ShaderRegister = paramIdx;
-		rootParameters[paramIdx].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // this is a constant buffer view root descriptor
-		rootParameters[paramIdx].Descriptor = rootCBVDescriptor; // this is the root descriptor for this root parameter
-		rootParameters[paramIdx].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX; // our vertex shader will be the only shader accessing this parameter for now
+		rootParameters[paramIdx].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+		rootParameters[paramIdx].Descriptor = rootCBVDescriptor;
+		rootParameters[paramIdx].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
 	}
 
 	// 2 & 3 : Root parameter for the light and material pixel shader constant buffer
@@ -89,25 +89,22 @@ void ForwardLighning::initRootSignature()
 		descriptorTableRanges[i].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // this appends the range to the end of the root signature descriptor tables
 		descriptorTableRanges[i].BaseShaderRegister = i; // start index of the shader registers in the range
 		
-		// create a descriptor table
+		// Create a descriptor table
 		D3D12_ROOT_DESCRIPTOR_TABLE descriptorTable;
-		descriptorTable.NumDescriptorRanges = 1; // we only have one range
-		descriptorTable.pDescriptorRanges = &descriptorTableRanges[i]; // the pointer to the beginning of our ranges array
-
-		// fill out the parameter for our descriptor table. Remember it's a good idea to sort parameters by frequency of change. Our constant
-		// buffer will be changed multiple times per frame, while our descriptor table will not be changed at all (in this tutorial)
-		rootParameters[paramIdx].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // this is a descriptor table
-		rootParameters[paramIdx].DescriptorTable = descriptorTable; // this is our descriptor table for this root parameter
-		rootParameters[paramIdx].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // our pixel shader will be the only shader accessing this parameter for now
+		descriptorTable.NumDescriptorRanges = 1;
+		descriptorTable.pDescriptorRanges = &descriptorTableRanges[i];
+		rootParameters[paramIdx].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+		rootParameters[paramIdx].DescriptorTable = descriptorTable;
+		rootParameters[paramIdx].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
 	}
 
-	// create root signature
+	// Create root signature
 	createRootSignature(rootParameters, _countof(rootParameters));
 }
 
 void ForwardLighning::initPipelineStateObjects()
 {
-	// create input layout
+	// Create input layout
 	D3D12_INPUT_ELEMENT_DESC inputLayoutElement[] =
 	{
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
@@ -171,7 +168,7 @@ void ForwardLighning::initPipelineStateObjects()
 									"SSS_IDX", sssIdxDef.c_str(), NULL, NULL
 	};
 
-	// Compile vertex shader
+	// Compile pixel shader
 	ID3DBlob* pixelShader = compileShader(std::wstring(L"ForwardLightning_PS.hlsl"), false, macros);
 
 	// Compile solid PSO
@@ -214,7 +211,7 @@ void ForwardLighning::initPipelineStateObjects()
 
 void ForwardLighning::initStaticConstantBuffers()
 {
-	for (nbInt32 i = 0; i < SwapChainBufferCount; ++i)
+	for (nbUint32 i = 0u; i < SwapChainBufferCount; ++i)
 	{
 		HRESULT hr = D3D12Device->CreateCommittedResource(&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
 			D3D12_HEAP_FLAG_NONE,
@@ -224,9 +221,9 @@ void ForwardLighning::initStaticConstantBuffers()
 			IID_PPV_ARGS(&m_pixelShaderLightsCBUploadHeaps[i]));
 
 		NEBULA_ASSERT(SUCCEEDED(hr));
-		m_pixelShaderLightsCBUploadHeaps[i]->SetName(L"Pixel shader lights Constant Buffer Upload heap");
+		m_pixelShaderLightsCBUploadHeaps[i]->SetName(L"Pixel shader lights constant buffer upload heap");
 
-		hr = m_pixelShaderLightsCBUploadHeaps[i]->Map(0, &readRangeGPUOnly, reinterpret_cast<void**>(&m_pixelShaderLightsCBGPUAddress[i]));
+		hr = m_pixelShaderLightsCBUploadHeaps[i]->Map(0, &ReadRangeGPUOnly, reinterpret_cast<void**>(&m_pixelShaderLightsCBGPUAddress[i]));
 		NEBULA_ASSERT(SUCCEEDED(hr));
 	}
 }
@@ -234,7 +231,7 @@ void ForwardLighning::initStaticConstantBuffers()
 void ForwardLighning::initDynamicMaterialConstantBuffer(const Scene::BaseScene& scene, ID3D12GraphicsCommandList* commandList)
 {
 	const auto& materials = scene.getModel()->getMaterials();
-	if (!materials.size())
+	if (materials.empty())
 		return;
 
 	// Allocate the maximal possible number of materials.
@@ -260,7 +257,7 @@ void ForwardLighning::initDynamicMaterialConstantBuffer(const Scene::BaseScene& 
 		NEBULA_ASSERT(SUCCEEDED(hr));
 		m_pixelShaderMaterialCBUploadHeap->SetName(L"Pixel shader material Constant Buffer Upload heap");
 
-		hr = m_pixelShaderMaterialCBUploadHeap->Map(0, &readRangeGPUOnly, reinterpret_cast<void**>(&m_pixelShaderMaterialCBGPUAddress));
+		hr = m_pixelShaderMaterialCBUploadHeap->Map(0, &ReadRangeGPUOnly, reinterpret_cast<void**>(&m_pixelShaderMaterialCBGPUAddress));
 		NEBULA_ASSERT(SUCCEEDED(hr));
 
 		// Create default heap
@@ -276,7 +273,7 @@ void ForwardLighning::initDynamicMaterialConstantBuffer(const Scene::BaseScene& 
 		m_pixelShaderMaterialCBDefaultHeap->SetName(L"Pixel shader material Constant Buffer Default Resource heap");
 	}
 
-	// 1 : Update maerials in upload heap
+	// 1 : Update materials in upload heap
 	for (auto& mat : materials)
 	{
 		updateMaterial(scene, mat.first, commandList);
@@ -297,61 +294,58 @@ void ForwardLighning::fromMaterialUploadToDefaultHeaps(ID3D12GraphicsCommandList
 
 void ForwardLighning::updateMaterial(const Scene::BaseScene& scene, const MaterialIdentifier& matId, ID3D12GraphicsCommandList* commandList)
 {
-	using namespace Graphics::Material;
+	using namespace Material;
 
 	const DX12Model* dx12Model = static_cast<const DX12Model*>(scene.getModel().get());
 	auto materialHandle = dx12Model->getMaterialHandle(matId);
 
-	for (nbInt32 i = 0; i < SwapChainBufferCount; ++i)
+	PixelShaderMaterialCB pixelShaderMaterialCB;
+	auto& materialCB = pixelShaderMaterialCB.material;
+	ZeroMemory(&pixelShaderMaterialCB, sizeof(pixelShaderMaterialCB));
+
+	const BaseMaterial* material = dx12Model->getMaterial(materialHandle->matId);
+	if (material->isFresnelMaterial())
 	{
-		PixelShaderMaterialCB pixelShaderMaterialCB;
-		auto& materialCB = pixelShaderMaterialCB.material;
-		ZeroMemory(&pixelShaderMaterialCB, sizeof(pixelShaderMaterialCB));
+		const FresnelMaterial* fresnelMat = static_cast<const FresnelMaterial*>(material);
 
-		const BaseMaterial* material = dx12Model->getMaterial(materialHandle->matId);
-		if (material->isFresnelMaterial())
-		{
-			const FresnelMaterial* fresnelMat = static_cast<const FresnelMaterial*>(material);
-
-			materialCB.ambient = { fresnelMat->getAmbient().r, fresnelMat->getAmbient().g, fresnelMat->getAmbient().b, 1.0f };
-			materialCB.shininess = fresnelMat->getShininess();
-			materialCB.roughness = fresnelMat->getRoughness();
-			materialCB.fresnel0 = fresnelMat->getFresnel0();
-		}
-		else
-		{
-			materialCB.diffuse = { defaultAmbient, defaultAmbient, defaultAmbient, 1.0f };
-			materialCB.ambient = { defaultAmbient, defaultAmbient, defaultAmbient, 1.0f };
-		}
-
-		if (material->isDielectric())
-		{
-			const DefaultDielectric* dielectricMat = static_cast<const DefaultDielectric*>(material);
-			materialCB.diffuse = { dielectricMat->getDiffuse().r, dielectricMat->getDiffuse().g, dielectricMat->getDiffuse().b, 1.0f };
-			materialCB.specular = { dielectricMat->getSpecular().r, dielectricMat->getSpecular().g, dielectricMat->getSpecular().b, 1.0f };
-			materialCB.emissive = { dielectricMat->getEmissive().r, dielectricMat->getEmissive().g, dielectricMat->getEmissive().b, 1.0f };
-		}
-		else if (material->getType() == BaseMaterial::Type::DefaultMetal)
-		{
-			const DefaultMetal* metalMat = static_cast<const DefaultMetal*>(material);
-			materialCB.diffuse = { metalMat->getReflectance().r, metalMat->getReflectance().g, metalMat->getReflectance().b, 1.0f };
-		}
-		else if (material->getType() == BaseMaterial::Type::Hair)
-		{
-			const Hair* hairMat = static_cast<const Hair*>(material);
-			materialCB.diffuse = { hairMat->getReflectance().r, hairMat->getReflectance().g, hairMat->getReflectance().b, 1.0f };
-		}
-
-		materialCB.opacity = material->getOpacity();
-		materialCB.type = static_cast<INT>(material->getType());
-
-		materialCB.hasDiffuseTex = materialHandle->diffuseTexture.isValid();
-		materialCB.hasSpecularTex = materialHandle->specularTexture.isValid();
-		materialCB.hasNormalTex = materialHandle->normalTexture.isValid();
-
-		nbUint64 posInCB = matId * PixelShaderMaterialCBAlignedSize;
-		memcpy(m_pixelShaderMaterialCBGPUAddress + posInCB, &pixelShaderMaterialCB, sizeof(PixelShaderMaterialCB));
+		materialCB.ambient = { fresnelMat->getAmbient().r, fresnelMat->getAmbient().g, fresnelMat->getAmbient().b, 1.0f };
+		materialCB.shininess = fresnelMat->getShininess();
+		materialCB.roughness = fresnelMat->getRoughness();
+		materialCB.fresnel0 = fresnelMat->getFresnel0();
 	}
+	else
+	{
+		materialCB.diffuse = { defaultAmbient, defaultAmbient, defaultAmbient, 1.0f };
+		materialCB.ambient = { defaultAmbient, defaultAmbient, defaultAmbient, 1.0f };
+	}
+
+	if (material->isDielectric())
+	{
+		const DefaultDielectric* dielectricMat = static_cast<const DefaultDielectric*>(material);
+		materialCB.diffuse = { dielectricMat->getDiffuse().r, dielectricMat->getDiffuse().g, dielectricMat->getDiffuse().b, 1.0f };
+		materialCB.specular = { dielectricMat->getSpecular().r, dielectricMat->getSpecular().g, dielectricMat->getSpecular().b, 1.0f };
+		materialCB.emissive = { dielectricMat->getEmissive().r, dielectricMat->getEmissive().g, dielectricMat->getEmissive().b, 1.0f };
+	}
+	else if (material->getType() == BaseMaterial::Type::DefaultMetal)
+	{
+		const DefaultMetal* metalMat = static_cast<const DefaultMetal*>(material);
+		materialCB.diffuse = { metalMat->getReflectance().r, metalMat->getReflectance().g, metalMat->getReflectance().b, 1.0f };
+	}
+	else if (material->getType() == BaseMaterial::Type::Hair)
+	{
+		const Hair* hairMat = static_cast<const Hair*>(material);
+		materialCB.diffuse = { hairMat->getReflectance().r, hairMat->getReflectance().g, hairMat->getReflectance().b, 1.0f };
+	}
+
+	materialCB.opacity = material->getOpacity();
+	materialCB.type = static_cast<INT>(material->getType());
+
+	materialCB.hasDiffuseTex = materialHandle->diffuseTexture.isValid();
+	materialCB.hasSpecularTex = materialHandle->specularTexture.isValid();
+	materialCB.hasNormalTex = materialHandle->normalTexture.isValid();
+
+	nbUint64 posInCB = matId * PixelShaderMaterialCBAlignedSize;
+	memcpy(m_pixelShaderMaterialCBGPUAddress + posInCB, &pixelShaderMaterialCB, sizeof(PixelShaderMaterialCB));
 }
 
 void ForwardLighning::updatePixelShaderLightsCB(ForwardLightningPushArgs& data, nbInt32 frameIndex)
@@ -418,16 +412,16 @@ void ForwardLighning::pushDrawCommands(ForwardLightningPushArgs& data, ID3D12Gra
 	// Set Pso
 	commandList->SetPipelineState(data.scene.isWireframeEnabled() ? m_wireframePSO : m_solidPSO);
 
-	// set root signature
+	// Set root signature
 	commandList->SetGraphicsRootSignature(m_rootSignature);
 
-	// set the primitive topology
+	// Set the primitive topology
 	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-	// update light constant buffers
+	// Update light constant buffers
 	updatePixelShaderLightsCB(data, frameIndex);
 
-	// set shared constant buffer views
+	// Set shared constant buffer views
 	commandList->SetGraphicsRootConstantBufferView(0, CameraConstantBufferSingleton::instance()->getUploadtHeaps()[frameIndex]->GetGPUVirtualAddress());
 	commandList->SetGraphicsRootConstantBufferView(2, m_pixelShaderLightsCBUploadHeaps[frameIndex]->GetGPUVirtualAddress());
 
@@ -463,12 +457,12 @@ void ForwardLighning::pushDrawCommands(ForwardLightningPushArgs& data, ID3D12Gra
 		const auto normalTex = getPSReadyTextureHandle(materialHandle->normalTexture, materialHandle, 6);
 
 		// Draw meshes.
-		for (auto* mesh : group.second)
+		for (auto* meshHandle : group.second)
 		{
-			commandList->IASetVertexBuffers(0, 1, &mesh->vertexBuffer.bufferView);
-			commandList->IASetIndexBuffer(&mesh->indexBuffer.bufferView);
+			commandList->IASetVertexBuffers(0, 1, &meshHandle->vertexBuffer.bufferView);
+			commandList->IASetIndexBuffer(&meshHandle->indexBuffer.bufferView);
 
-			commandList->DrawIndexedInstanced(mesh->nbIndices, 1, 0, 0, 0);
+			commandList->DrawIndexedInstanced(meshHandle->nbIndices, 1, 0, 0, 0);
 		}
 
 		// Reset texture states.

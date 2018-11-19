@@ -64,7 +64,7 @@ void LightVisualLines::updateConstantBuffers(const LightVisualLinesPushArgs& dat
 	XMStoreFloat4x4(&vertexShaderCB.wvpMat, mvp);
 	memcpy(m_vertexShaderCBGPUAddress[frameIndex], &vertexShaderCB, sizeof(VertexShaderCB));
 
-	// Vertex shader CB
+	// Pixel shader CB
 	PixelShaderCB pixelShaderCB;
 	pixelShaderCB.color = XMFLOAT4(0.6f, 0.6f, 0.6f, 1.0f);
 	memcpy(m_pixelShaderCBGPUAddress[frameIndex], &pixelShaderCB, sizeof(PixelShaderCB));

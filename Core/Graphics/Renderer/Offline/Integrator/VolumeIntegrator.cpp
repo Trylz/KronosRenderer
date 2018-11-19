@@ -18,9 +18,9 @@ namespace Graphics { namespace Renderer { namespace Offline { namespace Integrat
 		const Scene::BaseScene* scene,
 		const RGBSpectrum& inRadiance,
 		const glm::vec3& startPt,
-		const glm::vec3& endPt)
+		const glm::vec3& endPt,
+		const MediaPtr& media)
 	{
-		const MediaPtr& media = scene->getMedia();
 		const MediaSettings& mediaSettings = media->getSettings();
 
 		const glm::vec3 direction = endPt - startPt;
@@ -30,10 +30,10 @@ namespace Graphics { namespace Renderer { namespace Offline { namespace Integrat
 		if (mediaSettings.m_dynamicNbSamples)
 		{
 			// Compute dynamic nb samples based on line size.
-			const nbFloat32 sceneSize = glm::length(scene->getModel()->getBounds().getSize());
-			const nbFloat32 lengthOverSceneSize = dirLength / sceneSize;
+			const nbFloat32 boundsSize = glm::length(scene->getModel()->getBounds().getSize());
+			const nbFloat32 lengthOverBoundsSize = dirLength / boundsSize;
 
-			nbSamples = (nbUint32)(nbSamples * lengthOverSceneSize);
+			nbSamples = (nbUint32)(nbSamples * lengthOverBoundsSize);
 		}
 
 		RGBSpectrum accInRadiance;
@@ -45,7 +45,7 @@ namespace Graphics { namespace Renderer { namespace Offline { namespace Integrat
 			//const nbFloat32 segmentTransmittance = std::exp2f(-stepSize * media->getExtinctionCoeff());
 			//const nbFloat32 scatteringTransmitance = segmentTransmittance * mediaSettings.m_scatteringCoeff;
 
-			std::vector<glm::vec3> indirectSamples(2);
+			glm::vec3 indirectSamples[2];
 			glm::vec3 currentPt = startPt;
 
 			for (nbUint32 i = 0u; i < nbSamples; ++i, currentPt += step)
@@ -91,9 +91,9 @@ namespace Graphics { namespace Renderer { namespace Offline { namespace Integrat
 						if (intersector->intersect(ray, isectResult))
 						{
 							const auto isectProps = buildIntersectionProperties(ray, isectResult, scene);
-							const auto material = scene->getModel()->getMaterial(isectResult.object->m_materialId);
+							const auto material = scene->getModel()->getMaterial(isectResult.object->getMaterialId());
 
-							const auto materialColorCache = material->buildColorCache(scene->getAmbientColor(),
+							const auto materialColorCache = material->buildBsdfCache(scene->getAmbientColor(),
 								isectProps.texCoord,
 								scene->getModel()->getImageContainer());
 
@@ -103,12 +103,10 @@ namespace Graphics { namespace Renderer { namespace Offline { namespace Integrat
 								materialColorCache,
 								isectProps);
 						}
-						else if (auto& cubeMap = scene->getCubeMap())
+						else
 						{
 							nbFloat32 phase = media->sample(direction, sample);
-							indirectRadiance += phase * glm::swizzle<glm::X, glm::Y, glm::Z>(
-									cubeMap->sample(ray)
-								);
+							indirectRadiance += phase * getSkyColor(scene, ray);
 						}
 					}
 				}

@@ -20,7 +20,7 @@ namespace Graphics { namespace Renderer { namespace Offline { namespace Integrat
 
 		for (auto& lightIter : lights)
 		{
-			auto sampleToLight = lightIter.second->generateSampleToLight(s_nbGenerator, isectProps.P);
+			const auto sampleToLight = lightIter.second->generateSampleToLight(s_nbGenerator, isectProps.P);
 			if (!sampleToLight.canProcess)
 				continue;
 

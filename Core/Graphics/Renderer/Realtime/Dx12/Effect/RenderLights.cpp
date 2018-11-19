@@ -30,14 +30,14 @@ RenderLights::RenderLights(const DXGI_SAMPLE_DESC& sampleDesc)
 	initVertexAndIndexBuffer();
 	initTextures();
 
-	for (nbInt32 i = 0; i < SwapChainBufferCount; ++i)
+	for (nbUint32 i = 0u; i < SwapChainBufferCount; ++i)
 		m_vShaderCenterCBUploadHeaps[i] = nullptr;
 }
 
 RenderLights::~RenderLights()
 {
 	// Heaps
-	for (nbInt32 i = 0; i < SwapChainBufferCount; ++i)
+	for (nbUint32 i = 0u; i < SwapChainBufferCount; ++i)
 	{
 		if (m_vShaderCenterCBUploadHeaps[i])
 			m_vShaderCenterCBUploadHeaps[i]->Release();
@@ -95,7 +95,7 @@ void RenderLights::initRootSignature()
 	rootParameters[paramIdx].DescriptorTable = descriptorTable;
 	rootParameters[paramIdx].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
 
-	// create root signature
+	// Create root signature
 	createRootSignature(rootParameters, _countof(rootParameters));
 }
 
@@ -151,7 +151,7 @@ void RenderLights::initPipelineStateObjects()
 
 void RenderLights::initVertexShaderSharedCB()
 {
-	for (nbInt32 i = 0; i < SwapChainBufferCount; ++i)
+	for (nbUint32 i = 0u; i < SwapChainBufferCount; ++i)
 	{
 		HRESULT hr = D3D12Device->CreateCommittedResource(
 			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
@@ -163,9 +163,9 @@ void RenderLights::initVertexShaderSharedCB()
 
 		NEBULA_ASSERT(SUCCEEDED(hr));
 
-		m_vShaderSharedCBUploadHeaps[i]->SetName(L"RenderLightsEffect : Vertex shader static constant Buffer Upload heap");
+		m_vShaderSharedCBUploadHeaps[i]->SetName(L"RenderLights : Vertex shader constant buffer");
 
-		hr = m_vShaderSharedCBUploadHeaps[i]->Map(0, &readRangeGPUOnly, reinterpret_cast<void**>(&m_vShaderSharedCBGPUAddress[i]));
+		hr = m_vShaderSharedCBUploadHeaps[i]->Map(0, &ReadRangeGPUOnly, reinterpret_cast<void**>(&m_vShaderSharedCBGPUAddress[i]));
 		NEBULA_ASSERT(SUCCEEDED(hr));
 	}
 }
@@ -178,7 +178,7 @@ void RenderLights::initVertexShaderCenterCB(const Scene::BaseScene& scene)
 	const auto& lights = scene.getLights();
 	const nbUint32 nbLights = (nbUint32)lights.size();
 
-	for (nbInt32 i = 0; i < SwapChainBufferCount; ++i)
+	for (nbUint32 i = 0u; i < SwapChainBufferCount; ++i)
 	{
 		if (m_vShaderCenterCBUploadHeaps[i])
 			m_vShaderCenterCBUploadHeaps[i]->Release();
@@ -194,7 +194,7 @@ void RenderLights::initVertexShaderCenterCB(const Scene::BaseScene& scene)
 		NEBULA_ASSERT(SUCCEEDED(hr));
 		m_vShaderCenterCBUploadHeaps[i]->SetName(L"RenderLightsEffect : Center Constant Buffer Upload heap");
 
-		hr = m_vShaderCenterCBUploadHeaps[i]->Map(0, &readRangeGPUOnly, reinterpret_cast<void**>(&m_vShaderCenterCBGPUAddress[i]));
+		hr = m_vShaderCenterCBUploadHeaps[i]->Map(0, &ReadRangeGPUOnly, reinterpret_cast<void**>(&m_vShaderCenterCBGPUAddress[i]));
 		NEBULA_ASSERT(SUCCEEDED(hr));
 	}
 }
@@ -212,7 +212,7 @@ void RenderLights::initVertexAndIndexBuffer()
 
 void RenderLights::initTextures()
 {
-	using Graphics::Light::LightType;
+	using Light::LightType;
 
 	auto initTexture = [this](LightType lType, const std::string& path){
 		try
@@ -220,14 +220,14 @@ void RenderLights::initTextures()
 			m_images.emplace(lType, Texture::Helper::createRGBAImage(path)) ;
 			GraphicResourceAllocatorPtr<DX12_GRAPHIC_ALLOC_PARAMETERS>->createRGBATexture2D(m_images[lType], m_textures[lType]);
 		}
-		catch(Texture::CreateImageException)
+		catch(Texture::CreateImageException&)
 		{
 			if (m_images[lType])
 				delete m_images[lType];
 
 			m_images[lType] = nullptr;
 		}
-		catch(CreateTextureException)
+		catch(CreateTextureException&)
 		{
 			NEBULA_ASSERT(false);
 		}
@@ -269,7 +269,7 @@ void RenderLights::updateVertexShaderSharedCB(RenderLightsPushArgs& data, nbInt3
 
 void RenderLights::pushDrawCommands(RenderLightsPushArgs& data, ID3D12GraphicsCommandList* commandList, nbInt32 frameIndex)
 {
-	using Graphics::Light::LightType;
+	using Light::LightType;
 
 	commandList->SetPipelineState(m_PSO);
 	commandList->SetGraphicsRootSignature(m_rootSignature);
@@ -285,7 +285,7 @@ void RenderLights::pushDrawCommands(RenderLightsPushArgs& data, ID3D12GraphicsCo
 	{
 		commandList->SetGraphicsRootConstantBufferView(1, i * VtxShaderCenterCBAlignedSize + m_vShaderCenterCBUploadHeaps[frameIndex]->GetGPUVirtualAddress());
 
-		auto tex = m_textures.find(lightIter.second->getType());
+		const auto tex = m_textures.find(lightIter.second->getType());
 		NEBULA_ASSERT(tex != m_textures.end());
 
 		if (!tex->second.descriptorHandle.isEmpty())

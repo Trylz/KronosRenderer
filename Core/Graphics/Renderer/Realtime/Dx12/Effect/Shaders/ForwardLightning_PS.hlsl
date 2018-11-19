@@ -132,7 +132,7 @@ float4 specularLightning(float4 matDiffuse, float2 texCoord, float HoN, float fr
 		matSpecular = matDiffuse;
 	}
 
-	float normalizationFactor = (Material.shininess + 8) * InvPI8;
+	float normalizationFactor = saturate((Material.shininess + 8) * InvPI8);
 
 	return saturate(
 		matSpecular * fresnel * pow(HoN, Material.shininess) * normalizationFactor

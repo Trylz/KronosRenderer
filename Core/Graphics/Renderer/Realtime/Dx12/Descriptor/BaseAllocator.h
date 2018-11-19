@@ -100,7 +100,7 @@ inline nbInt32 BaseAllocator<descType, pageSize>::retrieveFreeBlock(UINT count)
 	{
 		if (m_freeBlocks[i].count >= count)
 		{
-			UINT residuum = m_freeBlocks[i].count - count;
+			const UINT residuum = m_freeBlocks[i].count - count;
 			if (residuum)
 			{
 				Block newBlock;

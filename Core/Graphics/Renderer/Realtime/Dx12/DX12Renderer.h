@@ -53,7 +53,7 @@ public:
 	void present() override;
 
 	void createRGBATexture2D(const Texture::RGBAImage* image, Dx12TextureHandle& dst) override;
-	void createRGBATexture2DArray(const std::vector<const Texture::RGBAImage*>& images, Dx12TextureHandle& dst) override;
+	void createRGBATextureCube(const std::vector<const Texture::RGBAImage*>& images, Dx12TextureHandle& dst) override;
 
 	nbBool releaseTexture(const Dx12TextureHandle& textureHandle) const override;
 
@@ -112,9 +112,9 @@ private:
 
 	ArrayBufferResource createArrayBufferRecource(const void* data, nbUint32 sizeofElem, nbUint32 count);
 
-	void createRGBATexture2DArray(const std::vector<const Texture::RGBAImage*>& image, nbUint32 width, nbUint32 height, D3D12_SRV_DIMENSION viewDimension, Dx12TextureHandle& dst);
+	void createRGBATexture2DArray(const std::vector<const Texture::RGBAImage*>& images, nbUint32 width, nbUint32 height, D3D12_SRV_DIMENSION viewDimension, Dx12TextureHandle& dst);
 
-	// the window
+	// The window
 	HWND m_hwindow;
 
 	// Descriptor allocators
@@ -122,20 +122,10 @@ private:
 	std::unique_ptr<Descriptor::RTV_DescriptorAllocator> m_rtvAllocator;
 	std::unique_ptr<Descriptor::DSV_DescriptorAllocator> m_dsvAllocator;
 
-	// the dxgi factory
 	CComPtr<IDXGIFactory4> m_dxgiFactory;
-
-	// swapchain used to switch between render targets
 	CComPtr<IDXGISwapChain3> m_swapChain;
-
-	// The swap chain description structure
 	DXGI_SWAP_CHAIN_DESC m_swapChainDesc = {};
-
-	DescriptorHandle m_dsvDescriptorsHandle;
-
-	// number of render targets equal to buffer count
 	ID3D12Resource* m_renderTargets[SwapChainBufferCount];
-
 	CComPtr<ID3D12Resource> m_pixelReadBuffer;
 
 	struct CommandBuffer
@@ -151,18 +141,14 @@ private:
 
 	std::unordered_map<CommandType, CommandBuffer> m_commandBuffers;
 
-	// area that output from rasterizer will be stretched to.
 	D3D12_VIEWPORT m_viewport; 
-
-	// the area to draw in. pixels outside that area will not be drawn onto
 	D3D12_RECT m_scissorRect; 
 
-	// The multi-sampling description
 	DXGI_SAMPLE_DESC m_msaaSampleDesc = {};
 	DXGI_SAMPLE_DESC m_simpleSampleDesc = {};
 
-	// This is the memory for our depth buffer.
 	ID3D12Resource* m_depthStencilBuffer =  nullptr;
+	DescriptorHandle m_msaaDsvDescriptorHandle;
 
 	// The offscreen render targets
 	ID3D12Resource* m_msaaRenderTarget = nullptr;
@@ -171,8 +157,7 @@ private:
 	ID3D12Resource* m_positionRenderTarget = nullptr;
 	DescriptorHandle m_positionRTDescriptorHandle;
 	ID3D12Resource* m_positionDepthStencilBuffer = nullptr;
-	DescriptorHandle m_positionDsvDescriptorsHandle;
-	D3D12_RESOURCE_DESC m_positionRenderTargetDesc;
+	DescriptorHandle m_positionDsvDescriptorHandle;
 
 	std::vector<ID3D12Resource*> m_loadingResources;
 
@@ -190,28 +175,28 @@ private:
 	std::atomic_bool m_effectsReady;
 };
 
-inline Graphics::Model::ModelPtr DX12Renderer::createModelFromRaw(const std::string& path) const
+inline Model::ModelPtr DX12Renderer::createModelFromRaw(const std::string& path) const
 {
 	return std::make_unique<DX12Model>(path);
 }
 
-inline Graphics::Model::ModelPtr DX12Renderer::createModelFromNode(const Utilities::Xml::XmlNode& node)const
+inline Model::ModelPtr DX12Renderer::createModelFromNode(const Utilities::Xml::XmlNode& node)const
 {
 	return std::make_unique<DX12Model>(node);
 }
 
-inline Graphics::Texture::CubeMapPtr DX12Renderer::createCubeMapFromRaw(Graphics::Texture::CubeMapConstructRawArgs& args) const
+inline Texture::CubeMapPtr DX12Renderer::createCubeMapFromRaw(Texture::CubeMapConstructRawArgs& args) const
 {
 	return std::make_unique<DX12CubeMap>(args);
 }
-inline Graphics::Texture::CubeMapPtr DX12Renderer::createCubeMapFromNode(const Graphics::Texture::CubeMapConstructNodeArgs& args) const
+inline Texture::CubeMapPtr DX12Renderer::createCubeMapFromNode(const Texture::CubeMapConstructNodeArgs& args) const
 {
 	return std::make_unique<DX12CubeMap>(args);
 }
 
 inline nbBool DX12Renderer::createVertexBuffer(const void* data, Dx12VertexBufferHandle& dst, nbUint32 sizeofElem, nbUint32 count)
 {
-	ArrayBufferResource resourceData = createArrayBufferRecource(data, sizeofElem, count);
+	const ArrayBufferResource resourceData = createArrayBufferRecource(data, sizeofElem, count);
 	if (resourceData.bufferSize == 0u || resourceData.buffer == nullptr)
 	{
 		return false;

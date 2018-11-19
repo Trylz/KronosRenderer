@@ -47,7 +47,7 @@ void RenderWorldPosition::initPipelineStateObjects()
 	ID3DBlob* vertexShader = compileShader(std::wstring(L"WorldPosition_VS.hlsl"), true);
 	ID3DBlob* pixelShader = compileShader(std::wstring(L"WorldPosition_PS.hlsl"), false);
 
-	// Compile PSOs
+	// Compile PSO
 	D3D12_INPUT_ELEMENT_DESC inputLayoutElement[] =
 	{
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
@@ -86,12 +86,12 @@ void RenderWorldPosition::pushDrawCommands(RenderWorldPositionPushArgs& data, ID
 		commandList->SetGraphicsRootConstantBufferView(1, MeshGroupConstantBufferSingleton::instance()->getDefaultHeap()->GetGPUVirtualAddress() + groupPosInCB);
 
 		// Draw meshes.
-		for (auto* mesh : group.second)
+		for (auto* meshHandle : group.second)
 		{
-			commandList->IASetVertexBuffers(0, 1, &mesh->vertexBuffer.bufferView);
-			commandList->IASetIndexBuffer(&mesh->indexBuffer.bufferView);
+			commandList->IASetVertexBuffers(0, 1, &meshHandle->vertexBuffer.bufferView);
+			commandList->IASetIndexBuffer(&meshHandle->indexBuffer.bufferView);
 
-			commandList->DrawIndexedInstanced(mesh->nbIndices, 1, 0, 0, 0);
+			commandList->DrawIndexedInstanced(meshHandle->nbIndices, 1, 0, 0, 0);
 		}
 	}
 }

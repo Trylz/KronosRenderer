@@ -36,9 +36,6 @@ void RenderScaleGizmo::pushDrawCommands(RenderGizmoPushArgs& data, ID3D12Graphic
 	const DX12ScaleGizmo* dx12Gizmo = dynamic_cast<const DX12ScaleGizmo*>(data.scene.getCurrentGizmo());
 	NEBULA_ASSERT(dx12Gizmo);
 
-	if (!dx12Gizmo->getEnabled())
-		return;
-
 	updateConstantBuffers(data.scene.getCamera(), dx12Gizmo, frameIndex);
 
 	commandList->SetPipelineState(m_PSO);

@@ -21,7 +21,6 @@ namespace Graphics { namespace Renderer { namespace Realtime { namespace Dx12
 {
 	struct ResourceBuffer
 	{
-		// A default buffer in GPU memory that we will load array data into
 		ID3D12Resource* buffer = nullptr;
 	};
 
@@ -79,8 +78,6 @@ namespace Graphics { namespace Renderer { namespace Realtime { namespace Dx12
 	using Dx12VertexBufferHandle = ArrayBuffer<D3D12_VERTEX_BUFFER_VIEW>;
 
 	using Dx12IndexBufferHandle = ArrayBuffer<D3D12_INDEX_BUFFER_VIEW>;
-
-	using SharedDevicePtr = CComPtr<ID3D12Device>;
 
 	using ResourceArray = std::vector<ID3D12Resource*>;
 }}}}
