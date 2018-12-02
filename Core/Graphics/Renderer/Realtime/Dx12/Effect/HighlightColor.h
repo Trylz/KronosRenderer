@@ -8,7 +8,6 @@
 #pragma once
 
 #include "BaseEffect.h"
-#include "Graphics/Renderer/Realtime/RealtimeRenderer.h"
 #include <DirectXMath.h>
 
 namespace Graphics { namespace Renderer { namespace Realtime { namespace Dx12 { namespace Effect

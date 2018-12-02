@@ -55,10 +55,10 @@ namespace Graphics { namespace Renderer { namespace Offline { namespace Integrat
 		const Model::ModelPtr& model = scene->getModel();
 
 		// Apply normal mapping
-		const Material::BaseMaterial* material = model->getMaterial(mesh->getMaterialId());
+		const Material::BaseMaterialPtr material = model->getMaterial(mesh->getMaterialId());
 		if (material->isFresnelMaterial())
 		{
-			const auto* fresnelMat = static_cast<const Material::FresnelMaterial*>(material);
+			const auto* fresnelMat = static_cast<const Material::FresnelMaterial*>(material.get());
 			const ImageIdentifier normalMapId = fresnelMat->getNormalImageId();
 			
 			if (normalMapId.isValid())
@@ -85,8 +85,8 @@ namespace Graphics { namespace Renderer { namespace Offline { namespace Integrat
 
 		IntersectionProperties props;
 		props.P = P;
-		props.deltaP = getOffsetedPositionInDirection(P, N, scene->getRenderSettings()->m_rayEpsilon);
-		props.inDeltaP = getOffsetedPositionInDirection(P, -N, scene->getRenderSettings()->m_rayEpsilon);
+		props.deltaP = getOffsetedPositionInDirection(P, N, scene->getCurrentRenderSettings().m_rayEpsilon);
+		props.inDeltaP = getOffsetedPositionInDirection(P, -N, scene->getCurrentRenderSettings().m_rayEpsilon);
 		props.V = V;
 		props.N = N;
 		props.texCoord = texCoord;

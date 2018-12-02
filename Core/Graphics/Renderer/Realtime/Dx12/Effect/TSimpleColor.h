@@ -120,7 +120,7 @@ void TSimpleColor<PushDrawArgs, PixelCBElementCount>::initPipelineStateObjects()
 template <typename PushDrawArgs, nbUint32 PixelCBElementCount>
 void TSimpleColor<PushDrawArgs, PixelCBElementCount>::initConstantBuffers()
 {
-	for (nbUint32 i = 0u; i < SwapChainBufferCount; ++i)
+	MAKE_SWAP_CHAIN_ITERATOR_I
 	{
 		// Vertex shader
 		HRESULT hr = D3D12Device->CreateCommittedResource(

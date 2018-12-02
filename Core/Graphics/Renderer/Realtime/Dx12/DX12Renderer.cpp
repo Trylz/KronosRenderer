@@ -25,7 +25,7 @@ nbBool DX12Renderer::init(const InitArgs& args)
 	m_hwindow = args.hwnd;
 
 	RECT rect;
-	NEBULA_ASSERT(GetWindowRect(m_hwindow, &rect) > 0);
+	NEBULA_ASSERT(GetClientRect(m_hwindow, &rect) > 0);
 	const glm::uvec2 bufferSize(rect.right - rect.left, rect.bottom - rect.top);
 
 	HRESULT hr = CreateDXGIFactory1(IID_PPV_ARGS(&m_dxgiFactory));
@@ -140,7 +140,7 @@ void DX12Renderer::finishTasks()
 	// wait for the gpu to finish all frames
 	for (auto& buffer : m_commandBuffers)
 	{
-		for (nbUint32 i = 0u; i < SwapChainBufferCount; ++i)
+		MAKE_SWAP_CHAIN_ITERATOR_I
 		{
 			buffer.second.frameIndex = i;
 			waitCurrentFrameCommandsFinish(buffer.first);
@@ -307,13 +307,14 @@ nbBool DX12Renderer::createSwapChain(IDXGIFactory4* m_dxgiFactory, const glm::uv
 
 nbBool DX12Renderer::bindSwapChainRenderTargets()
 {
-	for (nbUint32 i = 0u; i < SwapChainBufferCount; ++i)
+	MAKE_SWAP_CHAIN_ITERATOR_I
 	{
 		HRESULT hr = m_swapChain->GetBuffer(i, IID_PPV_ARGS(&m_renderTargets[i]));
 		if (FAILED(hr))
 		{
 			return false;
 		}
+
 	}
 
 	return true;
@@ -321,7 +322,7 @@ nbBool DX12Renderer::bindSwapChainRenderTargets()
 
 nbBool DX12Renderer::createCommandAllocators()
 {
-	for (nbUint32 i = 0u; i < SwapChainBufferCount; ++i)
+	MAKE_SWAP_CHAIN_ITERATOR_I
 	{
 		HRESULT hr = D3D12Device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_commandBuffers[CommandType::Direct].commandAllocator[i]));
 		if (FAILED(hr))
@@ -355,7 +356,7 @@ nbBool DX12Renderer::createFencesAndFenceEvent()
 {
 	for (auto& buffer : m_commandBuffers)
 	{
-		for (nbUint32 i = 0u; i < SwapChainBufferCount; ++i)
+		MAKE_SWAP_CHAIN_ITERATOR_I
 		{
 			HRESULT hr = D3D12Device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&buffer.second.fences[i]));
 			if (FAILED(hr))
@@ -531,13 +532,14 @@ void DX12Renderer::releaseSwapChainDynamicResources()
 	NEBULA_ASSERT(m_positionRenderTarget);
 	m_positionRenderTarget->Release();
 
-	for (nbInt32 i = 0; i < SwapChainBufferCount; i++)
+	MAKE_SWAP_CHAIN_ITERATOR_I
 	{
 		m_renderTargets[i]->Release();
 	}
 
 	m_rtvAllocator->release(m_msaaRTDescriptorHandle);
 	m_rtvAllocator->release(m_positionRTDescriptorHandle);
+
 	m_dsvAllocator->release(m_msaaDsvDescriptorHandle);
 	m_dsvAllocator->release(m_positionDsvDescriptorHandle);
 }
@@ -558,7 +560,7 @@ void DX12Renderer::resizeBuffers(const glm::uvec2& newSize)
 	setUpViewportAndScissor(newSize);
 }
 
-void DX12Renderer::createRGBATextureCube(const std::vector<const Texture::RGBAImage*>& images, Dx12TextureHandle& dst)
+void DX12Renderer::createTextureCube(const std::vector<const Texture::Image*>& images, Dx12TextureHandle& dst)
 {
 	const nbUint32 width = images[0]->getWidth();
 	const nbUint32 height = images[0]->getHeight();
@@ -576,19 +578,19 @@ void DX12Renderer::createRGBATextureCube(const std::vector<const Texture::RGBAIm
 	for (nbUint32 i = 1u; i < images.size(); ++i)
 	{
 		if (images[i]->getWidth() != width)
-			throw CreateTextureException("All images must have the same width. It is not the case for: " + images[i]->getPath());
+			throw CreateTextureException("All images must have the same width");
 
 		if (images[i]->getHeight() != height)
-			throw CreateTextureException("All images must have the same height. It is not the case for: " + images[i]->getPath());
+			throw CreateTextureException("All images must have the same height.");
 
 		if (images[i]->getFormat() != format)
 			throw CreateTextureException("Images must have the same format");
 	}
 
-	createRGBATexture2DArray(images, width, height, D3D12_SRV_DIMENSION_TEXTURECUBE, dst);
+	createTexture2DArray(images, width, height, D3D12_SRV_DIMENSION_TEXTURECUBE, dst);
 }
 
-void DX12Renderer::createRGBATexture2DArray(const std::vector<const Texture::RGBAImage*>& images, nbUint32 width, nbUint32 height, D3D12_SRV_DIMENSION viewDimension, Dx12TextureHandle& dst)
+void DX12Renderer::createTexture2DArray(const std::vector<const Texture::Image*>& images, nbUint32 width, nbUint32 height, D3D12_SRV_DIMENSION viewDimension, Dx12TextureHandle& dst)
 {
 	const nbUint32 arraySize = (nbUint32)images.size();
 	NEBULA_ASSERT(arraySize < D3D12_REQ_TEXTURE2D_ARRAY_AXIS_DIMENSION);
@@ -602,14 +604,22 @@ void DX12Renderer::createRGBATexture2DArray(const std::vector<const Texture::RGB
 	textureDesc.MipLevels = 1; // Number of mipmaps. We are not generating mipmaps for this texture, so we have only one level.
 
 	const Texture::ImageFormat nebulaFormat = images[0]->getFormat();
-	if (nebulaFormat == Texture::ImageFormat::RGBA8)
+	switch(nebulaFormat)
 	{
+	case Texture::ImageFormat::RGBA8:
 		textureDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-	}
-	else
-	{
-		NEBULA_ASSERT(nebulaFormat == Texture::ImageFormat::RGBA32F);
+	break;
+
+	case Texture::ImageFormat::RGB32F:
+		textureDesc.Format = DXGI_FORMAT_R32G32B32_FLOAT;
+	break;
+
+	case Texture::ImageFormat::RGBA32F:
 		textureDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+	break;
+
+	default:
+		throw CreateTextureException("Unsupported image format");
 	}
 
 	textureDesc.SampleDesc.Count = 1; // This is the number of samples per pixel, we just want 1 sample
@@ -630,7 +640,7 @@ void DX12Renderer::createRGBATexture2DArray(const std::vector<const Texture::RGB
 
 	dst.format = textureDesc.Format;
 
-	std::string bufferDebugString = "Texture default heap first image = " + images[0]->getPath() + ", size = " + std::to_string(arraySize);
+	std::string bufferDebugString = "Texture default heap size = " + std::to_string(arraySize);
 	std::wstring bufferDebugStringW(bufferDebugString.begin(), bufferDebugString.end());
 	dst.buffer->SetName(bufferDebugStringW.c_str());
 
@@ -650,7 +660,7 @@ void DX12Renderer::createRGBATexture2DArray(const std::vector<const Texture::RGB
 
 	NEBULA_ASSERT(SUCCEEDED(hr));
 
-	std::string uploadDebugString = "Texture upload heap first image = " + images[0]->getPath() + ", size = " + std::to_string(arraySize);
+	std::string uploadDebugString = "Texture upload heap size = " + std::to_string(arraySize);
 	std::wstring uploadDebugStringW(uploadDebugString.begin(), uploadDebugString.end());
 
 	textureBufferUploadHeap->SetName(uploadDebugStringW.c_str());
@@ -942,8 +952,14 @@ void DX12Renderer::drawScene(const Scene::BaseScene& scene)
 	// Update the camera constant buffer
 	Effect::CameraConstantBufferSingleton::instance()->update(scene, commandList, frameIdx);
 
+	// Start viewport render
+	prepareViewportRender();
+
 	// Transition the MSAA RT from the resolve source to the render target state
 	commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_msaaRenderTarget, D3D12_RESOURCE_STATE_RESOLVE_SOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET));
+
+	// Set the OM stage render target
+	commandList->OMSetRenderTargets(1, &m_msaaRTDescriptorHandle.getCpuHandle(), FALSE, &m_msaaDsvDescriptorHandle.getCpuHandle());
 
 	// Clear the render target
 	const RGBColor sceneAmbient = scene.getAmbientColor();
@@ -953,19 +969,7 @@ void DX12Renderer::drawScene(const Scene::BaseScene& scene)
 	// Clear the depth/stencil buffer
 	commandList->ClearDepthStencilView(m_msaaDsvDescriptorHandle.getCpuHandle(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
 
-	// Set OM stage render target
-	commandList->OMSetRenderTargets(1, &m_msaaRTDescriptorHandle.getCpuHandle(), FALSE, &m_msaaDsvDescriptorHandle.getCpuHandle());
-
-	// Set the viewport
-	commandList->RSSetViewports(1, &m_viewport);
-
-	// Set the scissor rect
-	commandList->RSSetScissorRects(1, &m_scissorRect);
-
-	// Now push draw commands
-	ID3D12DescriptorHeap* descriptorHeaps[] = { m_cbs_srv_uavAllocator->getHeap() };
-	commandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
-
+	// Now push draw commands.
 	// Draw cubemap first so it can't override selection highlights
 	if (scene.hasCubeMap())
 	{
@@ -1037,6 +1041,22 @@ void DX12Renderer::drawScene(const Scene::BaseScene& scene)
 
 	// Transition render target to the present state.
 	commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_renderTargets[frameIdx], D3D12_RESOURCE_STATE_RESOLVE_DEST, D3D12_RESOURCE_STATE_PRESENT));
+}
+
+void DX12Renderer::prepareViewportRender()
+{
+	auto& commandList = m_commandBuffers[CommandType::Direct].commandList;
+	const nbInt32 frameIdx = m_commandBuffers[CommandType::Direct].frameIndex;
+
+	// Set the viewport
+	commandList->RSSetViewports(1, &m_viewport);
+
+	// Set the scissor rect
+	commandList->RSSetScissorRects(1, &m_scissorRect);
+
+	// Set the descriptor heaps
+	ID3D12DescriptorHeap* descriptorHeaps[] = { m_cbs_srv_uavAllocator->getHeap() };
+	commandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
 }
 
 void DX12Renderer::present()

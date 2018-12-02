@@ -52,10 +52,10 @@ public:
 	void drawScene(const Scene::BaseScene& scene) override;
 	void present() override;
 
-	void createRGBATexture2D(const Texture::RGBAImage* image, Dx12TextureHandle& dst) override;
-	void createRGBATextureCube(const std::vector<const Texture::RGBAImage*>& images, Dx12TextureHandle& dst) override;
+	void createTexture2D(const Texture::Image* image, Dx12TextureHandle& dst) override;
+	void createTextureCube(const std::vector<const Texture::Image*>& images, Dx12TextureHandle& dst) override;
 
-	nbBool releaseTexture(const Dx12TextureHandle& textureHandle) const override;
+	void releaseTexture(const Dx12TextureHandle& textureHandle) const override;
 
 	nbBool createVertexBuffer(const void* data, Dx12VertexBufferHandle& dst, nbUint32 sizeofElem, nbUint32 count) override;
 	void releaseVertexBuffer(const Dx12VertexBufferHandle& arrayBufferHandle) const override;
@@ -90,6 +90,8 @@ private:
 	void waitCommandsFinish(CommandType commandType, nbInt32 frameIdx);
 	void waitCurrentFrameCommandsFinish(CommandType commandType);
 
+	void prepareViewportRender();
+
 	// Dx12 initilization helpers
 	// @See: // https://www.braynzarsoft.net/viewtutorial/q16390-03-initializing-directx-12
 	nbBool createDevice(IDXGIFactory4* m_dxgiFactory);
@@ -112,7 +114,7 @@ private:
 
 	ArrayBufferResource createArrayBufferRecource(const void* data, nbUint32 sizeofElem, nbUint32 count);
 
-	void createRGBATexture2DArray(const std::vector<const Texture::RGBAImage*>& images, nbUint32 width, nbUint32 height, D3D12_SRV_DIMENSION viewDimension, Dx12TextureHandle& dst);
+	void createTexture2DArray(const std::vector<const Texture::Image*>& images, nbUint32 width, nbUint32 height, D3D12_SRV_DIMENSION viewDimension, Dx12TextureHandle& dst);
 
 	// The window
 	HWND m_hwindow;
@@ -231,15 +233,15 @@ inline void DX12Renderer::updateLightBuffers(const Scene::BaseScene& scene)
 	m_renderLightsEffect->updateLightBuffers(scene);
 }
 
-inline void DX12Renderer::createRGBATexture2D(const Texture::RGBAImage* image, Dx12TextureHandle& dst)
+inline void DX12Renderer::createTexture2D(const Texture::Image* image, Dx12TextureHandle& dst)
 {
-	createRGBATexture2DArray({ image }, image->getWidth(), image->getHeight(), D3D12_SRV_DIMENSION_TEXTURE2D, dst);
+	createTexture2DArray({ image }, image->getWidth(), image->getHeight(), D3D12_SRV_DIMENSION_TEXTURE2D, dst);
 }
 
-inline nbBool DX12Renderer::releaseTexture(const Dx12TextureHandle& textureHandle) const
+inline void DX12Renderer::releaseTexture(const Dx12TextureHandle& textureHandle) const
 {
 	m_cbs_srv_uavAllocator->release(textureHandle.descriptorHandle);
-	return textureHandle.buffer->Release();
+	textureHandle.buffer->Release();
 }
 
 inline void DX12Renderer::releaseVertexBuffer(const Dx12VertexBufferHandle& arrayBufferHandle) const

@@ -64,8 +64,12 @@ namespace Graphics { namespace Renderer { namespace Offline { namespace Integrat
 
 						if (occlusionStrength != 1.0f)
 						{
-							nbFloat32 phase = media->sample(direction, sampleToLight.L);
+							const nbFloat32 phase = media->sample(direction, sampleToLight.L);
+							const nbFloat32 distanceFactor = lightIter.second->getType() != Light::Point ? 1.0f :
+								std::exp2f(-sampleToLight.length * media->getExtinctionCoeff());
+
 							directRadiance += phase *
+								distanceFactor *
 								lightIter.second->getFinalColor() *
 								(1.0f - occlusionStrength);
 						}
@@ -97,7 +101,10 @@ namespace Graphics { namespace Renderer { namespace Offline { namespace Integrat
 								isectProps.texCoord,
 								scene->getModel()->getImageContainer());
 
-							indirectRadiance += DirectLightningIntegrator::sample(scene->getLights(),
+							const nbFloat32 distanceFactor = std::exp2f(-isectResult.meshIntersectData.packetIntersectionResult.t
+							* media->getExtinctionCoeff());
+
+							indirectRadiance += distanceFactor * DirectLightningIntegrator::sample(scene->getLights(),
 								intersector,
 								*material,
 								materialColorCache,

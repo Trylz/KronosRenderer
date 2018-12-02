@@ -30,14 +30,14 @@ RenderLights::RenderLights(const DXGI_SAMPLE_DESC& sampleDesc)
 	initVertexAndIndexBuffer();
 	initTextures();
 
-	for (nbUint32 i = 0u; i < SwapChainBufferCount; ++i)
+	MAKE_SWAP_CHAIN_ITERATOR_I
 		m_vShaderCenterCBUploadHeaps[i] = nullptr;
 }
 
 RenderLights::~RenderLights()
 {
 	// Heaps
-	for (nbUint32 i = 0u; i < SwapChainBufferCount; ++i)
+	MAKE_SWAP_CHAIN_ITERATOR_I
 	{
 		if (m_vShaderCenterCBUploadHeaps[i])
 			m_vShaderCenterCBUploadHeaps[i]->Release();
@@ -151,7 +151,7 @@ void RenderLights::initPipelineStateObjects()
 
 void RenderLights::initVertexShaderSharedCB()
 {
-	for (nbUint32 i = 0u; i < SwapChainBufferCount; ++i)
+	MAKE_SWAP_CHAIN_ITERATOR_I
 	{
 		HRESULT hr = D3D12Device->CreateCommittedResource(
 			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
@@ -178,7 +178,7 @@ void RenderLights::initVertexShaderCenterCB(const Scene::BaseScene& scene)
 	const auto& lights = scene.getLights();
 	const nbUint32 nbLights = (nbUint32)lights.size();
 
-	for (nbUint32 i = 0u; i < SwapChainBufferCount; ++i)
+	MAKE_SWAP_CHAIN_ITERATOR_I
 	{
 		if (m_vShaderCenterCBUploadHeaps[i])
 			m_vShaderCenterCBUploadHeaps[i]->Release();
@@ -218,7 +218,7 @@ void RenderLights::initTextures()
 		try
 		{
 			m_images.emplace(lType, Texture::Helper::createRGBAImage(path)) ;
-			GraphicResourceAllocatorPtr<DX12_GRAPHIC_ALLOC_PARAMETERS>->createRGBATexture2D(m_images[lType], m_textures[lType]);
+			GraphicResourceAllocatorPtr<DX12_GRAPHIC_ALLOC_PARAMETERS>->createTexture2D(m_images[lType], m_textures[lType]);
 		}
 		catch(Texture::CreateImageException&)
 		{
