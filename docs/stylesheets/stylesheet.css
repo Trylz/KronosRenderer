@@ -218,6 +218,11 @@ ol li {
   padding-left: 20px;
 }
 
+.ul1>li
+{
+    margin-bottom : 10px;
+}
+
 dl dt {
   font-weight: bold;
 }
