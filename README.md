@@ -1,4 +1,4 @@
-![logo](docs/logo.png?raw=true)
+![logo](logo.jpg?raw=true)
 # Nebula Render
 
 A high performance renderer with realtime DirectX 12 preview written in c++.  
