@@ -9,5 +9,5 @@ This repository contains the initial source code of:
 - The CPU raytracer's integrators    
 - The DirectX 12 renderer as well as the realtime effects used.   
 
-![Dragon scene](docs/gallery/DragonScene.png?raw=true "DragonScene")  
+![Dragon scene](docs/images/dragon_scene.png?raw=true "DragonScene")  
 ![Editor](Editor.png?raw=true "Editor")  
