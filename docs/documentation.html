@@ -1,152 +1,191 @@
-<!-- Made using Embree page -->
+<!-- Free template from uicookies.com -->
 <!DOCTYPE html>
-<html>
-
+<html lang="en">
   <head>
-    <meta charset='utf-8' />
-    <meta http-equiv="X-UA-Compatible" content="chrome=1" />
-    <meta name="description" content="Nebula Render: Physically based renderer" />
-    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
-    <title>Nebula Render</title>
-    <link rel="icon" type="image/jpg" href="logo.png">
-    <style>
-		body {
-		     font-size: 18px;
-		}
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Nebula Render | High performance physically based renderer</title>
+    <meta name="description" content="Free Bootstrap Theme by uicookies.com">
+    
+    <link rel="stylesheet" href="css/styles-merged.css">
+    <link rel="stylesheet" href="css/style.min.css">
+    <link rel="stylesheet" href="fonts/icomoon/style.css">
 
-	</style>
+    <!--[if lt IE 9]>
+      <script src="js/vendor/html5shiv.min.js"></script>
+      <script src="js/vendor/respond.min.js"></script>
+    <![endif]-->
   </head>
-
+  <style>
+    .uol>li
+    {
+       margin-bottom : 10px;
+    }
+</style>
   <body>
+    
+    <!-- Fixed navbar -->
+    <nav class="navbar navbar-default probootstrap-navbar" style="background-color: #303030;top: 0;">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar-collapse" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="index.html" title="uiCookies:Frame">Nebula Render</a>
+        </div>
 
-    <!-- HEADER -->
-    <div id="header_wrap" class="outer">
-      <div class="inner">
-        <a id="forkme_banner" href="https://github.com/Trylz/NebulaRender">View on GitHub</a>
-        <h1 id="project_title">Nebula Render</h1>
-        <h2 id="project_tagline">High performance physically based renderer</h2>
+        <div id="navbar-collapse" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav navbar-right">
+            <li><a href="gallery.html" style="color: white;" class="external">Gallery</a></li>
+            <li><a href="documentation.html" style="color: white;" class="external">Documentation</a></li>
+            <li><a href="download.html" style="color: white;" class="external">Download</a></li>
+            <li><a href="https://github.com/Trylz/NebulaRender" style="color: white;" class="external">Github</a></li>
+            <li><a href="contact.html" style="color: white;" class="external">Contact</a></li>
+          </ul>
+        </div>
       </div>
+    </nav>
+    
+    <section class="probootstrap-section probootstrap-bg-light" id="controls">
+      <div class="container">
+        <div class="row text-center mb100">
+          <div class="col-md-8 col-md-offset-2 probootstrap-section-heading">
+            <h2 class="mb30 text-black probootstrap-heading">Controls</h2>
+              <h3>Keyboard</h2>
+              <font color="black">
+                <table border="1" style="width:100%;table-layout: fixed;">
+                  <tr>
+                    <td>W, A, S, D</td>
+                    <td>Move the camera</td> 
+                  </tr>
+                  <tr>
+                    <td>CRTL + Z / CTRL + SHIFT + Z </td>
+                    <td>Undo/Redo</td> 
+                  </tr>
+                  <tr>
+                    <td>CRTL + C / CTRL + V</td>
+                    <td>Copy/Paste</td> 
+                  </tr>
+                  <tr>
+                    <td>CRTL + S</td>
+                    <td>Save the current scene</td> 
+                  </tr>
+                  <tr>
+                    <td>DELETE</td>
+                    <td> Delete an item</td> 
+                  </tr>
+                </table>
+              </font>
+              <h3>Mouse</h2>
+              <font color="black">
+                <table border="1" style="width:100%;table-layout: fixed;">
+                  <tr>
+                    <td>LB click</td>
+                    <td>Select items / Material drag and drop</td> 
+                  </tr>
+                  <tr>
+                    <td>RB click + motion</td>
+                    <td>Camera padding</td> 
+                  </tr>
+                  <tr>
+                    <td>MB scroll</td>
+                    <td>Zoom/Unzoom. This affect the camera FOVY</td> 
+                  </tr>
+                  <tr>
+                    <td>AB</td>
+                    <td>Increase/Decrease the camera's move sensibility</td> 
+                  </tr>
+                </table>
+                <br>
+                <p>
+                    RB click on a material map to clear it.<br>
+                    RB click on a material in the left panel to assign it to the current selection.<br><br>
 
-      <div id="nav">
-      <div id="nbar">
-        <ul>
-          <li><a href="index.html">Overview</a></li>
-          <li><a href="gallery.html">Gallery</a></li>
-          <li><a href="downloads.html">Downloads</a></li>
-          <li><a href="documentation.html">Documentation</a></li>
-          <li><a href="about.html">About</a></li>
-        </ul>
+                    <i>
+                        LB = Left button<br>
+                        MB = Middle button<br>
+                        RB = Right button<br>
+                        AB = Auxiliary button<br><br>
+                    </i>
+                </p>
+                </font>
+          </div>
+        </div>
+        <!-- END row -->
       </div>
+    </section>
+    <!-- END section -->
+
+    <section class="probootstrap-section">
+      <div class="container">
+         <div class="row text-center mb100">
+          <div class="col-md-8 col-md-offset-2 probootstrap-section-heading">
+          <font color="black">
+            <h2 class="mb30 text-black probootstrap-heading">Interface</h2>
+                <p>
+                Here a quick view of the main window:<br><br>
+                <img src="images/editor.png" alt="Editor"><br><br><br>
+
+                The window is subdivided into 6 different parts:<br>
+              <ol align="left" class = uol>
+                <li>
+                    <b>Scene view</b><br>
+                    The list of all the scene items except materials.
+                </li>
+                <li>
+                    <b>Material view</b><br>
+                    The list of the scene's materials.
+                </li>
+
+                <li>
+                    <b>Realtime viewport</b><br>
+                    Fast DirectX preview allowing to interactively edit the scene.<br>
+                    The same viewport is used when performing realtime raytracing.
+                </li>
+
+                <li>
+                    <b>Modifier editor</b><br>
+                    Allow to edit properties of the selected items.
+                </li>
+
+                <li>
+                    <b>Toolbar</b><br>
+                    A collection of helpers to manipulate the scene.
+                </li>
+
+                <li>
+                    <b>Menu bar</b><br>
+                    Standard menu bar allowing to save the scene, create elements, export materials and much more.
+                </li>
+          </ol><br><br>
+          <h2>More about the different parts will come soon ! </h2> 
+            </p>
+          </font>
+          </div>
+        </div>
       </div>
-    </div>
+    </section>
+    <!-- END section -->
 
-    <!-- MAIN CONTENT -->
-    <div id="main_content_wrap" class="outer">
-		<div id="main_content" class="inner">
-			<p>
-					Nebula has a soft learning curve. The user interface as well as the controls are<br>quite intuitive.<br>
-				<h2>Controls</h2>
-				<h4>Keyboard</h4>
-				<ul class = uol>
-					<li>
-					W, A, S, D : Move the camera.
-					</li>
+    <footer class="probootstrap-footer">
+      <div class="container text-center">
+        <div class="row">
+        </div>
+        <div class="row">
+          <div class="col-md-12">
+            &copy; Copyright 2018 <a>Nebula Render</a>. All Rights Reserved.
+          </div>
+        </div>
+      </div>
+    </footer>
 
-					<li>
-					CRTL + Z / CTRL + SHIFT + Z : Undo/Redo.
-					</li>
+    
 
-					<li>
-					CRTL + C / CTRL + V : Copy/Paste.
-					</li>
+    <script src="js/scripts.min.js"></script>
+    <script src="js/custom.js"></script>
 
-					<li>
-					CRTL + S : Save the current scene.
-					</li>
-
-					<li>
-					DELETE : Delete an item.
-					</li>
-				</ul>
-
-				<h4>Mouse</h4>
-				<ul class = uol>
-					<li>
-					LB click : Select items / Material drag and drop.
-					</li>
-
-					<li>
-					RB click + motion : Rotate the camera.
-					</li>
-
-					<li>
-					MB click + motion : Camera padding.
-					</li>
-
-					<li>
-					MB scroll : Zoom/Unzoom. This affect the vertical field of view of the camera.
-					</li>
-
-					<li>
-					AB : Increase/Decrease the camera's move sensibility.
-					</li>
-
-					<li>
-					RB click on a material map to clear it.
-					</li>
-
-					<li>
-					RB click on a material in the left panel to assign it to the current selection.<br>
-					</li>
-				</ul>
-				LB = Left button<br>
-				MB = Middle button<br>
-				RB = Right button<br>
-				AB = Auxiliary button<br><br>
-
-				<h2>Interface</h2>
-
-  				Here a quick view of the main window:<br><br>
-  				<img src="editor.png" alt="Editor"><br><br>
-
-
-  				The window is subdivided into 6 different parts:<br><br>
-				<ol class = uol>
-					<li>
-					<b>Scene view</b><br>
-					The list of all the scene items except materials.
-					</li>
-
-					<li>
-					<b>Material view</b><br>
-					The list of the scene's materials.
-					</li>
-
-					<li>
-					<b>Realtime viewport</b><br>
-					Fast DirectX preview allowing to interactively edit the scene.<br>
-					The same viewport is used when performing realtime raytracing.
-					</li>
-
-					<li>
-					<b>Modifier editor</b><br>
-					Allow to edit properties of the selected items.
-					</li>
-
-					<li>
-					<b>Toolbar</b><br>
-					A collection of helpers to manipulate the scene.
-					</li>
-
-					<li>
-					<b>Menu bar</b><br>
-					Standard menu bar allowing to save the scene, create elements, export materials and much more.
-					</li>
-
-				</ul><br>
-				More information about the different parts will come soon !
-			</p>
-  		</div>
-  	</div>
   </body>
 </html>
