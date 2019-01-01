@@ -22,9 +22,9 @@ namespace Graphics { namespace Renderer { namespace Offline { namespace Integrat
 		const nbUint32 triStartIdx = (NEBULA_INTRINSICS_NB_FLOAT * trianglePacketIdx + packedInternalIdx) * NEBULA_PRIMITIVE_NB_VTX;
 
 		NEBULA_ASSERT(NEBULA_PRIMITIVE_NB_VTX == 3u);
-		const auto& v1 = mesh->buildTransformedVertexFromIndices(triStartIdx);
-		const auto& v2 = mesh->buildTransformedVertexFromIndices(triStartIdx + 1);
-		const auto& v3 = mesh->buildTransformedVertexFromIndices(triStartIdx + 2);
+		const auto v1 = mesh->buildTransformedVertexFromIndices(triStartIdx);
+		const auto v2 = mesh->buildTransformedVertexFromIndices(triStartIdx + 1);
+		const auto v3 = mesh->buildTransformedVertexFromIndices(triStartIdx + 2);
 
 		// Compute barycentric interpolation weights
 		//see <-- https://en.wikibooks.org/wiki/GLSL_Programming/Rasterization ->
