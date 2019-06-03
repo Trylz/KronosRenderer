@@ -12,7 +12,8 @@
 namespace Graphics { namespace Renderer { namespace Offline { namespace Integrator
 {
 	nbFloat32 AOIntegrator::sample(const Intersector::BaseIntersectorPtr& intersector,
-		const IntersectionProperties& isectProps)
+		const IntersectionProperties& isectProps,
+		nbBool useDistanceMode)
 	{
 		// Perform one ao sample
 		const nbFloat32 r1 = s_nbGenerator.generateSignedNormalized();
@@ -27,7 +28,20 @@ namespace Graphics { namespace Renderer { namespace Offline { namespace Integrat
 		}
 
 		Math::Ray aoRay(isectProps.deltaP, aoSample);
-		nbFloat32 occlusionStrength = intersector->occlusion(aoRay);
+		nbFloat32 occlusionStrength;
+		
+		if (useDistanceMode)
+		{
+			Intersector::IntersectionInfo info;
+			if (intersector->intersect(aoRay, info))
+				occlusionStrength = std::exp(-info.meshIntersectData.packetIntersectionResult.t);
+			else
+				occlusionStrength = 0.0f;
+		}
+		else
+		{
+			occlusionStrength = intersector->occlusion(aoRay);
+		}
 
 		return (1.0f - occlusionStrength) * NoL;
 	}

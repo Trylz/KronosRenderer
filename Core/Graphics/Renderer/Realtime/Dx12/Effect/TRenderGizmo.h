@@ -67,18 +67,18 @@ void TRenderGizmo<PixelCBElementCount>::updateVertexShaderConstantBuffer(const C
 }
 
 template <nbUint32 PixelCBElementCount>
-const DirectX::XMFLOAT4 TRenderGizmo<PixelCBElementCount>::s_xAxisColor = DirectX::XMFLOAT4(1.0f, 0.0f, 0.0f, 0.6f);
+const DirectX::XMFLOAT4 TRenderGizmo<PixelCBElementCount>::s_xAxisColor = DirectX::XMFLOAT4(1.0f, 0.0f, 0.0f, 0.8f);
 
 template <nbUint32 PixelCBElementCount>
-const DirectX::XMFLOAT4 TRenderGizmo<PixelCBElementCount>::s_yAxisColor = DirectX::XMFLOAT4(0.0f, 1.0f, 0.0f, 0.6f);
+const DirectX::XMFLOAT4 TRenderGizmo<PixelCBElementCount>::s_yAxisColor = DirectX::XMFLOAT4(0.0f, 1.0f, 0.0f, 0.8f);
 
 template <nbUint32 PixelCBElementCount>
-const DirectX::XMFLOAT4 TRenderGizmo<PixelCBElementCount>::s_zAxisColor = DirectX::XMFLOAT4(0.0f, 0.0f, 1.0f, 0.6f);
+const DirectX::XMFLOAT4 TRenderGizmo<PixelCBElementCount>::s_zAxisColor = DirectX::XMFLOAT4(0.0f, 0.0f, 1.0f, 0.8f);
 
 template <nbUint32 PixelCBElementCount>
-const DirectX::XMFLOAT4 TRenderGizmo<PixelCBElementCount>::s_hoverColor = DirectX::XMFLOAT4(1.0f, 1.0f, 0.0f, 0.6f);
+const DirectX::XMFLOAT4 TRenderGizmo<PixelCBElementCount>::s_hoverColor = DirectX::XMFLOAT4(1.0f, 1.0f, 0.0f, 0.8f);
 
 template <nbUint32 PixelCBElementCount>
-const DirectX::XMFLOAT4 TRenderGizmo<PixelCBElementCount>::s_whiteColor = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 0.6f);
+const DirectX::XMFLOAT4 TRenderGizmo<PixelCBElementCount>::s_whiteColor = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 0.8f);
 
 }}}}}

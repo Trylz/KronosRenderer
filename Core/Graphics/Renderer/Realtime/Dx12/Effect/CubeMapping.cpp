@@ -70,11 +70,34 @@ void CubeMapping::initPipelineStateObjects()
 	ID3DBlob* vertexShader = compileShader(std::wstring(L"CubeMapping_VS.hlsl"), true);
 	ID3DBlob* pixelShader = compileShader(std::wstring(L"CubeMapping_PS.hlsl"), false);
 
+	D3D12_DEPTH_STENCIL_DESC dsDesc = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
+	dsDesc.DepthEnable = TRUE;
+	dsDesc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
+	dsDesc.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
+
+	dsDesc.StencilEnable = TRUE;
+	dsDesc.StencilReadMask = 0xFF;
+	dsDesc.StencilWriteMask = 0xFF;
+
+	// Front-facing pixels.
+	dsDesc.FrontFace.StencilFailOp = D3D12_STENCIL_OP_KEEP;
+	dsDesc.FrontFace.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
+	dsDesc.FrontFace.StencilPassOp = D3D12_STENCIL_OP_KEEP;
+	dsDesc.FrontFace.StencilFunc = D3D12_COMPARISON_FUNC_EQUAL;
+
+	// Back-facing pixels.
+	dsDesc.BackFace.StencilFailOp = D3D12_STENCIL_OP_KEEP;
+	dsDesc.BackFace.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
+	dsDesc.BackFace.StencilPassOp = D3D12_STENCIL_OP_KEEP;
+	dsDesc.BackFace.StencilFunc = D3D12_COMPARISON_FUNC_EQUAL;
+
 	compilePipeline(m_PSO,
 		vertexShader,
 		pixelShader,
 		inputLayoutElement,
-		sizeof(inputLayoutElement) / sizeof(D3D12_INPUT_ELEMENT_DESC)
+		sizeof(inputLayoutElement) / sizeof(D3D12_INPUT_ELEMENT_DESC),
+		CD3DX12_BLEND_DESC(D3D12_DEFAULT),
+		dsDesc
 	);
 
 	m_PSO->SetName(L"Cube mapping PSO");

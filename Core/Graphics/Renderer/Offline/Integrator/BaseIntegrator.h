@@ -10,6 +10,7 @@
 #include "Helpers.h"
 #include "Scene/BaseScene.h"
 #include "../Intersector/BaseIntersector.h"
+#include <atomic>
 
 namespace Graphics { namespace Renderer { namespace Offline { namespace Integrator
 {

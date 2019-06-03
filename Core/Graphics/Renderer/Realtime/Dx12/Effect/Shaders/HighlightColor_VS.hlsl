@@ -29,6 +29,7 @@ cbuffer VertexShaderSharedCB : register(b1)
 {
 	float3 eyePosition;
 	float scale;
+	uint passIdx;
 };
 
 cbuffer VertexShaderGroupCB : register(b2)
@@ -39,14 +40,42 @@ cbuffer VertexShaderGroupCB : register(b2)
 
 VS_OUTPUT main(VS_INPUT input)
 {
+	float4 worldPosition;
+	switch (passIdx)
+	{
+		case UNIFORM_SCALE_PASS_IDX:
+		{
+			const float4x4 scaleMatrix = float4x4(
+				scale, 0.0f, 0.0f, 0.0f,
+				0.0f, scale, 0.0f, 0.0f,
+				0.0f, 0.0f, scale, 0.0f,
+				0.0f, 0.0f, 0.0f, 1.0f);
+
+			worldPosition = mul(input.position, mul(scaleMatrix, modelMat));
+		}
+		break;
+
+		case ORIENTED_SCALE_PASS_IDX:
+		{
+			worldPosition = mul(input.position, modelMat);
+			const float3 eyeVector = worldPosition.xyz - eyePosition;
+
+			float4 scaleDir = float4(input.normal.x, input.normal.y, input.normal.z, 0.0f);
+			scaleDir *= length(eyeVector) * scale;
+
+			worldPosition += scaleDir;
+		}
+		break;
+
+		default:
+		{
+			worldPosition = mul(input.position, modelMat);
+		}
+		break;
+	}
+
 	VS_OUTPUT output;
-
-	float4 worldPosition = mul(input.position, modelMat);
-	float3 eyeVector = worldPosition.xyz - eyePosition;
-	float4 scaleDir = float4(input.normal.x, input.normal.y, input.normal.z, 0.0f);
-	scaleDir *= length(eyeVector) * scale;
-
-	output.position = mul(worldPosition + scaleDir, vpMat);
+	output.position = mul(worldPosition, vpMat);
 
 	return output;
 }

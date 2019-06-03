@@ -14,6 +14,7 @@ namespace Graphics { namespace Renderer { namespace Offline { namespace Integrat
 struct AOIntegrator : public BaseIntegrator
 {
 	static nbFloat32 sample(const Intersector::BaseIntersectorPtr& intersector,
-		const IntersectionProperties& isectProps);
+		const IntersectionProperties& isectProps,
+		nbBool useDistanceMode);
 };
 }}}}

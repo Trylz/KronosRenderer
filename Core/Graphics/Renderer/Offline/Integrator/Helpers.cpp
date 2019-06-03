@@ -55,25 +55,28 @@ namespace Graphics { namespace Renderer { namespace Offline { namespace Integrat
 		const Model::ModelPtr& model = scene->getModel();
 
 		// Apply normal mapping
-		const Material::BaseMaterialPtr material = model->getMaterial(mesh->getMaterialId());
+		const Material::DatabaseMaterialPtr material = model->getMaterialFromEntityOrDefault(mesh->getMaterialId());
 		if (material->isFresnelMaterial())
 		{
 			const auto* fresnelMat = static_cast<const Material::FresnelMaterial*>(material.get());
-			const ImageIdentifier normalMapId = fresnelMat->getNormalImageId();
+			const EntityIdentifier normalMapId = fresnelMat->getNormalImageId();
 			
-			if (normalMapId.isValid())
+			if (normalMapId)
 			{
 				// Read bump map
-				const Texture::RGBAImage* image = model->getImage(normalMapId);
-				const RGBAColor bumpMapNormal = image->getNormalizedPixelFromRatio(texCoord) * 2.0f - 1.0f;
+				const auto image = Texture::getRGBAImageFromEntity(normalMapId);
+				if (image)
+				{
+					const RGBAColor bumpMapNormal = image->getNormalizedPixelFromRatio(texCoord) * 2.0f - 1.0f;
 
-				// Tangent space matrix
-				const glm::vec3 tangent = (v1.tangent * alpha1) + (v2.tangent * alpha2) + (v3.tangent * alpha3);
-				const glm::vec3 bitangent = (v1.bitangent * alpha1) + (v2.bitangent * alpha2) + (v3.bitangent * alpha3);
-				const glm::mat3 tbn = glm::mat3(tangent, bitangent, N);
+					// Tangent space matrix
+					const glm::vec3 tangent = (v1.tangent * alpha1) + (v2.tangent * alpha2) + (v3.tangent * alpha3);
+					const glm::vec3 bitangent = (v1.bitangent * alpha1) + (v2.bitangent * alpha2) + (v3.bitangent * alpha3);
+					const glm::mat3 tbn = glm::mat3(tangent, bitangent, N);
 
-				// Bump mapped normal
-				N = tbn * glm::swizzle<glm::X, glm::Y, glm::Z>(bumpMapNormal);
+					// Bump mapped normal
+					N = tbn * glm::swizzle<glm::X, glm::Y, glm::Z>(bumpMapNormal);
+				}
 			}
 		}
 
@@ -94,16 +97,20 @@ namespace Graphics { namespace Renderer { namespace Offline { namespace Integrat
 		return props;
 	}
 
-	RGBSpectrum getSkyColor(const Scene::BaseScene* scene, const Math::Ray& ray, nbBool useSceneAmbient)
+	Spectrum getSkyColor(const Scene::BaseScene* scene, const Math::Ray& ray, nbBool useSceneBackground)
 	{
-		if (auto& cubeMap = scene->getCubeMap())
+		if (const auto cubeMap = scene->getCubeMap())
 		{
-			auto sky = cubeMap->sample(ray);
-			return RGBSpectrum(sky.x, sky.y, sky.z);
+			nbFloat32 t;
+			if (cubeMap->intersect(ray, &t))
+			{
+				const auto sky = cubeMap->sample(ray);
+				return Spectrum(sky.x, sky.y, sky.z);
+			}
 		}
 		
-		if (useSceneAmbient)
-			return scene->getAmbientColor();
+		if (useSceneBackground)
+			return scene->getRenderingBackgroundColor();
 
 		return BlackRGBSpectrum;
 	}

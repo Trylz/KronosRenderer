@@ -5,6 +5,7 @@
 //	E-Mail					: nebularender@gmail.com
 //========================================================================
 
+#define PI 3.14159265359f
 #define InvPI 0.31830988618f
 #define InvPI8 0.03978873577f
 
@@ -26,10 +27,10 @@ SamplerState tSampler : register(s0);
 
 struct MaterialStruct
 {
-    float4 ambient;
-    float4 diffuse;
-    float4 specular;
-    float4 emissive;
+	float4 ambient;
+	float4 diffuse;
+	float4 specular;
+	float4 emissive;
 
 	float opacity;
 	float shininess;
@@ -38,7 +39,8 @@ struct MaterialStruct
 	float fresnel0;
 	int type;
 
-    bool hasDiffuseTex;
+	bool fresnelEnabled;
+	bool hasDiffuseTex;
 	bool hasSpecularTex;
 	bool hasNormalTex;
 }; 
@@ -57,7 +59,7 @@ cbuffer EnvironmentCB : register(b0)
 {
 	float4 MediaInfo;
 
-    float4 EyePosition;
+	float4 EyePosition;
 	float4 SceneAmbient;
 
 	int NbLights;
@@ -89,24 +91,31 @@ float4 diffuseLighning(float4 matDiffuse, float roughness, float fresnel, float 
 	}
 
 	// Hair or other dielectrics
-	float4 diffuse = matDiffuse * InvPI;
-	if (Material.type == PLASTIC_IDX)
+	float4 diffuse = matDiffuse;
+	switch (Material.type)
 	{
-		// Plastic. Oren Nayar reflectance model from the Unreal Engine
-		float a = roughness * roughness;
-		float s = a;
-		float s2 = s * s;
-		float Cosri = VoL - NoV * NoL;
-		float C1 = 1.0f - 0.5f * s2 / (s2 + 0.33f);
-		float C2 = 0.45f * s2 / (s2 + 0.09f) * Cosri * (Cosri >= 0.0f ? (1.0f / max(NoL, NoV)) : 1.0f);
-
-		diffuse *= (C1 + C2) * (1.0f + roughness * 0.5f);
-	}
-
-	if (Material.type == HAIR_IDX)
+	case HAIR_IDX:
 	{
 		// Realtime hair shading is not supported. Returns flat diffuse.
 		return diffuse;
+	}
+	break;
+
+	case PLASTIC_IDX:
+	{
+		const float fact = 1.0f / (PI + ((3.0f * PI - 4.0f) / 6.0f) * roughness);
+
+		float t = VoL - NoL * NoV;
+		if (t > 0.0f)
+			t /= max(NoL, NoV) + 1e-6f;
+
+		diffuse *= saturate(fact * (1.0f + roughness * t));
+	}
+	break;
+
+	default:
+		diffuse *= InvPI;
+	break;
 	}
 
 	return (1.0f - fresnel) * diffuse;
@@ -114,34 +123,50 @@ float4 diffuseLighning(float4 matDiffuse, float roughness, float fresnel, float 
 
 float4 specularLightning(float4 matDiffuse, float2 texCoord, float HoN, float fresnel)
 {
-	if (Material.type == PERFECT_MIRROR_IDX || Material.type == HAIR_IDX)
-		return float4(0.0f, 0.0f, 0.0f, 0.0f);
-
 	float4 matSpecular;
-	if (Material.type == DEFAULT_DIELECTRIC_IDX || Material.type == PLASTIC_IDX || Material.type == SSS_IDX)
+
+	switch (Material.type)
 	{
-		matSpecular = Material.specular;
-		if (Material.hasSpecularTex)
+		case PERFECT_MIRROR_IDX:
+		case HAIR_IDX:
 		{
-			matSpecular *= specularTex.Sample(tSampler, texCoord);
+			return float4(0.0f, 0.0f, 0.0f, 0.0f);
 		}
-	}
-	else
-	{
-		// Metal, use albedo as specular color.
-		matSpecular = matDiffuse;
+		break;
+
+		case DEFAULT_METAL_IDX:
+		{
+			// Metal, use albedo as specular color.
+			matSpecular = matDiffuse;
+		}
+		break;
+
+		case DEFAULT_DIELECTRIC_IDX:
+		case PLASTIC_IDX:
+		case SSS_IDX:
+		{
+			matSpecular = Material.specular;
+			if (Material.hasSpecularTex)
+			{
+				matSpecular *= specularTex.Sample(tSampler, texCoord);
+			}
+		}
+		break;
 	}
 
-	float normalizationFactor = saturate((Material.shininess + 8) * InvPI8);
+	const float normalizationFactor = saturate((Material.shininess + 8) * InvPI8);
 
 	return saturate(
 		matSpecular * fresnel * pow(HoN, Material.shininess) * normalizationFactor
 	);
 }
 
-float schlick(float HoN)
+float sampleFresnel(float HoN)
 {
-	return saturate(Material.fresnel0 + (1.0f - Material.fresnel0) * pow(1.0f - HoN, 5.0f));
+	if (Material.fresnelEnabled)
+		return saturate(Material.fresnel0 + (1.0f - Material.fresnel0) * pow(1.0f - HoN, 5.0f));
+
+	return NO_FRESNEL_VALUE;
 }
 
 float3 computeNormal(VS_OUTPUT input)
@@ -205,7 +230,7 @@ float4 main(VS_OUTPUT input) : SV_TARGET
 		const float VoL = dot(V, L);
 
 		// Compute fresnel
-		const float fresnel = schlick(HoN);
+		const float fresnel = sampleFresnel(HoN);
 
 		// Diffuse contribution
 		float4 color = diffuseLighning(matDiffuse, Material.roughness, fresnel, NoL, NoV, VoL);

@@ -44,8 +44,8 @@ public:
 	Model::ModelPtr createModelFromRaw(const std::string& path) const override;
 	Model::ModelPtr createModelFromNode(const Utilities::Xml::XmlNode& node) const override;
 
-	Texture::CubeMapPtr createCubeMapFromRaw(Graphics::Texture::CubeMapConstructRawArgs& args) const override;
-	Texture::CubeMapPtr createCubeMapFromNode(const Graphics::Texture::CubeMapConstructNodeArgs& args) const override;
+	Texture::CubeMapPtr createCubeMapFromRaw(Texture::CubeMapConstructRawArgs& args) const override;
+	Texture::CubeMapPtr createCubeMapFromNode(const Utilities::Xml::XmlNode& node) const override;
 
 	Scene::GizmoMap createGizmos() const override;
 
@@ -64,19 +64,18 @@ public:
 	void releaseIndexBuffer(const Dx12IndexBufferHandle& arrayBufferHandle) const override;
 
 	void resizeBuffers(const glm::uvec2& newSize) override;
-	void onMaterialChanged(const Scene::BaseScene& scene, const MaterialIdentifier& matId) override;
-	void onGroupTransformChanged(const Scene::BaseScene& scene, const Model::MeshGroupId& groupId) override;
+	void onMaterialChanged(const Scene::BaseScene& scene, const EntityIdentifier& matId) override;
+	void onGroupTransformChanged(const Scene::BaseScene& scene, const EntityIdentifier& groupId) override;
 
 	void updateLightBuffers(const Scene::BaseScene& scene) override;
 	void updateMaterialBuffers(const Scene::BaseScene& scene) override;
+	void updateMeshBuffers(const Scene::BaseScene& scene) override;
 
-	IntersectionInfo queryIntersection(const Scene::BaseScene& scene, const glm::uvec2& pos) override;
+	IntersectionInfoArray queryIntersection(const Scene::BaseScene& scene, const glm::uvec2& startPt, const glm::uvec2& endPt) override;
 
 	void startCommandRecording() override;
 	void endSceneLoadCommandRecording(const Scene::BaseScene* scene) override;
 	void endCommandRecording() override;
-
-	void tryWaitEffectCompilationDone();
 
 private:
 	enum class CommandType
@@ -96,11 +95,11 @@ private:
 	// @See: // https://www.braynzarsoft.net/viewtutorial/q16390-03-initializing-directx-12
 	nbBool createDevice(IDXGIFactory4* m_dxgiFactory);
 	nbBool createCommandQueues();
-	nbBool createSwapChain(IDXGIFactory4* m_dxgiFactory, const glm::uvec2& bufferSize);
+	nbBool createSwapChainPipeline(const glm::uvec2& bufferSize);
 	nbBool createRenderTargets(const glm::uvec2& bufferSize);
 	nbBool createDepthStencilBuffers(const glm::uvec2& bufferSize);
 	void setUpViewportAndScissor(const glm::uvec2& bufferSize);
-	nbBool createPixelReadBuffer();
+	nbBool createPixelReadBuffer(const glm::uvec2& bufferSize);
 	nbBool bindSwapChainRenderTargets();
 	nbBool createCommandAllocators();
 	nbBool createCommandLists();
@@ -124,18 +123,19 @@ private:
 	std::unique_ptr<Descriptor::RTV_DescriptorAllocator> m_rtvAllocator;
 	std::unique_ptr<Descriptor::DSV_DescriptorAllocator> m_dsvAllocator;
 
-	CComPtr<IDXGIFactory4> m_dxgiFactory;
-	CComPtr<IDXGISwapChain3> m_swapChain;
+	IDXGIFactory4* m_dxgiFactory;
+	IDXGISwapChain3* m_swapChain = nullptr;
 	DXGI_SWAP_CHAIN_DESC m_swapChainDesc = {};
 	ID3D12Resource* m_renderTargets[SwapChainBufferCount];
-	CComPtr<ID3D12Resource> m_pixelReadBuffer;
+	DescriptorHandle m_rtvDescriptorsHandle;
+	ID3D12Resource* m_pixelReadBuffer;
 
 	struct CommandBuffer
 	{
-		CComPtr<ID3D12CommandAllocator> commandAllocator[SwapChainBufferCount];
-		CComPtr<ID3D12GraphicsCommandList> commandList;
-		CComPtr<ID3D12CommandQueue> commandQueue;
-		CComPtr<ID3D12Fence> fences[SwapChainBufferCount];
+		ID3D12CommandAllocator* commandAllocator[SwapChainBufferCount];
+		ID3D12GraphicsCommandList* commandList;
+		ID3D12CommandQueue* commandQueue;
+		ID3D12Fence* fences[SwapChainBufferCount];
 		HANDLE fenceEvent;
 		UINT64 fenceValue[SwapChainBufferCount];
 		nbInt32 frameIndex;
@@ -161,7 +161,7 @@ private:
 	ID3D12Resource* m_positionDepthStencilBuffer = nullptr;
 	DescriptorHandle m_positionDsvDescriptorHandle;
 
-	std::vector<ID3D12Resource*> m_loadingResources;
+	ResourceArray m_pendingResources;
 
 	std::unique_ptr<Effect::ForwardLighning> m_forwardLightningEffect;
 	std::unique_ptr<Effect::CubeMapping> m_cubeMappingEffect;
@@ -172,9 +172,6 @@ private:
 	std::unique_ptr<Effect::RenderRotationGizmo> m_rotationGizmoEffect;
 	std::unique_ptr<Effect::LightVisualLines> m_lightVisualLinesEffect;
 	std::unique_ptr<Effect::RenderWorldPosition> m_renderPositionEffect;
-
-	std::thread m_compileEffectThread;
-	std::atomic_bool m_effectsReady;
 };
 
 inline Model::ModelPtr DX12Renderer::createModelFromRaw(const std::string& path) const
@@ -189,11 +186,11 @@ inline Model::ModelPtr DX12Renderer::createModelFromNode(const Utilities::Xml::X
 
 inline Texture::CubeMapPtr DX12Renderer::createCubeMapFromRaw(Texture::CubeMapConstructRawArgs& args) const
 {
-	return std::make_unique<DX12CubeMap>(args);
+	return std::make_shared<DX12CubeMap>(args);
 }
-inline Texture::CubeMapPtr DX12Renderer::createCubeMapFromNode(const Texture::CubeMapConstructNodeArgs& args) const
+inline Texture::CubeMapPtr DX12Renderer::createCubeMapFromNode(const Utilities::Xml::XmlNode& node) const
 {
-	return std::make_unique<DX12CubeMap>(args);
+	return std::make_shared<DX12CubeMap>(node);
 }
 
 inline nbBool DX12Renderer::createVertexBuffer(const void* data, Dx12VertexBufferHandle& dst, nbUint32 sizeofElem, nbUint32 count)
@@ -213,12 +210,12 @@ inline nbBool DX12Renderer::createVertexBuffer(const void* data, Dx12VertexBuffe
 	return true;
 }
 
-inline void DX12Renderer::onMaterialChanged(const Scene::BaseScene& scene, const MaterialIdentifier& matId)
+inline void DX12Renderer::onMaterialChanged(const Scene::BaseScene& scene, const EntityIdentifier& matId)
 {
 	m_forwardLightningEffect->onUpdateMaterial(scene, matId, m_commandBuffers[CommandType::Direct].commandList);
 }
 
-inline void DX12Renderer::onGroupTransformChanged(const Scene::BaseScene& scene, const Model::MeshGroupId& groupId)
+inline void DX12Renderer::onGroupTransformChanged(const Scene::BaseScene& scene, const EntityIdentifier& groupId)
 {
 	Effect::MeshGroupConstantBufferSingleton::instance()->onUpdateMeshGroup(scene, groupId, m_commandBuffers[CommandType::Direct].commandList);
 }
@@ -233,9 +230,10 @@ inline void DX12Renderer::updateLightBuffers(const Scene::BaseScene& scene)
 	m_renderLightsEffect->updateLightBuffers(scene);
 }
 
-inline void DX12Renderer::createTexture2D(const Texture::Image* image, Dx12TextureHandle& dst)
+inline void DX12Renderer::updateMeshBuffers(const Scene::BaseScene& scene)
 {
-	createTexture2DArray({ image }, image->getWidth(), image->getHeight(), D3D12_SRV_DIMENSION_TEXTURE2D, dst);
+	Effect::MeshGroupConstantBufferSingleton::instance()->resetBuffers(scene, m_commandBuffers[CommandType::Direct].commandList);
+	m_highlightColorEffect->resetBuffers(scene, m_commandBuffers[CommandType::Direct].commandList);
 }
 
 inline void DX12Renderer::releaseTexture(const Dx12TextureHandle& textureHandle) const

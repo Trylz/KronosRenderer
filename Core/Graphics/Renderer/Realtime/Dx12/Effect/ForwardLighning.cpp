@@ -22,6 +22,7 @@
 namespace Graphics { namespace Renderer { namespace Realtime { namespace Dx12 { namespace Effect
 {
 using namespace DirectX;
+using namespace Entity;
 
 ForwardLighning::ForwardLighning(const DXGI_SAMPLE_DESC& sampleDesc)
 : BaseEffect(sampleDesc)
@@ -39,7 +40,7 @@ ForwardLighning::~ForwardLighning()
 	NEBULA_DX12_SAFE_RELEASE(m_pixelShaderMaterialCBDefaultHeap);
 }
 
-void ForwardLighning::onUpdateMaterial(const Scene::BaseScene& scene, const MaterialIdentifier& matId, ID3D12GraphicsCommandList* commandList)
+void ForwardLighning::onUpdateMaterial(const Scene::BaseScene& scene, const EntityIdentifier& matId, ID3D12GraphicsCommandList* commandList)
 {
 	commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_pixelShaderMaterialCBDefaultHeap, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_DEST));
 
@@ -139,27 +140,30 @@ void ForwardLighning::initPipelineStateObjects()
 	dsDesc.FrontFace.StencilFailOp = D3D12_STENCIL_OP_KEEP;
 	dsDesc.FrontFace.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
 	dsDesc.FrontFace.StencilPassOp = D3D12_STENCIL_OP_KEEP;
-	dsDesc.FrontFace.StencilFunc = D3D12_COMPARISON_FUNC_GREATER;
+	dsDesc.FrontFace.StencilFunc = D3D12_COMPARISON_FUNC_EQUAL;
 
 	// Back-facing pixels.
 	dsDesc.BackFace.StencilFailOp = D3D12_STENCIL_OP_KEEP;
 	dsDesc.BackFace.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
 	dsDesc.BackFace.StencilPassOp = D3D12_STENCIL_OP_KEEP;
-	dsDesc.BackFace.StencilFunc = D3D12_COMPARISON_FUNC_GREATER;
+	dsDesc.BackFace.StencilFunc = D3D12_COMPARISON_FUNC_EQUAL;
 
 	// Compile vertex shader
 	ID3DBlob* vertexShader = compileShader(std::wstring(L"ForwardLightning_VS.hlsl"), true);
 
 	// Pixel shader macros
 	auto maxLightDef = std::to_string(Graphics::Light::MaxLightsPerScene);
+	auto noFresnelValueDef = std::to_string(NEBULA_NO_FRESNEL_VALUE);
+
 	auto defaultDielectricIdxDef = std::to_string(Material::BaseMaterial::Type::DefaultDielectric);
 	auto defaultMetalIdxDef = std::to_string(Material::BaseMaterial::Type::DefaultMetal);
 	auto perfectMirrorIdxDef = std::to_string(Material::BaseMaterial::Type::PerfectMirror);
 	auto plasticIdxDef = std::to_string(Material::BaseMaterial::Type::Plastic);
 	auto hairIdxDef = std::to_string(Material::BaseMaterial::Type::Hair);
 	auto sssIdxDef = std::to_string(Material::BaseMaterial::Type::SSS);
-
+	
 	D3D_SHADER_MACRO macros[] = {	"MAX_LIGHTS", maxLightDef.c_str(),
+									"NO_FRESNEL_VALUE", noFresnelValueDef.c_str(),
 									"DEFAULT_DIELECTRIC_IDX", defaultDielectricIdxDef.c_str(),
 									"DEFAULT_METAL_IDX", defaultMetalIdxDef.c_str(),
 									"PERFECT_MIRROR_IDX", perfectMirrorIdxDef.c_str(),
@@ -236,7 +240,7 @@ void ForwardLighning::initDynamicMaterialConstantBuffer(const Scene::BaseScene& 
 
 	// Allocate the maximal possible number of materials.
 	// This allow material references to be still be valid during deletion.
-	const nbUint32 bufferSize = (--materials.end())->second->getId() + 1;
+	const nbUint32 bufferSize = (nbUint32)materials.size();
 
 	if (bufferSize > m_materialBufferSize)
 	{
@@ -274,9 +278,12 @@ void ForwardLighning::initDynamicMaterialConstantBuffer(const Scene::BaseScene& 
 	}
 
 	// 1 : Update materials in upload heap
-	for (auto& mat : materials)
+	m_materialCBPositions.clear();
+	for (const auto& mat : materials)
 	{
-		updateMaterial(scene, mat.first, commandList);
+		m_materialCBPositions.emplace(mat, (nbUint32)m_materialCBPositions.size() * PixelShaderMaterialCBAlignedSize);
+
+		updateMaterial(scene, mat, commandList);
 	}
 
 	// 2: Copy to default heap
@@ -292,7 +299,7 @@ void ForwardLighning::fromMaterialUploadToDefaultHeaps(ID3D12GraphicsCommandList
 	commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_pixelShaderMaterialCBDefaultHeap, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE));
 }
 
-void ForwardLighning::updateMaterial(const Scene::BaseScene& scene, const MaterialIdentifier& matId, ID3D12GraphicsCommandList* commandList)
+void ForwardLighning::updateMaterial(const Scene::BaseScene& scene, const EntityIdentifier& matId, ID3D12GraphicsCommandList* commandList)
 {
 	using namespace Material;
 
@@ -303,7 +310,7 @@ void ForwardLighning::updateMaterial(const Scene::BaseScene& scene, const Materi
 	auto& materialCB = pixelShaderMaterialCB.material;
 	ZeroMemory(&pixelShaderMaterialCB, sizeof(pixelShaderMaterialCB));
 
-	const BaseMaterial* material = dx12Model->getMaterial(materialHandle->matId).get();
+	const BaseMaterial* material = dx12Model->getMaterialFromEntityOrDefault(materialHandle->matId).get();
 	if (material->isFresnelMaterial())
 	{
 		const FresnelMaterial* fresnelMat = static_cast<const FresnelMaterial*>(material);
@@ -312,6 +319,7 @@ void ForwardLighning::updateMaterial(const Scene::BaseScene& scene, const Materi
 		materialCB.shininess = fresnelMat->getShininess();
 		materialCB.roughness = fresnelMat->getRoughness();
 		materialCB.fresnel0 = fresnelMat->getFresnel0();
+		materialCB.fresnelEnabled = (BOOL)fresnelMat->getFresnelEnabled();
 	}
 	else
 	{
@@ -340,12 +348,11 @@ void ForwardLighning::updateMaterial(const Scene::BaseScene& scene, const Materi
 	materialCB.opacity = material->getOpacity();
 	materialCB.type = static_cast<INT>(material->getType());
 
-	materialCB.hasDiffuseTex = materialHandle->diffuseTexture.isValid();
-	materialCB.hasSpecularTex = materialHandle->specularTexture.isValid();
-	materialCB.hasNormalTex = materialHandle->normalTexture.isValid();
+	materialCB.hasDiffuseTex = static_cast<INT>(dx12Model->getTextureHandle(materialHandle->diffuseTexture) != nullptr);
+	materialCB.hasSpecularTex = static_cast<INT>(dx12Model->getTextureHandle(materialHandle->specularTexture) != nullptr);
+	materialCB.hasNormalTex = static_cast<INT>(dx12Model->getTextureHandle(materialHandle->normalTexture) != nullptr);
 
-	nbUint64 posInCB = matId * PixelShaderMaterialCBAlignedSize;
-	memcpy(m_pixelShaderMaterialCBGPUAddress + posInCB, &pixelShaderMaterialCB, sizeof(PixelShaderMaterialCB));
+	memcpy(m_pixelShaderMaterialCBGPUAddress + m_materialCBPositions[matId], &pixelShaderMaterialCB, sizeof(PixelShaderMaterialCB));
 }
 
 void ForwardLighning::updatePixelShaderLightsCB(ForwardLightningPushArgs& data, nbInt32 frameIndex)
@@ -375,30 +382,32 @@ void ForwardLighning::updatePixelShaderLightsCB(ForwardLightningPushArgs& data, 
 
 	nbInt32 lightIdx = 0;
 
-	for (auto& lightIter : lights)
+	for (const auto& lightId : lights)
 	{
 		auto& dx12Light = m_pixelShaderLightsCB.lights[lightIdx];
-		auto lightType = lightIter.second->getType();
+		const auto light = Light::getLightFromEntity(lightId);
+
+		const auto lightType = light->getType();
 
 		dx12Light.type = static_cast<nbInt32>(lightType);
 
-		if (lightIter.second->getType() == Graphics::Light::LightType::Point)
+		if (light->getType() == Light::LightType::Point)
 		{
-			auto* omniLight = static_cast<Graphics::Light::OmniLight*>(lightIter.second.get());
+			auto* omniLight = static_cast<Light::OmniLight*>(light.get());
 
 			const auto pos = omniLight->getPosition();
 			dx12Light.position = { pos.x, pos.y, pos.z, 0.0f };
 			dx12Light.range = omniLight->getRange();
 		}
-		else if (lightIter.second->getType() == Graphics::Light::LightType::Directionnal)
+		else if (light->getType() == Graphics::Light::LightType::Directionnal)
 		{
-			auto* directionnalLight = static_cast<Graphics::Light::DirectionnalLight*>(lightIter.second.get());
+			auto* directionnalLight = static_cast<Graphics::Light::DirectionnalLight*>(light.get());
 			const auto& direction = directionnalLight->getDirection();
 
 			dx12Light.direction = { direction.x, direction.y, direction.z, 0.0f };
 		}
 
-		const auto& color = lightIter.second->getFinalColor();
+		const auto& color = light->getFinalColor();
 		dx12Light.color = { color.r, color.g, color.r, 0.0f };
 
 		++lightIdx;
@@ -426,11 +435,11 @@ void ForwardLighning::pushDrawCommands(ForwardLightningPushArgs& data, ID3D12Gra
 	commandList->SetGraphicsRootConstantBufferView(2, m_pixelShaderLightsCBUploadHeaps[frameIndex]->GetGPUVirtualAddress());
 
 	const auto* dx12Model = static_cast<const DX12Model*>(data.scene.getModel().get());
-	const auto& meshByGroup = dx12Model->getMeshesByGroup();
+	const auto& meshGroups = dx12Model->getMeshGroups();
 
-	auto& getPSReadyTextureHandle = [dx12Model, commandList](const ImageIdentifier& imageId, const DX12Model::SharedTMaterialHandlePtr& materialHandle, nbInt32 rootParamIdx)
+	auto& getPSReadyTextureHandle = [dx12Model, commandList](const EntityIdentifier& imageId, const DX12Model::SharedTMaterialHandlePtr& materialHandle, nbInt32 rootParamIdx)
 	{
-		const auto tex = imageId.isValid() ? dx12Model->getTexture(imageId) : nullptr;
+		const auto tex = imageId ? dx12Model->getTextureHandle(imageId) : nullptr;
 		if (tex)
 		{
 			commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(tex->getHandle().buffer, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE));
@@ -440,16 +449,16 @@ void ForwardLighning::pushDrawCommands(ForwardLightningPushArgs& data, ID3D12Gra
 		return tex;
 	};
 
-	for (auto& group : dx12Model->getMeshHandlesByGroup())
+	for (const auto& group : dx12Model->getMeshHandlesByGroup())
 	{
-		const auto meshByGroupIter = meshByGroup.find(group.first);
-		const auto& materialHandle = dx12Model->getMaterialHandle(meshByGroupIter->second[0]->getMaterialId());
+		const auto meshByGroupPtr = Model::getMeshGroupFromEntity(group.first);
+		if (!meshByGroupPtr->m_enabled)
+			continue;
 
-		const nbUint64 groupPosInCB = std::distance(meshByGroup.begin(), meshByGroupIter) * MeshGroupConstantBuffer::VertexShaderCBAlignedSize;
-		commandList->SetGraphicsRootConstantBufferView(1, MeshGroupConstantBufferSingleton::instance()->getDefaultHeap()->GetGPUVirtualAddress() + groupPosInCB);
+		commandList->SetGraphicsRootConstantBufferView(1, MeshGroupConstantBufferSingleton::instance()->getMeshGroupGPUVirtualAddress(group.first));
 
-		const nbUint32 matPosInCB = materialHandle->matId * PixelShaderMaterialCBAlignedSize;
-		commandList->SetGraphicsRootConstantBufferView(3, m_pixelShaderMaterialCBDefaultHeap->GetGPUVirtualAddress() + matPosInCB);
+		const auto materialHandle = dx12Model->getMaterialHandle(meshByGroupPtr->m_materialId);
+		commandList->SetGraphicsRootConstantBufferView(3, m_pixelShaderMaterialCBDefaultHeap->GetGPUVirtualAddress() + m_materialCBPositions[meshByGroupPtr->m_materialId]);
 		
 		// Set textures states.
 		const auto diffuseTex = getPSReadyTextureHandle(materialHandle->diffuseTexture, materialHandle, 4);

@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "Graphics/Texture/Image.h"
+#include "Graphics/Texture/ImageImpl.h"
 #include "Graphics/Vertex.h"
 #include <vector>
 
@@ -26,6 +26,7 @@ class TGraphicResourceAllocator
 {
 public:
 	virtual void createTexture2D(const Texture::Image* image, TextureHandle& dst) = 0;
+
 	virtual void createTextureCube(const std::vector<const Texture::Image*>& images, TextureHandle& dst) = 0;
 	virtual void releaseTexture(const TextureHandle& textureHandle) const = 0;
 

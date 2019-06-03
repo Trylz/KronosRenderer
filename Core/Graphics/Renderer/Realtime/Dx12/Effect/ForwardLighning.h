@@ -28,7 +28,7 @@ public:
 
 	void onNewScene(const Scene::BaseScene& scene, ID3D12GraphicsCommandList* commandList);
 	void updateMaterialBuffers(const Scene::BaseScene& scene, ID3D12GraphicsCommandList* commandList);
-	void onUpdateMaterial(const Scene::BaseScene& scene, const MaterialIdentifier& matId, ID3D12GraphicsCommandList* commandList);
+	void onUpdateMaterial(const Scene::BaseScene& scene, const EntityIdentifier& matId, ID3D12GraphicsCommandList* commandList);
 
 private:
 	NEBULA_DX12_ATTRIBUTE_ALIGN struct DX12Light
@@ -55,6 +55,7 @@ private:
 		FLOAT fresnel0;
 		INT type;
 
+		BOOL fresnelEnabled;
 		BOOL hasDiffuseTex;
 		BOOL hasSpecularTex;
 		BOOL hasNormalTex;
@@ -85,7 +86,7 @@ private:
 	void initStaticConstantBuffers();
 	void initDynamicMaterialConstantBuffer(const Scene::BaseScene& scene, ID3D12GraphicsCommandList* commandList);
 	void fromMaterialUploadToDefaultHeaps(ID3D12GraphicsCommandList* commandList);
-	void updateMaterial(const Scene::BaseScene& scene, const MaterialIdentifier& matId, ID3D12GraphicsCommandList* commandList);
+	void updateMaterial(const Scene::BaseScene& scene, const EntityIdentifier& matId, ID3D12GraphicsCommandList* commandList);
 
 	void updatePixelShaderLightsCB(ForwardLightningPushArgs& data, nbInt32 frameIndex);
 
@@ -101,6 +102,8 @@ private:
 	UINT8* m_pixelShaderMaterialCBGPUAddress;
 	ID3D12Resource* m_pixelShaderMaterialCBUploadHeap;
 	ID3D12Resource* m_pixelShaderMaterialCBDefaultHeap;
+
+	std::unordered_map<EntityIdentifier, nbUint32> m_materialCBPositions;
 
 	nbUint32 m_materialBufferSize = 0u;
 };

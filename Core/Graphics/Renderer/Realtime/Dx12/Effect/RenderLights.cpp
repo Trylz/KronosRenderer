@@ -53,13 +53,6 @@ RenderLights::~RenderLights()
 		if (!tex.second.descriptorHandle.isEmpty())
 			GraphicResourceAllocatorPtr<DX12_GRAPHIC_ALLOC_PARAMETERS>->releaseTexture(tex.second);
 	}
-
-	// Images
-	for (auto& im : m_images)
-	{
-		if (im.second)
-			delete im.second;
-	}
 }
 
 void RenderLights::initRootSignature()
@@ -218,13 +211,10 @@ void RenderLights::initTextures()
 		try
 		{
 			m_images.emplace(lType, Texture::Helper::createRGBAImage(path)) ;
-			GraphicResourceAllocatorPtr<DX12_GRAPHIC_ALLOC_PARAMETERS>->createTexture2D(m_images[lType], m_textures[lType]);
+			GraphicResourceAllocatorPtr<DX12_GRAPHIC_ALLOC_PARAMETERS>->createTexture2D(m_images[lType].get(), m_textures[lType]);
 		}
 		catch(Texture::CreateImageException&)
 		{
-			if (m_images[lType])
-				delete m_images[lType];
-
 			m_images[lType] = nullptr;
 		}
 		catch(CreateTextureException&)
@@ -240,15 +230,15 @@ void RenderLights::initTextures()
 void RenderLights::updateVertexShaderCenterCB(struct RenderLightsPushArgs& data, nbInt32 frameIndex)
 {
 	nbInt32 i = 0;
-	for (auto& light : data.scene.getLights())
+	for (const auto& lightId : data.scene.getLights())
 	{
-		const glm::vec3& lightPos = light.second->getPosition();
+		const glm::vec3 lightPos = Light::getLightFromEntity(lightId)->getPosition();
 		auto centerCameraSpace = data.scene.getCamera()->getViewMatrix() * glm::vec4(lightPos.x, lightPos.y, lightPos.z, 1.0f);
 
 		VertexShaderCenterCB buffer;
 		buffer.centerCameraSpace = { centerCameraSpace.x, centerCameraSpace.y, centerCameraSpace.z, 1.0f};
 
-		nbUint64 posInCB = i * VtxShaderCenterCBAlignedSize;
+		const nbUint64 posInCB = i * VtxShaderCenterCBAlignedSize;
 		memcpy(m_vShaderCenterCBGPUAddress[frameIndex] + posInCB, &buffer, sizeof(VertexShaderCenterCB));
 
 		++i;
@@ -281,11 +271,11 @@ void RenderLights::pushDrawCommands(RenderLightsPushArgs& data, ID3D12GraphicsCo
 	commandList->SetGraphicsRootConstantBufferView(0, m_vShaderSharedCBUploadHeaps[frameIndex]->GetGPUVirtualAddress());
 
 	nbInt32 i = 0;
-	for (auto& lightIter : data.scene.getLights())
+	for (const auto& lightId : data.scene.getLights())
 	{
 		commandList->SetGraphicsRootConstantBufferView(1, i * VtxShaderCenterCBAlignedSize + m_vShaderCenterCBUploadHeaps[frameIndex]->GetGPUVirtualAddress());
 
-		const auto tex = m_textures.find(lightIter.second->getType());
+		const auto tex = m_textures.find(Light::getLightFromEntity(lightId)->getType());
 		NEBULA_ASSERT(tex != m_textures.end());
 
 		if (!tex->second.descriptorHandle.isEmpty())

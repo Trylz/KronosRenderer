@@ -36,9 +36,6 @@ template <typename DataToProcessType>
 class BaseEffect
 {
 public:
-	inline BaseEffect(const DXGI_SAMPLE_DESC& sampleDesc)
-	: m_sampleDesc(sampleDesc) {}
-
 	virtual ~BaseEffect() {}
 
 	virtual void pushDrawCommands(DataToProcessType data, ID3D12GraphicsCommandList* commandList, nbInt32 frameIndex) = 0;
@@ -60,12 +57,17 @@ protected:
 		const D3D12_BLEND_DESC& blendDesc = CD3DX12_BLEND_DESC(D3D12_DEFAULT),
 		const D3D12_DEPTH_STENCIL_DESC& depthStencilDesc = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT),
 		const D3D12_RASTERIZER_DESC& rasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT),
-		const std::vector<DXGI_FORMAT>& renderTargetFormats = std::vector<DXGI_FORMAT>{ NEBULA_SWAP_CHAIN_FORMAT });
+		const std::vector<DXGI_FORMAT>& renderTargetFormats = std::vector<DXGI_FORMAT>{ NEBULA_SWAP_CHAIN_FORMAT },
+		const D3D12_PRIMITIVE_TOPOLOGY_TYPE topologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE);
 
 	DXGI_SAMPLE_DESC m_sampleDesc;
 	CComPtr<ID3D12RootSignature> m_rootSignature;
 
 protected:
+	inline BaseEffect(){}
+	inline BaseEffect(const DXGI_SAMPLE_DESC& desc) { setSampleDesc(desc); }
+	inline void setSampleDesc(const DXGI_SAMPLE_DESC& desc) { m_sampleDesc = desc; }
+
 	virtual void initRootSignature() = 0;
 	virtual void initPipelineStateObjects() = 0;
 };
@@ -165,7 +167,8 @@ void BaseEffect<DataToProcessType>::compilePipeline(PipelineStatePtr& pipelineSt
 	const D3D12_BLEND_DESC& blendDesc,
 	const D3D12_DEPTH_STENCIL_DESC& depthStencilDesc,
 	const D3D12_RASTERIZER_DESC& rasterizerDesc,
-	const std::vector<DXGI_FORMAT>& renderTargetFormats)
+	const std::vector<DXGI_FORMAT>& renderTargetFormats,
+	const D3D12_PRIMITIVE_TOPOLOGY_TYPE topologyType)
 {
 	// Fill out a shader bytecode structure, which is basically just a pointer
 	// to the shader bytecode and the size of the shader bytecode.
@@ -189,7 +192,7 @@ void BaseEffect<DataToProcessType>::compilePipeline(PipelineStatePtr& pipelineSt
 	psoDesc.pRootSignature = m_rootSignature;
 	psoDesc.VS = vertexShaderBytecode;
 	psoDesc.PS = pixelShaderBytecode;
-	psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+	psoDesc.PrimitiveTopologyType = topologyType;
 
 	NEBULA_ASSERT(renderTargetFormats.size() <= 8);
 	const UINT numRenderTargets = std::min((UINT)renderTargetFormats.size(), 8u);

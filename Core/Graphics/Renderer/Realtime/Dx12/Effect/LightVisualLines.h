@@ -15,8 +15,8 @@ namespace Graphics { namespace Renderer { namespace Realtime { namespace Dx12 { 
 {
 struct LightVisualLinesPushArgs
 {
-	const Camera::SharedCameraPtr camera;
-	const Light::BaseLight* light;
+	const Camera::SharedCameraPtr& camera;
+	const Light::DatabaseLightPtr& light;
 	const nbFloat32 sceneBoundsSize;
 };
 

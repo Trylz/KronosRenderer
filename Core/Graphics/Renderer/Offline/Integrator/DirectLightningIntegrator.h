@@ -13,7 +13,7 @@ namespace Graphics { namespace Renderer { namespace Offline { namespace Integrat
 {
 struct DirectLightningIntegrator : BaseIntegrator
 {
-	static RGBSpectrum sample(const Scene::BaseScene::LightContainer& lights,
+	static Spectrum sample(const EntityIdentifierArray& lights,
 		const Intersector::BaseIntersectorPtr& intersector,
 		const Material::BaseMaterial& material,
 		const Material::BaseMaterial::BaseColorCachePtr& colorCache,

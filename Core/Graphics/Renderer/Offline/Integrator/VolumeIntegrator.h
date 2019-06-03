@@ -13,9 +13,9 @@ namespace Graphics { namespace Renderer { namespace Offline { namespace Integrat
 {
 struct VolumeIntegrator : BaseIntegrator
 {
-	static RGBSpectrum sample(const Intersector::BaseIntersectorPtr& intersector,
+	static Spectrum sample(const Intersector::BaseIntersectorPtr& intersector,
 		const Scene::BaseScene* scene,
-		const RGBSpectrum& inRadiance,
+		const Spectrum& inRadiance,
 		const glm::vec3& startPt,
 		const glm::vec3& endPt,
 		const MediaPtr& media);

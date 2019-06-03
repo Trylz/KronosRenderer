@@ -58,7 +58,7 @@ private:
 	PipelineStatePtr m_PSO;
 
 	std::unordered_map<Light::LightType, Dx12TextureHandle> m_textures;
-	std::unordered_map<Light::LightType, Texture::RGBAImage*> m_images;
+	std::unordered_map<Light::LightType, Texture::SharedRGBAImagePtr> m_images;
 
 	Dx12VertexBufferHandle m_vtxBuffer;
 	Dx12IndexBufferHandle m_idxBuffer;

@@ -28,12 +28,16 @@ MeshGroupConstantBuffer::~MeshGroupConstantBuffer()
 
 void MeshGroupConstantBuffer::initVertexShaderConstantBuffer(const Scene::BaseScene& scene, ID3D12GraphicsCommandList* commandList)
 {
-	const auto& meshesByGroup = scene.getModel()->getMeshesByGroup();
-	const nbUint32 bufferSize = (nbUint32)meshesByGroup.size();
+	const auto& meshGroups = scene.getModel()->getMeshGroups();
+	const nbUint32 bufferSize = (nbUint32)meshGroups.size();
 
 	// 0 : Init heaps
 	NEBULA_DX12_SAFE_RELEASE(m_vertexShaderCBUploadHeap);
 	NEBULA_DX12_SAFE_RELEASE(m_vertexShaderCBDefaultHeap);
+	m_groupCBPositions.clear();
+
+	if (!bufferSize)
+		return;
 
 	// Create upload heap
 	HRESULT hr = D3D12Device->CreateCommittedResource(&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
@@ -62,16 +66,18 @@ void MeshGroupConstantBuffer::initVertexShaderConstantBuffer(const Scene::BaseSc
 	m_vertexShaderCBDefaultHeap->SetName(L"Vertex shader group constant buffer default heap");
 
 	// 1 : Update upload heap
-	for (auto& group : meshesByGroup)
+	for (const auto& groupId : meshGroups)
 	{
-		updateMeshGroup(scene, group.first, commandList);
+		m_groupCBPositions.emplace(groupId, (nbUint32)m_groupCBPositions.size() * VertexShaderCBAlignedSize);
+
+		updateMeshGroup(scene, groupId, commandList);
 	}
 
 	// 2: Copy to default heap
 	fromVertexShaderUploadToDefaulHeap(commandList);
 }
 
-void MeshGroupConstantBuffer::onUpdateMeshGroup(const Scene::BaseScene& scene, const Model::MeshGroupId& groupId, ID3D12GraphicsCommandList* commandList)
+void MeshGroupConstantBuffer::onUpdateMeshGroup(const Scene::BaseScene& scene, const EntityIdentifier& groupId, ID3D12GraphicsCommandList* commandList)
 {
 	commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_vertexShaderCBDefaultHeap, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, D3D12_RESOURCE_STATE_COPY_DEST));
 
@@ -89,22 +95,18 @@ void MeshGroupConstantBuffer::fromVertexShaderUploadToDefaulHeap(ID3D12GraphicsC
 	commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_vertexShaderCBDefaultHeap, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER));
 }
 
-void MeshGroupConstantBuffer::updateMeshGroup(const Scene::BaseScene& scene, const Model::MeshGroupId& groupId, ID3D12GraphicsCommandList* commandList)
+void MeshGroupConstantBuffer::updateMeshGroup(const Scene::BaseScene& scene, const EntityIdentifier& groupId, ID3D12GraphicsCommandList* commandList)
 {
-	// Read first mesh tranform
-	const auto& meshesByGroup = scene.getModel()->getMeshesByGroup();
-	const auto groupIter = meshesByGroup.find(groupId);
-	const glm::mat4& matrix = groupIter->second[0]->getTransform()->getMatrix();
+	const auto& group = Model::getMeshGroupFromEntity(groupId);
+	const glm::mat4& matrix = group->getTransform()->getMatrix();
 
 	XMMATRIX modelMatrix = XMMATRIX(&matrix[0][0]);
 	modelMatrix = XMMatrixTranspose(modelMatrix);
 
 	VertexShaderGroupCB vertexShaderCB;
 	XMStoreFloat4x4(&vertexShaderCB.modelMat, modelMatrix);
-	// Set flat id of first mesh since group ids are strings
-	vertexShaderCB.groupId = groupIter->second[0]->getFlatId();
+	vertexShaderCB.groupId = group->getIdentifier().getValue();
 
-	const nbUint64 posInCB = std::distance(meshesByGroup.begin(), groupIter) * VertexShaderCBAlignedSize;
-	memcpy(m_vertexShaderCBGPUAddress + posInCB, &vertexShaderCB, sizeof(VertexShaderGroupCB));
+	memcpy(m_vertexShaderCBGPUAddress + m_groupCBPositions[groupId], &vertexShaderCB, sizeof(VertexShaderGroupCB));
 }
 }}}}}

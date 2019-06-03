@@ -20,8 +20,8 @@ public:
 	MeshGroupConstantBuffer();
 	~MeshGroupConstantBuffer();
 
-	void onNewScene(const Scene::BaseScene& scene, ID3D12GraphicsCommandList* commandList);
-	void onUpdateMeshGroup(const Scene::BaseScene& scene, const Model::MeshGroupId& groupId, ID3D12GraphicsCommandList* commandList);
+	void resetBuffers(const Scene::BaseScene& scene, ID3D12GraphicsCommandList* commandList);
+	void onUpdateMeshGroup(const Scene::BaseScene& scene, const EntityIdentifier& groupId, ID3D12GraphicsCommandList* commandList);
 
 	struct VertexShaderGroupCB
 	{
@@ -29,29 +29,31 @@ public:
 		UINT groupId;
 	};
 
-	ID3D12Resource* getDefaultHeap();
+	D3D12_GPU_VIRTUAL_ADDRESS getMeshGroupGPUVirtualAddress(const EntityIdentifier& entityId);
 
 	static const nbUint32 VertexShaderCBAlignedSize = NEBULA_DX12_ALIGN_SIZE(VertexShaderGroupCB);
 
 private:
 	void fromVertexShaderUploadToDefaulHeap(ID3D12GraphicsCommandList* commandList);
-	void updateMeshGroup(const Scene::BaseScene& scene, const Model::MeshGroupId& groupId, ID3D12GraphicsCommandList* commandList);
+	void updateMeshGroup(const Scene::BaseScene& scene, const EntityIdentifier& groupId, ID3D12GraphicsCommandList* commandList);
 	void initVertexShaderConstantBuffer(const Scene::BaseScene& scene, ID3D12GraphicsCommandList* commandList);
 
 	// vertex shader constant buffer
 	UINT8* m_vertexShaderCBGPUAddress;
 	ID3D12Resource* m_vertexShaderCBUploadHeap;
 	ID3D12Resource* m_vertexShaderCBDefaultHeap;
+
+	std::unordered_map<EntityIdentifier, nbUint32> m_groupCBPositions;
 };
 
-inline void MeshGroupConstantBuffer::onNewScene(const Scene::BaseScene& scene, ID3D12GraphicsCommandList* commandList)
+inline void MeshGroupConstantBuffer::resetBuffers(const Scene::BaseScene& scene, ID3D12GraphicsCommandList* commandList)
 {
 	initVertexShaderConstantBuffer(scene, commandList);
 }
 
-inline ID3D12Resource* MeshGroupConstantBuffer::getDefaultHeap()
+inline D3D12_GPU_VIRTUAL_ADDRESS MeshGroupConstantBuffer::getMeshGroupGPUVirtualAddress(const EntityIdentifier& entityId)
 {
-	return m_vertexShaderCBDefaultHeap;
+	return m_vertexShaderCBDefaultHeap->GetGPUVirtualAddress() + m_groupCBPositions[entityId];
 }
 
 using MeshGroupConstantBufferSingleton = Utilities::Singleton<MeshGroupConstantBuffer>;

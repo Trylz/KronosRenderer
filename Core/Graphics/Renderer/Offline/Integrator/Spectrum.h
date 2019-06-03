@@ -11,7 +11,7 @@
 
 namespace Graphics { namespace Renderer { namespace Offline { namespace Integrator
 {
-using RGBSpectrum = RGBColor;
-const RGBSpectrum BlackRGBSpectrum = RGBSpectrum(0.0f);
-const RGBSpectrum WhiteRGBSpectrum = RGBSpectrum(1.0f);
+using Spectrum = RGBColor;
+const Spectrum BlackRGBSpectrum = Spectrum(0.0f);
+const Spectrum WhiteRGBSpectrum = Spectrum(1.0f);
 }}}}

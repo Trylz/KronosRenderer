@@ -77,13 +77,14 @@ void RenderWorldPosition::pushDrawCommands(RenderWorldPositionPushArgs& data, ID
 	commandList->SetGraphicsRootConstantBufferView(0, CameraConstantBufferSingleton::instance()->getUploadtHeaps()[frameIndex]->GetGPUVirtualAddress());
 
 	const auto* dx12Model = static_cast<const DX12Model*>(data.scene.getModel().get());
-	const auto& meshByGroup = dx12Model->getMeshesByGroup();
 
-	for (auto& group : dx12Model->getMeshHandlesByGroup())
+	for (const auto& group : dx12Model->getMeshHandlesByGroup())
 	{
-		const auto meshByGroupIter = meshByGroup.find(group.first);
-		const nbUint64 groupPosInCB = std::distance(meshByGroup.begin(), meshByGroupIter) * MeshGroupConstantBuffer::VertexShaderCBAlignedSize;
-		commandList->SetGraphicsRootConstantBufferView(1, MeshGroupConstantBufferSingleton::instance()->getDefaultHeap()->GetGPUVirtualAddress() + groupPosInCB);
+		const auto meshByGroupPtr = Model::getMeshGroupFromEntity(group.first);
+		if (!meshByGroupPtr->m_enabled)
+			continue;
+
+		commandList->SetGraphicsRootConstantBufferView(1, MeshGroupConstantBufferSingleton::instance()->getMeshGroupGPUVirtualAddress(group.first));
 
 		// Draw meshes.
 		for (auto* meshHandle : group.second)

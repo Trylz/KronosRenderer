@@ -10,10 +10,11 @@
 #include "Spectrum.h"
 #include "Scene/BaseScene.h"
 #include "../Intersector/IntersectionInfo.h"
+#include "../Intersector/BaseIntersector.h"
 
 namespace Graphics { namespace Renderer { namespace Offline { namespace Integrator
 {
-inline nbBool isNegligeable(const RGBSpectrum& s)
+inline nbBool isNegligeable(const Spectrum& s)
 {
 	static const nbFloat32 oeps = 1e-5f;
 	return (s.x < oeps) && (s.y < oeps) && (s.z < oeps);
@@ -36,6 +37,6 @@ struct IntersectionProperties
 
 IntersectionProperties buildIntersectionProperties(const Math::Ray& ray, const Intersector::IntersectionInfo& info, const Scene::BaseScene* scene);
 
-RGBSpectrum getSkyColor(const Scene::BaseScene* scene, const Math::Ray& ray, nbBool useSceneAmbient = false);
+Spectrum getSkyColor(const Scene::BaseScene* scene, const Math::Ray& ray, nbBool useSceneBackground = false);
 
 }}}}

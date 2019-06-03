@@ -14,14 +14,14 @@
 namespace Graphics { namespace Renderer { namespace Offline { namespace Integrator
 {
 	// @See: https://cs.dartmouth.edu/~wjarosz/publications/dissertation/chapter4.pdf
-	RGBSpectrum VolumeIntegrator::sample(const Intersector::BaseIntersectorPtr& intersector,
+	Spectrum VolumeIntegrator::sample(const Intersector::BaseIntersectorPtr& intersector,
 		const Scene::BaseScene* scene,
-		const RGBSpectrum& inRadiance,
+		const Spectrum& inRadiance,
 		const glm::vec3& startPt,
 		const glm::vec3& endPt,
 		const MediaPtr& media)
 	{
-		const MediaSettings& mediaSettings = media->getSettings();
+		const MediaSettings& mediaSettings = media->getMediaSettings();
 
 		const glm::vec3 direction = endPt - startPt;
 		const nbFloat32 dirLength = glm::length(direction);
@@ -36,13 +36,14 @@ namespace Graphics { namespace Renderer { namespace Offline { namespace Integrat
 			nbSamples = (nbUint32)(nbSamples * lengthOverBoundsSize);
 		}
 
-		RGBSpectrum accInRadiance;
+
+		Spectrum accInRadiance;
 		{
 			// Accumulated in-scattering radiance
 			const glm::vec3 step = direction / (nbFloat32)nbSamples;
 
 			//const nbFloat32 stepSize = dirLength / nbSamples;
-			//const nbFloat32 segmentTransmittance = std::exp2f(-stepSize * media->getExtinctionCoeff());
+			//const nbFloat32 segmentTransmittance = std::exp2f(-stepSize * extinction);
 			//const nbFloat32 scatteringTransmitance = segmentTransmittance * mediaSettings.m_scatteringCoeff;
 
 			glm::vec3 indirectSamples[2];
@@ -50,12 +51,13 @@ namespace Graphics { namespace Renderer { namespace Offline { namespace Integrat
 
 			for (nbUint32 i = 0u; i < nbSamples; ++i, currentPt += step)
 			{
-				RGBSpectrum directRadiance;
+				Spectrum directRadiance;
 				{
 					// Compute direct contribution from lights
-					for (auto& lightIter : scene->getLights())
+					for (const auto& lightId : scene->getLights())
 					{
-						const auto sampleToLight = lightIter.second->generateSampleToLight(s_nbGenerator, currentPt);
+						const auto light = Light::getLightFromEntity(lightId);
+						const auto sampleToLight = light->generateSampleToLight(s_nbGenerator, currentPt);
 						if (!sampleToLight.canProcess)
 							continue;
 
@@ -65,18 +67,18 @@ namespace Graphics { namespace Renderer { namespace Offline { namespace Integrat
 						if (occlusionStrength != 1.0f)
 						{
 							const nbFloat32 phase = media->sample(direction, sampleToLight.L);
-							const nbFloat32 distanceFactor = lightIter.second->getType() != Light::Point ? 1.0f :
+							const nbFloat32 distanceFactor = light->getType() != Light::Point ? 1.0f :
 								std::exp2f(-sampleToLight.length * media->getExtinctionCoeff());
 
 							directRadiance += phase *
 								distanceFactor *
-								lightIter.second->getFinalColor() *
+								light->getFinalColor() *
 								(1.0f - occlusionStrength);
 						}
 					}
 				}
 
-				RGBSpectrum indirectRadiance;
+				Spectrum indirectRadiance;
 				if (mediaSettings.m_multipleStattering)
 				{
 					// Compute indirect contributions.
@@ -95,11 +97,9 @@ namespace Graphics { namespace Renderer { namespace Offline { namespace Integrat
 						if (intersector->intersect(ray, isectResult))
 						{
 							const auto isectProps = buildIntersectionProperties(ray, isectResult, scene);
-							const auto material = scene->getModel()->getMaterial(isectResult.object->getMaterialId());
+							const auto material = scene->getModel()->getMaterialFromEntityOrDefault(isectResult.object->getMaterialId());
 
-							const auto materialColorCache = material->buildBsdfCache(scene->getAmbientColor(),
-								isectProps.texCoord,
-								scene->getModel()->getImageContainer());
+							const auto materialColorCache = material->buildBsdfCache(scene->getAmbientColor(), isectProps.texCoord);
 
 							const nbFloat32 distanceFactor = std::exp2f(-isectResult.meshIntersectData.packetIntersectionResult.t
 							* media->getExtinctionCoeff());
@@ -127,9 +127,9 @@ namespace Graphics { namespace Renderer { namespace Offline { namespace Integrat
 		// Reduced surface radiance
 		const nbFloat32 transmittance = std::exp2f(-dirLength * media->getExtinctionCoeff());
 
-		const RGBSpectrum reducedRadiance = inRadiance * transmittance;
+		const Spectrum reducedRadiance = inRadiance * transmittance;
 
-		return reducedRadiance + accInRadiance;
+		return (reducedRadiance + accInRadiance) * (mediaSettings.m_noise ? s_nbGenerator.generateBeetween(0.8f, 1.0f) : 1.0f);
 	}
 
 }}}}
